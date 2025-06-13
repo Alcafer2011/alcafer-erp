@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, Calendar } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { motion } from 'framer-motion';
+import { emailService } from '../../services/emailService';
 import toast from 'react-hot-toast';
 
 interface LoginFormProps {
@@ -78,13 +79,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     return null;
   };
 
+  const generateConfirmationToken = () => {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       if (isLogin) {
-        // Login
+        // Login normale con Supabase
         const { error } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
@@ -94,7 +99,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         toast.success('Accesso effettuato con successo!');
         onSuccess();
       } else {
-        // Registrazione
+        // Registrazione con email personalizzata via Brevo
         if (!await validateEmail(formData.email)) {
           throw new Error('Email non valida');
         }
@@ -108,44 +113,56 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           throw new Error('Utente non autorizzato alla registrazione');
         }
 
-        // Registrazione con redirect URL personalizzato
-        const { error } = await supabase.auth.signUp({
+        // Test connessione Brevo
+        const brevoConnected = await emailService.testBrevoConnection();
+        if (!brevoConnected) {
+          throw new Error('Servizio email non disponibile. Controlla la configurazione Brevo.');
+        }
+
+        // Genera token di conferma
+        const confirmationToken = generateConfirmationToken();
+        
+        // Salva i dati temporanei nel localStorage (per 24 ore)
+        const tempUserData = {
           email: formData.email,
           password: formData.password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
-            data: {
-              nome: formData.nome,
-              cognome: formData.cognome,
-              data_nascita: formData.dataNascita,
-              ruolo: userRole,
-            }
-          }
+          nome: formData.nome,
+          cognome: formData.cognome,
+          data_nascita: formData.dataNascita,
+          ruolo: userRole,
+          token: confirmationToken,
+          expires: Date.now() + (24 * 60 * 60 * 1000) // 24 ore
+        };
+        
+        localStorage.setItem(`temp_user_${confirmationToken}`, JSON.stringify(tempUserData));
+
+        // Invia email di conferma via Brevo
+        const emailSent = await emailService.sendConfirmationEmail(
+          formData.email,
+          formData.nome,
+          confirmationToken
+        );
+
+        if (!emailSent) {
+          throw new Error('Errore nell\'invio dell\'email di conferma');
+        }
+
+        toast.success('🎉 Registrazione completata! Controlla la tua email per confermare l\'account.', {
+          duration: 8000,
         });
 
-        if (error) throw error;
-
-        toast.success('Registrazione completata! Controlla la tua email per confermare l\'account. Il link ti rimanderà direttamente qui.', {
-          duration: 8000,
+        // Reset form
+        setFormData({
+          email: '',
+          password: '',
+          nome: '',
+          cognome: '',
+          dataNascita: '',
         });
       }
     } catch (error: any) {
-      // Handle specific email confirmation error - check multiple possible error formats
-      const isEmailNotConfirmed = 
-        error.message?.includes('Email not confirmed') || 
-        error.code === 'email_not_confirmed' ||
-        (error.message && error.message.includes('email_not_confirmed')) ||
-        (typeof error === 'object' && error !== null && 
-         ((error as any).error_code === 'email_not_confirmed' || 
-          (error as any).code === 'email_not_confirmed'));
-
-      if (isEmailNotConfirmed) {
-        toast.error('Email non confermata. Controlla la tua casella di posta (inclusa la cartella spam) per il link di conferma e clicca su di esso prima di effettuare l\'accesso.', {
-          duration: 8000,
-        });
-      } else {
-        toast.error(error.message || 'Si è verificato un errore');
-      }
+      console.error('Errore:', error);
+      toast.error(error.message || 'Si è verificato un errore');
     } finally {
       setLoading(false);
     }
@@ -331,7 +348,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           {isLogin && (
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">
-                <strong>Nota:</strong> Se hai appena completato la registrazione, controlla la tua email (inclusa la cartella spam) per il link di conferma prima di effettuare l'accesso.
+                <strong>Nota:</strong> Se hai appena completato la registrazione, controlla la tua email per il link di conferma prima di effettuare l'accesso.
               </p>
             </div>
           )}
@@ -339,7 +356,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           {!isLogin && (
             <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-sm text-green-800">
-                <strong>✅ Redirect configurato:</strong> Il link di conferma email ti rimanderà direttamente a questa applicazione.
+                <strong>📧 Email via Brevo:</strong> Riceverai un'email di conferma professionale con il nostro sistema di notifiche avanzato.
               </p>
             </div>
           )}
