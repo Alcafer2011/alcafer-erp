@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { PieChart, Calculator, TrendingUp, DollarSign, Building2 } from 'lucide-react';
+import { PieChart, Calculator, DollarSign, Building2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { supabase } from '../../lib/supabase';
@@ -7,8 +7,14 @@ import { usePermissions } from '../../hooks/usePermissions';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import HelpTooltip from '../../components/common/HelpTooltip';
 
+interface DividendiData {
+  alcafer: { totale: number; percentuale: number };
+  gabifer: { totale: number; percentuale: number };
+  lavoriMese: any[];
+}
+
 const Dividendi: React.FC = () => {
-  const [dividendiData, setDividendiData] = useState({
+  const [dividendiData, setDividendiData] = useState<DividendiData>({
     alcafer: { totale: 0, percentuale: 0 },
     gabifer: { totale: 0, percentuale: 0 },
     lavoriMese: []
@@ -353,7 +359,7 @@ const Dividendi: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {dividendiData.lavoriMese.map((lavoro, index) => (
+                {dividendiData.lavoriMese.map((lavoro) => (
                   <tr key={lavoro.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>

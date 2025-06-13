@@ -1,6 +1,6 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle } from 'lucide-react';
+import { TrendingDown, AlertTriangle, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { FinancialMetrics, GasparottoAnalysis } from '../../services/financialAnalysisService';
 
@@ -64,7 +64,7 @@ const FinancialCharts: React.FC<FinancialChartsProps> = ({ metrics, analysis, mo
             { name: 'Liquidità', score: analysis.liquidità.score },
             { name: 'Efficienza', score: analysis.efficienza.score },
             { name: 'Crescita', score: analysis.crescita.score },
-          ].map((item, index) => (
+          ].map((item) => (
             <div key={item.name} className="text-center">
               <div className={`text-lg font-bold ${getScoreColor(item.score)}`}>
                 {item.score.toFixed(0)}
@@ -260,7 +260,7 @@ const FinancialCharts: React.FC<FinancialChartsProps> = ({ metrics, analysis, mo
             { name: 'Punto Pareggio', value: `€${metrics.puntoPareggio.toLocaleString('it-IT')}`, color: 'text-blue-600' },
             { name: 'Debt/Equity', value: metrics.debtToEquity.toFixed(2), color: 'text-purple-600' },
             { name: 'Asset Turnover', value: metrics.assetTurnover.toFixed(2), color: 'text-orange-600' },
-          ].map((metric, index) => (
+          ].map((metric) => (
             <div key={metric.name} className="text-center p-4 bg-gray-50 rounded-lg">
               <div className={`text-lg font-bold ${metric.color}`}>
                 {metric.value}

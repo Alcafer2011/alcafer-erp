@@ -65,7 +65,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     return strength;
   };
 
-  const determineUserRole = (nome: string, cognome: string, dataNascita: string) => {
+  const determineUserRole = (nome: string, cognome: string) => {
     const fullName = `${nome.toLowerCase()} ${cognome.toLowerCase()}`;
     
     if (fullName.includes('alessandro') && fullName.includes('calabria')) {
@@ -114,7 +114,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           throw new Error('Password non sufficientemente sicura');
         }
 
-        const userRole = determineUserRole(formData.nome, formData.cognome, formData.dataNascita);
+        const userRole = determineUserRole(formData.nome, formData.cognome);
         if (!userRole) {
           throw new Error('Utente non autorizzato alla registrazione');
         }

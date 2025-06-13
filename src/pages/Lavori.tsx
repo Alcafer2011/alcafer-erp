@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, Play, Pause, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Plus, Edit, Trash2, Play, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { Lavoro } from '../types/database';

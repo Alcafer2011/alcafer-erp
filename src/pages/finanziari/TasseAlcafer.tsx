@@ -7,8 +7,16 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import HelpTooltip from '../../components/common/HelpTooltip';
 import toast from 'react-hot-toast';
 
+interface TasseData {
+  ivaCorrente: number;
+  tasseCorrente: number;
+  scadenzeImminenti: any[];
+  totalePagato: number;
+  totaleDaPagare: number;
+}
+
 const TasseAlcafer: React.FC = () => {
-  const [tasseData, setTasseData] = useState({
+  const [tasseData, setTasseData] = useState<TasseData>({
     ivaCorrente: 0,
     tasseCorrente: 0,
     scadenzeImminenti: [],
@@ -254,8 +262,8 @@ const TasseAlcafer: React.FC = () => {
                 { da: 28001, a: 55000, aliquota: 38 },
                 { da: 55001, a: 75000, aliquota: 41 },
                 { da: 75001, a: null, aliquota: 43 }
-              ].map((scaglione, index) => (
-                <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+              ].map((scaglione) => (
+                <div key={scaglione.da} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                   <span className="text-sm text-gray-600">
                     €{scaglione.da.toLocaleString('it-IT')} - {scaglione.a ? `€${scaglione.a.toLocaleString('it-IT')}` : 'oltre'}
                   </span>
@@ -325,7 +333,7 @@ const TasseAlcafer: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {tasseData.scadenzeImminenti.map((scadenza: any, index) => (
+                {tasseData.scadenzeImminenti.map((scadenza: any) => (
                   <tr key={scadenza.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {scadenza.periodo}

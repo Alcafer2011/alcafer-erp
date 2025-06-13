@@ -149,7 +149,7 @@ export class BackupService {
       const backupUrl = await this.saveBackupToCloud(backupData);
       
       await notificationService.sendBackupNotification(true, `Backup salvato: ${backupUrl}`);
-    } catch (error) {
+    } catch (error: any) {
       await notificationService.sendBackupNotification(false, error.message);
       throw error;
     }

@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { supabase } from '../lib/supabase';
 import { notificationService } from './notificationService';
 

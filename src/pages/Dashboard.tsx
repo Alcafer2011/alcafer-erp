@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
-  Users, FileText, TrendingUp, DollarSign, Briefcase, 
-  AlertTriangle, CheckCircle, Clock, Plus 
+  Users, FileText, TrendingUp, Briefcase, 
+  AlertTriangle, CheckCircle, Clock
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -44,9 +44,9 @@ const Dashboard: React.FC = () => {
       const importoTotalePreventivi = preventivi?.reduce((sum, p) => sum + (p.importo || 0), 0) || 0;
 
       // Statistiche lavori
-      const { data: lavori, count: lavoriCount } = await supabase
+      const { data: lavori } = await supabase
         .from('lavori')
-        .select('*', { count: 'exact' });
+        .select('*');
 
       const lavoriInCorso = lavori?.filter(l => l.stato === 'in_produzione').length || 0;
       const lavoriCompletati = lavori?.filter(l => l.stato === 'completato').length || 0;
@@ -150,7 +150,7 @@ const Dashboard: React.FC = () => {
     {
       name: 'Valore Preventivi',
       value: `€${stats.importoTotalePreventivi.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`,
-      icon: DollarSign,
+      icon: TrendingUp,
       color: 'bg-indigo-500',
       textColor: 'text-indigo-600',
       bgColor: 'bg-indigo-50',
@@ -352,7 +352,7 @@ const Dashboard: React.FC = () => {
                 className="flex items-center gap-3 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100 rounded-lg transition-all duration-200 group"
               >
                 <div className="p-2 bg-yellow-600 rounded-lg group-hover:bg-yellow-700 transition-colors">
-                  <DollarSign className="h-5 w-5 text-white" />
+                  <TrendingUp className="h-5 w-5 text-white" />
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Calcola Dividendi</p>

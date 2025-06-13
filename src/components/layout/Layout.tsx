@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
-  Home, Users, FileText, Briefcase, DollarSign, Settings, 
+  Home, Users, FileText, Briefcase, Settings, 
   Menu, X, LogOut, HelpCircle, ChevronDown, Calculator,
   TrendingUp, PieChart, Receipt, Wrench, UserCheck
 } from 'lucide-react';

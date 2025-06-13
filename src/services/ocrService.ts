@@ -50,7 +50,6 @@ export class OCRService {
   async extractTextFromPDF(file: File): Promise<OCRResult> {
     // Implementazione per PDF
     try {
-      const arrayBuffer = await file.arrayBuffer();
       // Qui useresti una libreria come pdf-parse
       // Per ora ritorniamo un placeholder
       return {

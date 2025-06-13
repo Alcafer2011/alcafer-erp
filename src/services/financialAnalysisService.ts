@@ -68,12 +68,6 @@ export class FinancialAnalysisService {
         .lt('data_fine', `${anno + 1}-01-01`)
         .eq('stato', 'completato');
 
-      const { data: movimenti } = await supabase
-        .from('movimenti_contabili')
-        .select('*')
-        .gte('data', `${anno}-01-01`)
-        .lt('data', `${anno + 1}-01-01`);
-
       const { data: leasing } = await supabase
         .from('leasing_strumentali')
         .select('*')
@@ -87,8 +81,8 @@ export class FinancialAnalysisService {
       // Calcoli base
       const ricaviTotali = lavori?.reduce((sum, l) => sum + l.importo_totale, 0) || 0;
       const costiMateriali = lavori?.reduce((sum, l) => {
-        const costiMetallici = l.materiali_metallici?.reduce((s, m) => s + m.importo_totale, 0) || 0;
-        const costiVari = l.materiali_vari?.reduce((s, m) => s + m.importo_totale, 0) || 0;
+        const costiMetallici = l.materiali_metallici?.reduce((s: number, m: any) => s + m.importo_totale, 0) || 0;
+        const costiVari = l.materiali_vari?.reduce((s: number, m: any) => s + m.importo_totale, 0) || 0;
         return sum + costiMetallici + costiVari;
       }, 0) || 0;
 

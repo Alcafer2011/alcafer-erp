@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { notificationService } from './notificationService';
-import { addDays, format, isBefore } from 'date-fns';
+import { addDays, format } from 'date-fns';
 
 export interface TaxCalculation {
   ditta: 'alcafer' | 'gabifer';
@@ -81,7 +81,7 @@ export class TaxService {
     };
   }
 
-  async updateTaxesForJob(lavoroId: string, importo: number, ditta: 'alcafer' | 'gabifer'): Promise<void> {
+  async updateTaxesForJob(importo: number, ditta: 'alcafer' | 'gabifer'): Promise<void> {
     try {
       const calculation = ditta === 'alcafer' 
         ? this.calculateOrdinaryTaxes(importo)

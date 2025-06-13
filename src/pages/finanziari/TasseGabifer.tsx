@@ -7,8 +7,16 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import HelpTooltip from '../../components/common/HelpTooltip';
 import toast from 'react-hot-toast';
 
+interface TasseData {
+  tasseCorrente: number;
+  scadenzeImminenti: any[];
+  totalePagato: number;
+  totaleDaPagare: number;
+  fatturatoAnno: number;
+}
+
 const TasseGabifer: React.FC = () => {
-  const [tasseData, setTasseData] = useState({
+  const [tasseData, setTasseData] = useState<TasseData>({
     tasseCorrente: 0,
     scadenzeImminenti: [],
     totalePagato: 0,

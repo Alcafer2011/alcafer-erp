@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Calculator, TrendingUp, AlertTriangle, BookOpen, Target, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { usePermissions } from '../../hooks/usePermissions';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import HelpTooltip from '../../components/common/HelpTooltip';
 
 const FinanziariInfo: React.FC = () => {
-  const [financialMetrics, setFinancialMetrics] = useState({
+  const [financialMetrics] = useState({
     roi: 0.15,
     roe: 0.18,
     roa: 0.12,
@@ -20,7 +20,7 @@ const FinanziariInfo: React.FC = () => {
     inventoryTurnover: 8.2
   });
   
-  const [cashFlowData, setCashFlowData] = useState([
+  const [cashFlowData] = useState([
     { mese: 'Gen', operativo: 15000, investimenti: -5000, finanziario: 2000 },
     { mese: 'Feb', operativo: 18000, investimenti: -3000, finanziario: 1000 },
     { mese: 'Mar', operativo: 22000, investimenti: -8000, finanziario: 3000 },
@@ -106,7 +106,7 @@ const FinanziariInfo: React.FC = () => {
           { name: 'ROE', value: financialMetrics.roe, format: 'percentage', type: 'percentage' as const, icon: TrendingUp },
           { name: 'Current Ratio', value: financialMetrics.currentRatio, format: 'ratio', type: 'ratio' as const, icon: Calculator },
           { name: 'Debt/Equity', value: financialMetrics.debtToEquity, format: 'ratio', type: 'ratio' as const, icon: AlertTriangle }
-        ].map((indicator, index) => {
+        ].map((indicator) => {
           const Icon = indicator.icon;
           const colorClass = getIndicatorColor(indicator.value, indicator.type);
           
@@ -115,7 +115,7 @@ const FinanziariInfo: React.FC = () => {
               key={indicator.name}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+              transition={{ delay: 0.1 }}
               className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow"
             >
               <div className="flex items-center justify-between mb-4">
@@ -211,7 +211,7 @@ const FinanziariInfo: React.FC = () => {
               { name: 'Margine Netto', value: financialMetrics.netMargin, target: 0.1 },
               { name: 'Rotazione Attivi', value: financialMetrics.assetTurnover, target: 1.2 },
               { name: 'Rotazione Magazzino', value: financialMetrics.inventoryTurnover, target: 6 }
-            ].map((metric, index) => {
+            ].map((metric) => {
               const percentage = metric.name.includes('Margine') ? (metric.value * 100).toFixed(1) + '%' : metric.value.toFixed(1);
               const isGood = metric.value >= metric.target;
               

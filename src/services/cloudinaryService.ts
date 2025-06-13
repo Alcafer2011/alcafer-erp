@@ -1,7 +1,7 @@
 import { Cloudinary } from 'cloudinary-core';
 
 const cloudinary = new Cloudinary({
-  cloud_name: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME,
+  cloud_name: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string,
   secure: true
 });
 
@@ -22,9 +22,9 @@ export class CloudinaryService {
   private apiSecret: string;
 
   private constructor() {
-    this.cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-    this.apiKey = import.meta.env.VITE_CLOUDINARY_API_KEY;
-    this.apiSecret = import.meta.env.VITE_CLOUDINARY_API_SECRET;
+    this.cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string;
+    this.apiKey = import.meta.env.VITE_CLOUDINARY_API_KEY as string;
+    this.apiSecret = import.meta.env.VITE_CLOUDINARY_API_SECRET as string;
 
     if (!this.cloudName || !this.apiKey || !this.apiSecret) {
       console.warn('Cloudinary non configurato correttamente. Alcune funzionalità potrebbero non funzionare.');

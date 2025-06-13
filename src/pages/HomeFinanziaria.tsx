@@ -1,17 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { 
-  TrendingUp, TrendingDown, DollarSign, PieChart, 
-  BarChart3, AlertTriangle, CheckCircle, Clock,
-  Calculator, Target, Zap
+  TrendingUp, TrendingDown, BarChart3, 
+  AlertTriangle, Calculator, Target, Zap
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
 import { supabase } from '../lib/supabase';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import HelpTooltip from '../components/common/HelpTooltip';
 
+interface FinancialData {
+  ebitda: number;
+  indiceIndebitamento: number;
+  puntoPareggio: number;
+  ricaviMensili: Array<{ mese: string; valore: number }>;
+  costiMensili: Array<{ mese: string; valore: number }>;
+  margineOperativo: number;
+  liquidita: number;
+  crescitaMensile: number;
+}
+
 const HomeFinanziaria: React.FC = () => {
-  const [financialData, setFinancialData] = useState({
+  const [financialData, setFinancialData] = useState<FinancialData>({
     ebitda: 0,
     indiceIndebitamento: 0,
     puntoPareggio: 0,
@@ -32,7 +42,7 @@ const HomeFinanziaria: React.FC = () => {
   const fetchFinancialData = async () => {
     try {
       // Simula dati finanziari - in produzione questi verranno calcolati dai dati reali
-      const mockData = {
+      const mockData: FinancialData = {
         ebitda: 125000,
         indiceIndebitamento: 0.35,
         puntoPareggio: 85000,
@@ -345,7 +355,7 @@ const HomeFinanziaria: React.FC = () => {
           {
             title: 'Liquidità',
             value: `€${financialData.liquidita.toLocaleString('it-IT')}`,
-            icon: DollarSign,
+            icon: TrendingUp,
             color: 'text-purple-600',
             bgColor: 'bg-purple-50',
             help: 'Disponibilità liquide immediate per far fronte agli impegni'
