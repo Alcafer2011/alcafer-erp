@@ -90,16 +90,22 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     try {
       if (isLogin) {
         // Login normale con Supabase
+        console.log('🔐 Tentativo di login per:', formData.email);
+        
         const { error } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
         });
 
         if (error) throw error;
+        
+        console.log('✅ Login completato con successo');
         toast.success('Accesso effettuato con successo!');
         onSuccess();
       } else {
         // Registrazione con email personalizzata via Brevo
+        console.log('📝 Tentativo di registrazione per:', formData.email);
+        
         if (!await validateEmail(formData.email)) {
           throw new Error('Email non valida');
         }
@@ -114,6 +120,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         }
 
         // Test connessione Brevo
+        console.log('🧪 Test connessione Brevo...');
         const brevoConnected = await emailService.testBrevoConnection();
         if (!brevoConnected) {
           throw new Error('Servizio email non disponibile. Controlla la configurazione Brevo.');
@@ -121,6 +128,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
 
         // Genera token di conferma
         const confirmationToken = generateConfirmationToken();
+        console.log('🔑 Token di conferma generato:', confirmationToken);
         
         // Salva i dati temporanei nel localStorage (per 24 ore)
         const tempUserData = {
@@ -135,8 +143,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         };
         
         localStorage.setItem(`temp_user_${confirmationToken}`, JSON.stringify(tempUserData));
+        console.log('💾 Dati temporanei salvati nel localStorage');
 
         // Invia email di conferma via Brevo
+        console.log('📧 Invio email di conferma...');
         const emailSent = await emailService.sendConfirmationEmail(
           formData.email,
           formData.nome,
@@ -147,6 +157,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           throw new Error('Errore nell\'invio dell\'email di conferma');
         }
 
+        console.log('✅ Email di conferma inviata con successo');
         toast.success('🎉 Registrazione completata! Controlla la tua email per confermare l\'account.', {
           duration: 8000,
         });
@@ -161,8 +172,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         });
       }
     } catch (error: any) {
-      console.error('Errore:', error);
-      toast.error(error.message || 'Si è verificato un errore');
+      console.error('❌ Errore:', error);
+      
+      // Gestione errori specifici
+      if (error.message?.includes('Email not confirmed') || error.code === 'email_not_confirmed') {
+        toast.error('Email non confermata. Controlla la tua casella di posta per il link di conferma.', {
+          duration: 8000,
+        });
+      } else {
+        toast.error(error.message || 'Si è verificato un errore');
+      }
     } finally {
       setLoading(false);
     }

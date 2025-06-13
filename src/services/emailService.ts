@@ -15,9 +15,9 @@ export class EmailService {
     this.brevoApiKey = import.meta.env.VITE_BREVO_API_KEY;
     
     if (!this.brevoApiKey) {
-      console.warn('⚠️ Brevo API Key non configurata. Le email non verranno inviate.');
+      console.error('❌ Brevo API Key non configurata. Le email non verranno inviate.');
     } else {
-      console.log('✅ Brevo configurato correttamente');
+      console.log('✅ Brevo configurato correttamente con API key:', this.brevoApiKey.substring(0, 20) + '...');
     }
   }
 
@@ -30,11 +30,13 @@ export class EmailService {
 
   async sendEmail(template: EmailTemplate): Promise<boolean> {
     if (!this.brevoApiKey) {
-      console.error('❌ Brevo non configurato');
+      console.error('❌ Brevo non configurato - email non inviata');
       return false;
     }
 
     try {
+      console.log('📧 Tentativo invio email a:', template.to);
+      
       const response = await axios.post(
         'https://api.brevo.com/v3/smtp/email',
         {
@@ -55,16 +57,22 @@ export class EmailService {
         }
       );
 
-      console.log('✅ Email inviata con successo via Brevo');
+      console.log('✅ Email inviata con successo via Brevo:', response.status);
       return response.status === 201;
     } catch (error: any) {
-      console.error('❌ Errore invio email Brevo:', error.response?.data || error.message);
+      console.error('❌ Errore invio email Brevo:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
       return false;
     }
   }
 
   async sendConfirmationEmail(email: string, nome: string, confirmationToken: string): Promise<boolean> {
-    const confirmationUrl = `${window.location.origin}/auth/confirm?token=${confirmationToken}&email=${encodeURIComponent(email)}`;
+    const confirmationUrl = `${window.location.origin}?token=${confirmationToken}&email=${encodeURIComponent(email)}`;
+    
+    console.log('🔗 URL di conferma generato:', confirmationUrl);
     
     const htmlContent = `
       <!DOCTYPE html>
@@ -73,7 +81,7 @@ export class EmailService {
         <meta charset="utf-8">
         <title>Conferma il tuo account - Alcafer ERP</title>
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; }
@@ -81,6 +89,7 @@ export class EmailService {
           .button:hover { background: #1d4ed8; }
           .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
           .warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 5px; }
+          .url-box { word-break: break-all; background: #e5e7eb; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; margin: 15px 0; }
         </style>
       </head>
       <body>
@@ -105,10 +114,10 @@ export class EmailService {
               <strong>⚠️ Importante:</strong> Questo link è valido per 24 ore. Se non confermi entro questo tempo, dovrai registrarti nuovamente.
             </div>
             
-            <p>Se il pulsante non funziona, copia e incolla questo link nel tuo browser:</p>
-            <p style="word-break: break-all; background: #e5e7eb; padding: 10px; border-radius: 5px; font-family: monospace;">
+            <p><strong>Se il pulsante non funziona</strong>, copia e incolla questo link nel tuo browser:</p>
+            <div class="url-box">
               ${confirmationUrl}
-            </p>
+            </div>
             
             <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
             
@@ -132,7 +141,7 @@ export class EmailService {
       </html>
     `;
 
-    return this.sendEmail({
+    const result = await this.sendEmail({
       to: email,
       subject: '🚀 Conferma il tuo account - Alcafer ERP',
       htmlContent,
@@ -151,6 +160,14 @@ export class EmailService {
         Alcafer ERP - Sistema di Gestione Aziendale
       `
     });
+
+    if (result) {
+      console.log('✅ Email di conferma inviata con successo a:', email);
+    } else {
+      console.error('❌ Fallito invio email di conferma a:', email);
+    }
+
+    return result;
   }
 
   async sendWelcomeEmail(email: string, nome: string): Promise<boolean> {
@@ -161,12 +178,13 @@ export class EmailService {
         <meta charset="utf-8">
         <title>Benvenuto in Alcafer ERP!</title>
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: #f0fdf4; padding: 30px; border-radius: 0 0 10px 10px; }
           .feature { background: white; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #10b981; }
           .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+          .button { display: inline-block; background: #10b981; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
         </style>
       </head>
       <body>
@@ -204,7 +222,7 @@ export class EmailService {
             </div>
             
             <p style="text-align: center; margin: 30px 0;">
-              <a href="${window.location.origin}" style="display: inline-block; background: #10b981; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+              <a href="${window.location.origin}" class="button">
                 🚀 Accedi ad Alcafer ERP
               </a>
             </p>
@@ -253,6 +271,8 @@ export class EmailService {
     }
 
     try {
+      console.log('🧪 Test connessione Brevo...');
+      
       const response = await axios.get(
         'https://api.brevo.com/v3/account',
         {
@@ -265,7 +285,11 @@ export class EmailService {
       console.log('✅ Connessione Brevo OK:', response.data.email);
       return true;
     } catch (error: any) {
-      console.error('❌ Errore connessione Brevo:', error.response?.data || error.message);
+      console.error('❌ Errore connessione Brevo:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
       return false;
     }
   }

@@ -35,10 +35,23 @@ function App() {
   const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
-    console.log('🚀 App avviata');
+    console.log('🚀 App avviata - Controllo cookie consent');
+    
+    // Controlla sempre il consenso cookie all'avvio
     const consent = localStorage.getItem('cookie-consent');
     if (consent) {
-      setCookieConsent(JSON.parse(consent));
+      try {
+        const parsedConsent = JSON.parse(consent);
+        console.log('✅ Cookie consent trovato:', parsedConsent);
+        setCookieConsent(parsedConsent);
+      } catch (error) {
+        console.warn('⚠️ Cookie consent corrotto, richiedo nuovamente');
+        localStorage.removeItem('cookie-consent');
+        setCookieConsent(null);
+      }
+    } else {
+      console.log('❌ Nessun cookie consent trovato');
+      setCookieConsent(null);
     }
 
     // Gestisci conferma email personalizzata
@@ -48,6 +61,8 @@ function App() {
       const email = urlParams.get('email');
 
       if (token && email) {
+        console.log('🔗 Link di conferma rilevato:', { token, email });
+        
         try {
           // Recupera i dati temporanei
           const tempUserData = localStorage.getItem(`temp_user_${token}`);
@@ -65,6 +80,8 @@ function App() {
             toast.error('Link di conferma scaduto. Registrati nuovamente.');
             return;
           }
+
+          console.log('✅ Dati utente validi, procedo con registrazione Supabase');
 
           // Registra l'utente su Supabase
           const { data, error } = await supabase.auth.signUp({
@@ -98,10 +115,17 @@ function App() {
 
             if (profileError) {
               console.error('Errore nella creazione del profilo:', profileError);
+            } else {
+              console.log('✅ Profilo utente creato con successo');
             }
 
             // Invia email di benvenuto
-            await emailService.sendWelcomeEmail(userData.email, userData.nome);
+            try {
+              await emailService.sendWelcomeEmail(userData.email, userData.nome);
+              console.log('✅ Email di benvenuto inviata');
+            } catch (emailError) {
+              console.warn('⚠️ Errore invio email benvenuto:', emailError);
+            }
 
             // Rimuovi i dati temporanei
             localStorage.removeItem(`temp_user_${token}`);
@@ -170,14 +194,19 @@ function App() {
   }, []);
 
   const handleCookieConsent = (preferences: CookiePreferences) => {
+    console.log('🍪 Cookie consent ricevuto:', preferences);
     setCookieConsent(preferences);
+    localStorage.setItem('cookie-consent', JSON.stringify(preferences));
+    
     if (preferences.necessary) {
       setShowLogin(true);
+      console.log('✅ Cookie necessari accettati, mostro login');
     }
   };
 
   const handleLoginSuccess = () => {
     setShowLogin(false);
+    console.log('✅ Login completato con successo');
   };
 
   if (loading) {
@@ -188,8 +217,9 @@ function App() {
     );
   }
 
-  // Mostra il consenso cookie se non è stato dato
+  // SEMPRE mostra il consenso cookie se non è stato dato
   if (!cookieConsent) {
+    console.log('🍪 Mostro consenso cookie');
     return <CookieConsent onAccept={handleCookieConsent} />;
   }
 
