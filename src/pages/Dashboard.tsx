@@ -56,7 +56,7 @@ const Dashboard: React.FC = () => {
       const { data: recentPreventivi } = await supabase
         .from('preventivi')
         .select('*, cliente:clienti(*)')
-        .order('data_creazione', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(5);
 
       const { data: recentLavori } = await supabase
@@ -79,9 +79,9 @@ const Dashboard: React.FC = () => {
       const activity = [
         ...(recentPreventivi || []).map(p => ({
           type: 'preventivo',
-          title: `Preventivo ${p.numero_preventivo}`,
+          title: `Preventivo ${p.numero_preventivo || p.id}`,
           description: `Cliente: ${p.cliente?.nome || 'N/A'}`,
-          date: p.data_creazione,
+          date: p.created_at,
           status: p.stato,
         })),
         ...(recentLavori || []).map(l => ({
