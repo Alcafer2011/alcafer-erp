@@ -32,6 +32,7 @@ function App() {
   const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
+    console.log('🚀 App avviata');
     const consent = localStorage.getItem('cookie-consent');
     if (consent) {
       setCookieConsent(JSON.parse(consent));
