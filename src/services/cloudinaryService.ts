@@ -25,6 +25,10 @@ export class CloudinaryService {
     this.cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
     this.apiKey = import.meta.env.VITE_CLOUDINARY_API_KEY;
     this.apiSecret = import.meta.env.VITE_CLOUDINARY_API_SECRET;
+
+    if (!this.cloudName || !this.apiKey || !this.apiSecret) {
+      console.warn('Cloudinary non configurato correttamente. Alcune funzionalità potrebbero non funzionare.');
+    }
   }
 
   public static getInstance(): CloudinaryService {
@@ -35,9 +39,13 @@ export class CloudinaryService {
   }
 
   async uploadFile(file: File, folder: string = 'alcafer-erp'): Promise<UploadResult> {
+    if (!this.cloudName || !this.apiKey) {
+      throw new Error('Cloudinary non configurato');
+    }
+
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', 'alcafer_preset'); // Dovrai creare questo preset in Cloudinary
+    formData.append('upload_preset', 'ml_default'); // Preset pubblico di default
     formData.append('folder', folder);
 
     try {
@@ -50,13 +58,22 @@ export class CloudinaryService {
       );
 
       if (!response.ok) {
-        throw new Error('Upload failed');
+        throw new Error(`Upload fallito: ${response.statusText}`);
       }
 
-      return await response.json();
+      const result = await response.json();
+      return {
+        public_id: result.public_id,
+        secure_url: result.secure_url,
+        format: result.format,
+        resource_type: result.resource_type,
+        bytes: result.bytes,
+        width: result.width,
+        height: result.height
+      };
     } catch (error) {
-      console.error('Cloudinary upload error:', error);
-      throw error;
+      console.error('Errore upload Cloudinary:', error);
+      throw new Error('Errore nel caricamento del file');
     }
   }
 
@@ -68,11 +85,9 @@ export class CloudinaryService {
   async deleteFile(publicId: string): Promise<boolean> {
     try {
       const timestamp = Math.round(new Date().getTime() / 1000);
-      const signature = this.generateSignature(publicId, timestamp);
-
+      
       const formData = new FormData();
       formData.append('public_id', publicId);
-      formData.append('signature', signature);
       formData.append('api_key', this.apiKey);
       formData.append('timestamp', timestamp.toString());
 
@@ -87,15 +102,9 @@ export class CloudinaryService {
       const result = await response.json();
       return result.result === 'ok';
     } catch (error) {
-      console.error('Cloudinary delete error:', error);
+      console.error('Errore eliminazione Cloudinary:', error);
       return false;
     }
-  }
-
-  private generateSignature(publicId: string, timestamp: number): string {
-    // Implementazione semplificata - in produzione usa crypto-js
-    const stringToSign = `public_id=${publicId}&timestamp=${timestamp}${this.apiSecret}`;
-    return btoa(stringToSign); // Sostituire con SHA1 hash in produzione
   }
 
   getOptimizedUrl(publicId: string, options: any = {}): string {
