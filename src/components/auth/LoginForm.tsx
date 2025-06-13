@@ -134,8 +134,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         toast.success('Registrazione completata! Controlla la tua email per confermare l\'account.');
       }
     } catch (error: any) {
-      // Handle specific email confirmation error
-      if (error.message?.includes('Email not confirmed') || error.code === 'email_not_confirmed') {
+      // Handle specific email confirmation error - check multiple possible error formats
+      const isEmailNotConfirmed = 
+        error.message?.includes('Email not confirmed') || 
+        error.code === 'email_not_confirmed' ||
+        (error.message && error.message.includes('email_not_confirmed')) ||
+        (typeof error === 'object' && error !== null && 
+         ((error as any).error_code === 'email_not_confirmed' || 
+          (error as any).code === 'email_not_confirmed'));
+
+      if (isEmailNotConfirmed) {
         toast.error('Email non confermata. Controlla la tua casella di posta (inclusa la cartella spam) per il link di conferma e clicca su di esso prima di effettuare l\'accesso.', {
           duration: 8000,
         });
