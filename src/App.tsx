@@ -30,9 +30,10 @@ interface CookiePreferences {
 }
 
 function App() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, userProfile, user } = useAuth();
   const [cookieConsent, setCookieConsent] = useState<CookiePreferences | null>(null);
   const [showLogin, setShowLogin] = useState(false);
+  const [processingConfirmation, setProcessingConfirmation] = useState(false);
 
   useEffect(() => {
     console.log('🚀 App avviata - Controllo cookie consent');
@@ -53,15 +54,20 @@ function App() {
       console.log('❌ Nessun cookie consent trovato');
       setCookieConsent(null);
     }
+  }, []);
 
-    // Gestisci conferma email personalizzata
+  useEffect(() => {
+    // Gestisci conferma email personalizzata solo se i cookie sono accettati
+    if (!cookieConsent?.necessary) return;
+
     const handleEmailConfirmation = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get('token');
       const email = urlParams.get('email');
 
-      if (token && email) {
+      if (token && email && !processingConfirmation) {
         console.log('🔗 Link di conferma rilevato:', { token, email });
+        setProcessingConfirmation(true);
         
         try {
           // Recupera i dati temporanei
@@ -69,6 +75,8 @@ function App() {
           
           if (!tempUserData) {
             toast.error('Link di conferma scaduto o non valido');
+            // Pulisci l'URL e reindirizza al login
+            window.history.replaceState({}, document.title, window.location.pathname);
             return;
           }
 
@@ -78,6 +86,7 @@ function App() {
           if (Date.now() > userData.expires) {
             localStorage.removeItem(`temp_user_${token}`);
             toast.error('Link di conferma scaduto. Registrati nuovamente.');
+            window.history.replaceState({}, document.title, window.location.pathname);
             return;
           }
 
@@ -98,10 +107,15 @@ function App() {
             }
           });
 
-          if (error) throw error;
+          if (error) {
+            console.error('Errore registrazione Supabase:', error);
+            throw error;
+          }
 
           if (data.user) {
-            // Crea il profilo utente
+            console.log('✅ Utente creato su Supabase:', data.user.id);
+
+            // Crea il profilo utente nella tabella users
             const { error: profileError } = await supabase
               .from('users')
               .insert([{
@@ -115,6 +129,7 @@ function App() {
 
             if (profileError) {
               console.error('Errore nella creazione del profilo:', profileError);
+              // Non bloccare il processo, il profilo può essere creato dopo
             } else {
               console.log('✅ Profilo utente creato con successo');
             }
@@ -134,10 +149,17 @@ function App() {
             
             // Pulisci l'URL
             window.history.replaceState({}, document.title, window.location.pathname);
+            
+            // Forza il refresh della sessione
+            await supabase.auth.refreshSession();
           }
         } catch (error: any) {
           console.error('Errore nella conferma:', error);
           toast.error('Errore nella conferma dell\'account: ' + error.message);
+          // Pulisci l'URL in caso di errore
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } finally {
+          setProcessingConfirmation(false);
         }
       }
     };
@@ -152,11 +174,14 @@ function App() {
       }
 
       if (data.session && data.session.user && data.session.user.email_confirmed_at) {
+        console.log('📧 Email confermata via Supabase standard');
+        
+        // Controlla se il profilo esiste già
         const { data: existingProfile } = await supabase
           .from('users')
           .select('id')
           .eq('id', data.session.user.id)
-          .single();
+          .maybeSingle();
 
         if (!existingProfile && data.session.user.user_metadata) {
           const metadata = data.session.user.user_metadata;
@@ -176,6 +201,7 @@ function App() {
             if (profileError) {
               console.error('Errore nella creazione del profilo:', profileError);
             } else {
+              console.log('✅ Profilo creato dal callback Supabase');
               toast.success('Account confermato e profilo creato con successo!');
             }
           } catch (error) {
@@ -191,7 +217,7 @@ function App() {
     } else if (window.location.pathname === '/auth/callback' || window.location.hash.includes('access_token')) {
       handleAuthCallback();
     }
-  }, []);
+  }, [cookieConsent, processingConfirmation]);
 
   const handleCookieConsent = (preferences: CookiePreferences) => {
     console.log('🍪 Cookie consent ricevuto:', preferences);
@@ -209,10 +235,15 @@ function App() {
     console.log('✅ Login completato con successo');
   };
 
-  if (loading) {
+  if (loading || processingConfirmation) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <LoadingSpinner size="lg" />
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-gray-600">
+            {processingConfirmation ? 'Confermando il tuo account...' : 'Caricamento...'}
+          </p>
+        </div>
       </div>
     );
   }
@@ -240,6 +271,30 @@ function App() {
             className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
           >
             Rivedi Impostazioni Cookie
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Se l'utente è autenticato ma non ha un profilo, mostra un messaggio di errore
+  if (isAuthenticated && user && !userProfile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Profilo Incompleto</h2>
+          <p className="text-gray-600 mb-6">
+            Il tuo account è stato creato ma il profilo non è completo. 
+            Effettua il logout e registrati nuovamente.
+          </p>
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut();
+              window.location.reload();
+            }}
+            className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+          >
+            Logout e Riprova
           </button>
         </div>
       </div>

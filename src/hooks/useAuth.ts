@@ -22,6 +22,7 @@ export const useAuth = () => {
     // Ascolta i cambiamenti di autenticazione
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('🔐 Auth state changed:', event, session?.user?.id);
         setUser(session?.user ?? null);
         if (session?.user) {
           await loadUserProfile(session.user.id);
@@ -37,10 +38,19 @@ export const useAuth = () => {
 
   const loadUserProfile = async (userId: string) => {
     try {
+      console.log('👤 Caricamento profilo per utente:', userId);
       const profile = await getUserProfile(userId);
-      setUserProfile(profile);
+      
+      if (profile) {
+        console.log('✅ Profilo caricato:', profile);
+        setUserProfile(profile);
+      } else {
+        console.warn('⚠️ Nessun profilo trovato per l\'utente:', userId);
+        setUserProfile(null);
+      }
     } catch (error) {
-      console.error('Errore nel caricamento del profilo:', error);
+      console.error('❌ Errore nel caricamento del profilo:', error);
+      setUserProfile(null);
     } finally {
       setLoading(false);
     }
