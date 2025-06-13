@@ -35,9 +35,10 @@ npm install
 Crea un file `.env` nella cartella principale e copia questo contenuto:
 
 ```env
-# Supabase (già configurato)
+# Supabase - IMPORTANTE: Sostituisci con le tue credenziali reali
+# Vai su https://supabase.com/dashboard > Il tuo progetto > Settings > API
 VITE_SUPABASE_URL=https://wcntwbujilcyqjchlezx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6ZmN5dHVsZWVsaWhydWZ0d3d0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1ODkwNTIsImV4cCI6MjA2NTE2NTA1Mn0.fHFMI0zpmj80nIn2uHijCn_V-sW949bpeCOvGismr2g
+VITE_SUPABASE_ANON_KEY=your_actual_supabase_anon_key_here
 
 # Email Service (Brevo) - INSERISCI I TUOI DATI
 VITE_BREVO_API_KEY=your_brevo_api_key_here
@@ -69,6 +70,13 @@ npm run dev
 L'applicazione sarà disponibile su: `http://localhost:5173`
 
 ## 🔑 Come Ottenere le API Keys
+
+### ⚠️ IMPORTANTE: Supabase API Key
+1. Vai su [supabase.com/dashboard](https://supabase.com/dashboard)
+2. Seleziona il tuo progetto **wcntwbujilcyqjchlezx**
+3. Vai in **Settings > API**
+4. Copia la **Project API key (anon public)** - NON la service_role key
+5. Sostituisci `your_actual_supabase_anon_key_here` nel file `.env`
 
 ### Cloudinary
 1. Vai su [cloudinary.com](https://cloudinary.com)
@@ -114,6 +122,14 @@ L'applicazione è completamente responsive e funziona su:
 - ✅ Notifiche automatiche via email/WhatsApp
 
 ## 🚨 Risoluzione Problemi
+
+### ❌ Errore: "Invalid API key" (Supabase)
+1. Vai su [supabase.com/dashboard](https://supabase.com/dashboard)
+2. Seleziona il progetto **wcntwbujilcyqjchlezx**
+3. Vai in **Settings > API**
+4. Copia la **Project API key (anon public)**
+5. Sostituisci nel file `.env` la variabile `VITE_SUPABASE_ANON_KEY`
+6. Riavvia l'applicazione con `npm run dev`
 
 ### Errore: "npm install" fallisce
 ```bash
