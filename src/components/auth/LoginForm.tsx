@@ -108,28 +108,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           throw new Error('Utente non autorizzato alla registrazione');
         }
 
-        const { data, error } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
         });
 
         if (error) throw error;
-
-        if (data.user) {
-          // Salva il profilo utente
-          const { error: profileError } = await supabase
-            .from('users')
-            .insert([{
-              id: data.user.id,
-              email: formData.email,
-              nome: formData.nome,
-              cognome: formData.cognome,
-              data_nascita: formData.dataNascita,
-              ruolo: userRole,
-            }]);
-
-          if (profileError) throw profileError;
-        }
 
         toast.success('Registrazione completata! Controlla la tua email per confermare l\'account.');
       }
