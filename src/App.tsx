@@ -87,29 +87,45 @@ function App() {
 
   // Mostra il form di login se non autenticato
   if (!isAuthenticated || showLogin) {
-    return <LoginForm onSuccess={handleLoginSuccess} />;
+    return (
+      <>
+        <LoginForm onSuccess={handleLoginSuccess} />
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+          }}
+        />
+      </>
+    );
   }
 
   return (
-    <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/home-finanziaria" element={<HomeFinanziaria />} />
-          <Route path="/clienti" element={<Clienti />} />
-          <Route path="/preventivi" element={<Preventivi />} />
-          <Route path="/lavori" element={<Lavori />} />
-          <Route path="/materiali-metallici" element={<MaterialiMetallici />} />
-          <Route path="/materiali-vari" element={<MaterialiVari />} />
-          <Route path="/leasing" element={<LeasingStrumentali />} />
-          <Route path="/manovalanza" element={<Manovalanza />} />
-          <Route path="/finanziari/info" element={<FinanziariInfo />} />
-          <Route path="/finanziari/dividendi" element={<Dividendi />} />
-          <Route path="/finanziari/tasse-alcafer" element={<TasseAlcafer />} />
-          <Route path="/finanziari/tasse-gabifer" element={<TasseGabifer />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Layout>
+    <>
+      <Router>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/home-finanziaria" element={<HomeFinanziaria />} />
+            <Route path="/clienti" element={<Clienti />} />
+            <Route path="/preventivi" element={<Preventivi />} />
+            <Route path="/lavori" element={<Lavori />} />
+            <Route path="/materiali-metallici" element={<MaterialiMetallici />} />
+            <Route path="/materiali-vari" element={<MaterialiVari />} />
+            <Route path="/leasing" element={<LeasingStrumentali />} />
+            <Route path="/manovalanza" element={<Manovalanza />} />
+            <Route path="/finanziari/info" element={<FinanziariInfo />} />
+            <Route path="/finanziari/dividendi" element={<Dividendi />} />
+            <Route path="/finanziari/tasse-alcafer" element={<TasseAlcafer />} />
+            <Route path="/finanziari/tasse-gabifer" element={<TasseGabifer />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Layout>
+      </Router>
       <Toaster 
         position="top-right"
         toastOptions={{
@@ -120,7 +136,7 @@ function App() {
           },
         }}
       />
-    </Router>
+    </>
   );
 }
 
