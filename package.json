@@ -23,7 +23,6 @@
     "framer-motion": "^10.16.16",
     "clsx": "^2.0.0",
     "cloudinary": "^1.41.0",
-    "react-cloudinary-upload-widget": "^2.0.0",
     "tesseract.js": "^5.0.4",
     "pdf-parse": "^1.1.1",
     "mammoth": "^1.6.0",
