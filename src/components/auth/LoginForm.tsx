@@ -135,8 +135,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       }
     } catch (error: any) {
       // Handle specific email confirmation error
-      if (error.code === 'email_not_confirmed') {
-        toast.error('Email non confermata. Controlla la tua casella di posta (inclusa la cartella spam) per il link di conferma e clicca su di esso prima di effettuare l\'accesso.');
+      if (error.message?.includes('Email not confirmed') || error.code === 'email_not_confirmed') {
+        toast.error('Email non confermata. Controlla la tua casella di posta (inclusa la cartella spam) per il link di conferma e clicca su di esso prima di effettuare l\'accesso.', {
+          duration: 8000,
+        });
       } else {
         toast.error(error.message || 'Si è verificato un errore');
       }
@@ -321,6 +323,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
               {loading ? 'Caricamento...' : (isLogin ? 'Accedi' : 'Registrati')}
             </button>
           </form>
+
+          {isLogin && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Nota:</strong> Se hai appena completato la registrazione, controlla la tua email (inclusa la cartella spam) per il link di conferma prima di effettuare l'accesso.
+              </p>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>
