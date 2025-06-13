@@ -108,14 +108,26 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           throw new Error('Utente non autorizzato alla registrazione');
         }
 
+        // Registrazione con redirect URL personalizzato
         const { error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: {
+              nome: formData.nome,
+              cognome: formData.cognome,
+              data_nascita: formData.dataNascita,
+              ruolo: userRole,
+            }
+          }
         });
 
         if (error) throw error;
 
-        toast.success('Registrazione completata! Controlla la tua email per confermare l\'account.');
+        toast.success('Registrazione completata! Controlla la tua email per confermare l\'account. Il link ti rimanderà direttamente qui.', {
+          duration: 8000,
+        });
       }
     } catch (error: any) {
       // Handle specific email confirmation error - check multiple possible error formats
@@ -320,6 +332,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">
                 <strong>Nota:</strong> Se hai appena completato la registrazione, controlla la tua email (inclusa la cartella spam) per il link di conferma prima di effettuare l'accesso.
+              </p>
+            </div>
+          )}
+
+          {!isLogin && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm text-green-800">
+                <strong>✅ Redirect configurato:</strong> Il link di conferma email ti rimanderà direttamente a questa applicazione.
               </p>
             </div>
           )}

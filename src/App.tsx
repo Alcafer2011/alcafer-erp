@@ -19,6 +19,8 @@ import Dividendi from './pages/finanziari/Dividendi';
 import TasseAlcafer from './pages/finanziari/TasseAlcafer';
 import TasseGabifer from './pages/finanziari/TasseGabifer';
 import LoadingSpinner from './components/common/LoadingSpinner';
+import { supabase } from './lib/supabase';
+import toast from 'react-hot-toast';
 
 interface CookiePreferences {
   necessary: boolean;
@@ -36,6 +38,57 @@ function App() {
     const consent = localStorage.getItem('cookie-consent');
     if (consent) {
       setCookieConsent(JSON.parse(consent));
+    }
+
+    // Gestisci il callback di conferma email
+    const handleAuthCallback = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Errore nel recupero della sessione:', error);
+        return;
+      }
+
+      // Se c'è una sessione attiva e l'utente ha appena confermato l'email
+      if (data.session && data.session.user && data.session.user.email_confirmed_at) {
+        // Controlla se il profilo utente esiste già
+        const { data: existingProfile } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', data.session.user.id)
+          .single();
+
+        // Se il profilo non esiste, crealo usando i metadati dell'utente
+        if (!existingProfile && data.session.user.user_metadata) {
+          const metadata = data.session.user.user_metadata;
+          
+          try {
+            const { error: profileError } = await supabase
+              .from('users')
+              .insert([{
+                id: data.session.user.id,
+                email: data.session.user.email,
+                nome: metadata.nome,
+                cognome: metadata.cognome,
+                data_nascita: metadata.data_nascita,
+                ruolo: metadata.ruolo,
+              }]);
+
+            if (profileError) {
+              console.error('Errore nella creazione del profilo:', profileError);
+            } else {
+              toast.success('Account confermato e profilo creato con successo!');
+            }
+          } catch (error) {
+            console.error('Errore nella creazione del profilo:', error);
+          }
+        }
+      }
+    };
+
+    // Esegui il controllo del callback solo se siamo nella pagina di callback
+    if (window.location.pathname === '/auth/callback' || window.location.hash.includes('access_token')) {
+      handleAuthCallback();
     }
   }, []);
 
@@ -123,6 +176,7 @@ function App() {
             <Route path="/finanziari/dividendi" element={<Dividendi />} />
             <Route path="/finanziari/tasse-alcafer" element={<TasseAlcafer />} />
             <Route path="/finanziari/tasse-gabifer" element={<TasseGabifer />} />
+            <Route path="/auth/callback" element={<Navigate to="/" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>
