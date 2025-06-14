@@ -19,7 +19,7 @@ import Dividendi from './pages/finanziari/Dividendi';
 import TasseAlcafer from './pages/finanziari/TasseAlcafer';
 import TasseGabifer from './pages/finanziari/TasseGabifer';
 import LoadingSpinner from './components/common/LoadingSpinner';
-import { supabase } from './lib/supabase';
+import { supabase, checkSupabaseConnection } from './lib/supabase';
 import { emailService } from './services/emailService';
 import toast from 'react-hot-toast';
 
@@ -34,6 +34,7 @@ function App() {
   const [cookieConsent, setCookieConsent] = useState<CookiePreferences | null>(null);
   const [showLogin, setShowLogin] = useState(false);
   const [processingConfirmation, setProcessingConfirmation] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<boolean | null>(null);
 
   useEffect(() => {
     console.log('🚀 App avviata - Controllo cookie consent');
@@ -54,6 +55,20 @@ function App() {
       console.log('❌ Nessun cookie consent trovato');
       setCookieConsent(null);
     }
+
+    // Controlla la connessione a Supabase
+    const checkConnection = async () => {
+      const isConnected = await checkSupabaseConnection();
+      setConnectionStatus(isConnected);
+      
+      if (!isConnected) {
+        toast.error('Errore di connessione al database. Controlla le variabili d\'ambiente.', {
+          duration: 10000,
+        });
+      }
+    };
+    
+    checkConnection();
   }, []);
 
   useEffect(() => {
@@ -243,6 +258,26 @@ function App() {
           <p className="mt-4 text-gray-600">
             {processingConfirmation ? 'Confermando il tuo account...' : 'Caricamento...'}
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostra errore di connessione se non riusciamo a connetterci a Supabase
+  if (connectionStatus === false) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Errore di Connessione</h2>
+          <p className="text-gray-600 mb-6">
+            Non è possibile connettersi al database. Verifica che le variabili d'ambiente siano configurate correttamente.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+          >
+            Riprova
+          </button>
         </div>
       </div>
     );

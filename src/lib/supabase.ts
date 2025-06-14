@@ -31,11 +31,36 @@ export const getUserProfile = async (userId: string) => {
     .eq('id', userId)
     .maybeSingle();
   
-  if (error) throw error;
+  if (error) {
+    console.error('❌ Errore nel recupero del profilo utente:', error);
+    throw error;
+  }
   return data;
 };
 
 export const signOut = async () => {
   const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+  if (error) {
+    console.error('❌ Errore durante il logout:', error);
+    throw error;
+  }
+  console.log('✅ Logout effettuato con successo');
+};
+
+// Funzione per controllare lo stato della connessione
+export const checkSupabaseConnection = async () => {
+  try {
+    const { data, error } = await supabase.from('clienti').select('count()', { count: 'exact', head: true });
+    
+    if (error) {
+      console.error('❌ Errore di connessione a Supabase:', error);
+      return false;
+    }
+    
+    console.log('✅ Connessione a Supabase OK');
+    return true;
+  } catch (error) {
+    console.error('❌ Errore durante il test di connessione:', error);
+    return false;
+  }
 };
