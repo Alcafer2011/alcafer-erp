@@ -3,8 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from './hooks/useAuth';
 import CookieConsent from './components/auth/CookieConsent';
-import LoginForm from './components/auth/LoginForm';
-import EnhancedLoginForm from './components/auth/EnhancedLoginForm'; // Importa il nuovo form
+import EnhancedLoginForm from './components/auth/EnhancedLoginForm';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import HomeFinanziaria from './pages/HomeFinanziaria';
@@ -36,12 +35,10 @@ function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [processingConfirmation, setProcessingConfirmation] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<boolean | null>(null);
-  const [useEnhancedLogin, setUseEnhancedLogin] = useState(true); // Usa il login avanzato
 
   useEffect(() => {
     console.log('🚀 App avviata - Controllo cookie consent');
     
-    // Controlla sempre il consenso cookie all'avvio
     const consent = localStorage.getItem('cookie-consent');
     if (consent) {
       try {
@@ -58,7 +55,6 @@ function App() {
       setCookieConsent(null);
     }
 
-    // Controlla la connessione a Supabase
     const checkConnection = async () => {
       const isConnected = await checkSupabaseConnection();
       setConnectionStatus(isConnected);
@@ -74,7 +70,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // Gestisci conferma email personalizzata solo se i cookie sono accettati
     if (!cookieConsent?.necessary) return;
 
     const handleEmailConfirmation = async () => {
@@ -87,19 +82,16 @@ function App() {
         setProcessingConfirmation(true);
         
         try {
-          // Recupera i dati temporanei
           const tempUserData = localStorage.getItem(`temp_user_${token}`);
           
           if (!tempUserData) {
             toast.error('Link di conferma scaduto o non valido');
-            // Pulisci l'URL e reindirizza al login
             window.history.replaceState({}, document.title, window.location.pathname);
             return;
           }
 
           const userData = JSON.parse(tempUserData);
           
-          // Controlla se il token è scaduto
           if (Date.now() > userData.expires) {
             localStorage.removeItem(`temp_user_${token}`);
             toast.error('Link di conferma scaduto. Registrati nuovamente.');
@@ -109,7 +101,6 @@ function App() {
 
           console.log('✅ Dati utente validi, procedo con registrazione Supabase');
 
-          // Registra l'utente su Supabase
           const { data, error } = await supabase.auth.signUp({
             email: userData.email,
             password: userData.password,
@@ -132,7 +123,6 @@ function App() {
           if (data.user) {
             console.log('✅ Utente creato su Supabase:', data.user.id);
 
-            // Crea il profilo utente nella tabella users
             const { error: profileError } = await supabase
               .from('users')
               .insert([{
@@ -146,12 +136,10 @@ function App() {
 
             if (profileError) {
               console.error('Errore nella creazione del profilo:', profileError);
-              // Non bloccare il processo, il profilo può essere creato dopo
             } else {
               console.log('✅ Profilo utente creato con successo');
             }
 
-            // Invia email di benvenuto
             try {
               await emailService.sendWelcomeEmail(userData.email, userData.nome);
               console.log('✅ Email di benvenuto inviata');
@@ -159,21 +147,14 @@ function App() {
               console.warn('⚠️ Errore invio email benvenuto:', emailError);
             }
 
-            // Rimuovi i dati temporanei
             localStorage.removeItem(`temp_user_${token}`);
-
             toast.success('🎉 Account confermato con successo! Benvenuto in Alcafer ERP!');
-            
-            // Pulisci l'URL
             window.history.replaceState({}, document.title, window.location.pathname);
-            
-            // Forza il refresh della sessione
             await supabase.auth.refreshSession();
           }
         } catch (error: any) {
           console.error('Errore nella conferma:', error);
           toast.error('Errore nella conferma dell\'account: ' + error.message);
-          // Pulisci l'URL in caso di errore
           window.history.replaceState({}, document.title, window.location.pathname);
         } finally {
           setProcessingConfirmation(false);
@@ -181,7 +162,6 @@ function App() {
       }
     };
 
-    // Gestisci il callback di conferma email standard di Supabase
     const handleAuthCallback = async () => {
       const { data, error } = await supabase.auth.getSession();
       
@@ -193,7 +173,6 @@ function App() {
       if (data.session && data.session.user && data.session.user.email_confirmed_at) {
         console.log('📧 Email confermata via Supabase standard');
         
-        // Controlla se il profilo esiste già
         const { data: existingProfile } = await supabase
           .from('users')
           .select('id')
@@ -228,7 +207,6 @@ function App() {
       }
     };
 
-    // Controlla se siamo in una pagina di conferma
     if (window.location.search.includes('token=')) {
       handleEmailConfirmation();
     } else if (window.location.pathname === '/auth/callback' || window.location.hash.includes('access_token')) {
@@ -265,7 +243,6 @@ function App() {
     );
   }
 
-  // Mostra errore di connessione se non riusciamo a connetterci a Supabase
   if (connectionStatus === false) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -285,13 +262,11 @@ function App() {
     );
   }
 
-  // SEMPRE mostra il consenso cookie se non è stato dato
   if (!cookieConsent) {
     console.log('🍪 Mostro consenso cookie');
     return <CookieConsent onAccept={handleCookieConsent} />;
   }
 
-  // Se i cookie necessari sono stati rifiutati, mostra messaggio
   if (!cookieConsent.necessary) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -314,7 +289,6 @@ function App() {
     );
   }
 
-  // Se l'utente è autenticato ma non ha un profilo, mostra un messaggio di errore
   if (isAuthenticated && user && !userProfile) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -338,15 +312,10 @@ function App() {
     );
   }
 
-  // Mostra il form di login se non autenticato
   if (!isAuthenticated || showLogin) {
     return (
       <>
-        {useEnhancedLogin ? (
-          <EnhancedLoginForm onSuccess={handleLoginSuccess} />
-        ) : (
-          <LoginForm onSuccess={handleLoginSuccess} />
-        )}
+        <EnhancedLoginForm onSuccess={handleLoginSuccess} />
         <Toaster 
           position="top-right"
           toastOptions={{
