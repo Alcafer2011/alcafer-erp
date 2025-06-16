@@ -9,6 +9,8 @@ import { supabase } from '../lib/supabase';
 import { usePermissions } from '../hooks/usePermissions';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import HelpTooltip from '../components/common/HelpTooltip';
+import AIInsights from '../components/dashboard/AIInsights'; // Importa il componente AI
+import AIAssistant from '../components/dashboard/AIAssistant'; // Importa l'assistente AI
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState({
@@ -22,6 +24,16 @@ const Dashboard: React.FC = () => {
   });
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [financialData, setFinancialData] = useState({
+    ricaviAttuali: 65000,
+    costiMensili: 45000,
+    margineOperativo: 0.28,
+    liquidita: 89000,
+    crescitaMensile: 0.12,
+    dataPoints: 18,
+    dataQuality: 0.85,
+    consistency: 0.78
+  });
   const permissions = usePermissions();
 
   useEffect(() => {
@@ -363,6 +375,12 @@ const Dashboard: React.FC = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Componente AI Insights */}
+      <AIInsights financialData={financialData} />
+      
+      {/* Assistente AI */}
+      <AIAssistant />
     </div>
   );
 };

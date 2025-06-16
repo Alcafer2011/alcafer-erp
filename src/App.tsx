@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { useAuth } from './hooks/useAuth';
 import CookieConsent from './components/auth/CookieConsent';
 import LoginForm from './components/auth/LoginForm';
+import EnhancedLoginForm from './components/auth/EnhancedLoginForm'; // Importa il nuovo form
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import HomeFinanziaria from './pages/HomeFinanziaria';
@@ -35,6 +36,7 @@ function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [processingConfirmation, setProcessingConfirmation] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<boolean | null>(null);
+  const [useEnhancedLogin, setUseEnhancedLogin] = useState(true); // Usa il login avanzato
 
   useEffect(() => {
     console.log('🚀 App avviata - Controllo cookie consent');
@@ -340,7 +342,11 @@ function App() {
   if (!isAuthenticated || showLogin) {
     return (
       <>
-        <LoginForm onSuccess={handleLoginSuccess} />
+        {useEnhancedLogin ? (
+          <EnhancedLoginForm onSuccess={handleLoginSuccess} />
+        ) : (
+          <LoginForm onSuccess={handleLoginSuccess} />
+        )}
         <Toaster 
           position="top-right"
           toastOptions={{
