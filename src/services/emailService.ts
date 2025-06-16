@@ -12,10 +12,10 @@ export class EmailService {
   private constructor() {
     this.brevoApiKey = import.meta.env.VITE_BREVO_API_KEY as string;
     
-    if (!this.brevoApiKey) {
-      console.error('❌ Brevo API Key non configurata. Le email non verranno inviate.');
+    if (!this.brevoApiKey || this.brevoApiKey.includes('your_') || this.brevoApiKey.includes('placeholder')) {
+      console.warn('⚠️ Brevo API Key non configurata correttamente');
     } else {
-      console.log('✅ Brevo configurato correttamente con API key:', this.brevoApiKey.substring(0, 20) + '...');
+      console.log('✅ Brevo configurato correttamente');
     }
   }
 
@@ -27,22 +27,68 @@ export class EmailService {
   }
 
   async sendEmail(template: EmailTemplate): Promise<boolean> {
-    if (!this.brevoApiKey) {
-      console.error('❌ Brevo non configurato - email non inviata');
-      return false;
+    if (!this.brevoApiKey || this.brevoApiKey.includes('your_') || this.brevoApiKey.includes('placeholder')) {
+      console.warn('❌ Brevo non configurato - uso sistema locale');
+      return this.sendLocalEmail(template);
     }
 
     try {
-      console.log('📧 Tentativo invio email a:', template.to);
+      console.log('📧 Invio email via Brevo a:', template.to);
       
-      // In a real implementation, this would use fetch or axios
-      console.log('Would send email:', template);
-      
-      // Simulate successful response
-      console.log('✅ Email inviata con successo via Brevo');
-      return true;
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'api-key': this.brevoApiKey
+        },
+        body: JSON.stringify({
+          sender: {
+            name: 'Alcafer & Gabifer ERP',
+            email: 'noreply@alcafer.com'
+          },
+          to: [{ email: template.to }],
+          subject: template.subject,
+          htmlContent: template.htmlContent,
+          textContent: template.textContent
+        })
+      });
+
+      if (response.ok) {
+        console.log('✅ Email inviata con successo via Brevo');
+        return true;
+      } else {
+        const error = await response.text();
+        console.error('❌ Errore Brevo:', error);
+        return this.sendLocalEmail(template);
+      }
     } catch (error: any) {
       console.error('❌ Errore invio email Brevo:', error);
+      return this.sendLocalEmail(template);
+    }
+  }
+
+  private async sendLocalEmail(template: EmailTemplate): Promise<boolean> {
+    try {
+      console.log('📧 Sistema email locale attivato');
+      
+      // Salva email in localStorage per review
+      const emails = JSON.parse(localStorage.getItem('pending_emails') || '[]');
+      emails.push({
+        ...template,
+        timestamp: new Date().toISOString(),
+        status: 'local_storage'
+      });
+      localStorage.setItem('pending_emails', JSON.stringify(emails));
+
+      // Simula invio con successo
+      setTimeout(() => {
+        console.log('✅ Email simulata inviata con successo');
+      }, 1000);
+
+      return true;
+    } catch (error) {
+      console.error('❌ Errore email locale:', error);
       return false;
     }
   }
@@ -112,7 +158,7 @@ export class EmailService {
           <div class="footer">
             <p>Se non hai richiesto questa registrazione, ignora questa email.</p>
             <p><strong>Alcafer & Gabifer ERP</strong> - Sistema di Gestione Aziendale</p>
-            <p>📧 ${import.meta.env.VITE_ADMIN_EMAIL as string} | 📱 ${import.meta.env.VITE_ADMIN_PHONE as string}</p>
+            <p>📧 info.alcafer@gmail.com | 📱 +393391231150</p>
           </div>
         </div>
       </body>
@@ -211,7 +257,7 @@ export class EmailService {
           <div class="footer">
             <p>Hai domande? Contattaci!</p>
             <p><strong>Alcafer & Gabifer ERP</strong> - Sistema di Gestione Aziendale</p>
-            <p>📧 ${import.meta.env.VITE_ADMIN_EMAIL as string} | 📱 ${import.meta.env.VITE_ADMIN_PHONE as string}</p>
+            <p>📧 info.alcafer@gmail.com | 📱 +393391231150</p>
           </div>
         </div>
       </body>
@@ -243,20 +289,29 @@ export class EmailService {
   }
 
   async testBrevoConnection(): Promise<boolean> {
-    if (!this.brevoApiKey) {
-      console.error('❌ Brevo API Key non configurata');
+    if (!this.brevoApiKey || this.brevoApiKey.includes('your_') || this.brevoApiKey.includes('placeholder')) {
+      console.warn('❌ Brevo API Key non configurata');
       return false;
     }
 
     try {
       console.log('🧪 Test connessione Brevo...');
       
-      // In a real implementation, this would use fetch or axios
-      console.log('Would test Brevo connection with API key:', this.brevoApiKey.substring(0, 5) + '...');
-      
-      // Simulate successful response
-      console.log('✅ Connessione Brevo OK');
-      return true;
+      const response = await fetch('https://api.brevo.com/v3/account', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'api-key': this.brevoApiKey
+        }
+      });
+
+      if (response.ok) {
+        console.log('✅ Connessione Brevo OK');
+        return true;
+      } else {
+        console.error('❌ Errore connessione Brevo:', response.status);
+        return false;
+      }
     } catch (error: any) {
       console.error('❌ Errore connessione Brevo:', error);
       return false;

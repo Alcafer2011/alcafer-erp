@@ -30,9 +30,11 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
     const generateFingerprint = () => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      ctx!.textBaseline = 'top';
-      ctx!.font = '14px Arial';
-      ctx!.fillText('Device fingerprint', 2, 2);
+      if (ctx) {
+        ctx.textBaseline = 'top';
+        ctx.font = '14px Arial';
+        ctx.fillText('Device fingerprint', 2, 2);
+      }
       
       const fingerprint = btoa(JSON.stringify({
         userAgent: navigator.userAgent,
@@ -117,17 +119,21 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
         if (error) throw error;
 
         // Log accesso sicuro
-        await supabase.from('audit_log').insert({
-          table_name: 'auth_login',
-          record_id: data.user?.id,
-          action: 'LOGIN',
-          new_values: {
-            email: formData.email,
-            device_fingerprint: deviceFingerprint,
-            ip_address: 'client_ip', // In produzione usare IP reale
-            timestamp: new Date().toISOString()
-          }
-        });
+        try {
+          await supabase.from('audit_log').insert({
+            table_name: 'auth_login',
+            record_id: data.user?.id,
+            action: 'LOGIN',
+            new_values: {
+              email: formData.email,
+              device_fingerprint: deviceFingerprint,
+              ip_address: 'client_ip',
+              timestamp: new Date().toISOString()
+            }
+          });
+        } catch (auditError) {
+          console.warn('Audit log non disponibile:', auditError);
+        }
 
         toast.success('🔐 Accesso sicuro completato!');
         onSuccess();
@@ -166,18 +172,24 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
           expires: Date.now() + (24 * 60 * 60 * 1000)
         };
         
-        localStorage.setItem(`secure_user_${confirmationToken}`, JSON.stringify(tempUserData));
+        localStorage.setItem(`temp_user_${confirmationToken}`, JSON.stringify(tempUserData));
 
         // Invia email di conferma sicura
-        await emailService.sendConfirmationEmail(
+        const emailSent = await emailService.sendConfirmationEmail(
           formData.email,
           formData.nome,
           confirmationToken
         );
 
-        toast.success('🛡️ Registrazione sicura completata! Controlla la tua email.', {
-          duration: 8000,
-        });
+        if (emailSent) {
+          toast.success('🛡️ Registrazione sicura completata! Controlla la tua email.', {
+            duration: 8000,
+          });
+        } else {
+          toast.success('🛡️ Registrazione completata! Email di conferma salvata localmente.', {
+            duration: 8000,
+          });
+        }
 
         setFormData({
           email: '', password: '', nome: '', cognome: '', 
@@ -190,6 +202,19 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGeneratePassword = () => {
+    const newPassword = generateSecurePassword();
+    setFormData(prev => ({ 
+      ...prev, 
+      password: newPassword,
+      confirmPassword: newPassword // Auto-compila anche la conferma
+    }));
+    
+    // Copia negli appunti
+    navigator.clipboard.writeText(newPassword);
+    toast.success('Password generata e copiata negli appunti! Anche la conferma è stata compilata automaticamente.');
   };
 
   const getSecurityColor = () => {
@@ -346,10 +371,10 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
                 <>
                   <button
                     type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, password: generateSecurePassword() }))}
+                    onClick={handleGeneratePassword}
                     className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
                   >
-                    🎲 Genera Password Ultra-Sicura
+                    🎲 Genera Password Ultra-Sicura (Auto-compila entrambe)
                   </button>
                   
                   {formData.password && (
