@@ -41,7 +41,7 @@ export class FreeAnalyticsService {
       // @ts-ignore
       window.dataLayer = window.dataLayer || [];
       // @ts-ignore
-      function gtag(){dataLayer.push(arguments);}
+      function gtag(){window.dataLayer.push(arguments);}
       // @ts-ignore
       gtag('js', new Date());
       // @ts-ignore
@@ -118,9 +118,9 @@ export class FreeAnalyticsService {
 
     // Invia a GA4 se disponibile
     // @ts-ignore
-    if (typeof gtag !== 'undefined') {
+    if (typeof window.gtag !== 'undefined') {
       // @ts-ignore
-      gtag('event', 'page_view', {
+      window.gtag('event', 'page_view', {
         page_title: document.title,
         page_location: window.location.href
       });
@@ -142,9 +142,9 @@ export class FreeAnalyticsService {
 
     // Invia a GA4
     // @ts-ignore
-    if (typeof gtag !== 'undefined') {
+    if (typeof window.gtag !== 'undefined') {
       // @ts-ignore
-      gtag('event', event.action, {
+      window.gtag('event', event.action, {
         event_category: event.category,
         event_label: event.label,
         value: event.value
@@ -208,21 +208,20 @@ export class FreeAnalyticsService {
 
     // Core Web Vitals
     if ('web-vitals' in window) {
-      // @ts-ignore
       import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
-        getCLS((metric: any) => this.trackEvent({
+        getCLS((metric) => this.trackEvent({
           action: 'CLS',
           category: 'web_vitals',
           value: Math.round(metric.value * 1000)
         }));
 
-        getFID((metric: any) => this.trackEvent({
+        getFID((metric) => this.trackEvent({
           action: 'FID',
           category: 'web_vitals',
           value: Math.round(metric.value)
         }));
 
-        getLCP((metric: any) => this.trackEvent({
+        getLCP((metric) => this.trackEvent({
           action: 'LCP',
           category: 'web_vitals',
           value: Math.round(metric.value)
@@ -253,7 +252,7 @@ export class FreeAnalyticsService {
   }
 
   // 🎯 EVENTI BUSINESS SPECIFICI
-  trackBusinessEvent(eventType: 'preventivo_created' | 'lavoro_completed' | 'cliente_added' | 'login' | 'export_data', data?: any): void {
+  trackBusinessEvent(eventType: string, data?: any): void {
     this.trackEvent({
       action: eventType,
       category: 'business',

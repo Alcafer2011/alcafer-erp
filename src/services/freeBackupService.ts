@@ -1,3 +1,6 @@
+import { supabase } from '../lib/supabase';
+import { freeNotificationService } from './freeNotificationService';
+
 // 💾 BACKUP GRATUITO - GitHub + Google Drive + Dropbox + LocalStorage
 export interface BackupData {
   timestamp: string;
@@ -244,7 +247,7 @@ export class FreeBackupService {
       // Notifica risultati
       await this.notifyBackupResults(backupData, results);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Errore backup automatico:', error);
       await freeNotificationService.sendBackupNotification(false, error.message);
     }

@@ -1,4 +1,3 @@
-import { supabase } from '../lib/supabase';
 import { freeBackupService } from './freeBackupService';
 
 export interface BackupData {
@@ -26,7 +25,18 @@ export class BackupService {
   }
 
   async createBackup(): Promise<BackupData> {
-    return await freeBackupService.createFullBackup();
+    // Converte il formato di backup da freeBackupService al formato richiesto
+    const freeBackup = await freeBackupService.createFullBackup();
+    
+    return {
+      timestamp: freeBackup.timestamp,
+      tables: freeBackup.tables,
+      metadata: {
+        version: freeBackup.version,
+        totalRecords: freeBackup.metadata.totalRecords,
+        size: freeBackup.metadata.size
+      }
+    };
   }
 
   async performAutomaticBackup(): Promise<void> {

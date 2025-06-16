@@ -27,7 +27,12 @@ export class AIService {
     try {
       return await freeAIService.chatWithGemini(message, context);
     } catch (error) {
-      return await freeAIService.getLocalAIResponse(message, context);
+      // Usa il metodo pubblico invece di quello privato
+      const analysis = await freeAIService.analyzeFinancialData({
+        query: message,
+        context: context
+      });
+      return analysis.insights.join('\n\n');
     }
   }
 

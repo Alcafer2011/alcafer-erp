@@ -100,7 +100,8 @@ export class FreeAIService {
   }
 
   // 🧠 AI LOCALE AVANZATA (GRATUITO)
-  private getLocalAIResponse(message: string, context: any): string {
+  // Cambiato da private a public per risolvere l'errore TS2341
+  getLocalAIResponse(message: string, context: any): string {
     const responses = {
       // Analisi finanziarie
       'analisi': [

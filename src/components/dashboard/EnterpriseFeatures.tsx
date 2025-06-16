@@ -48,8 +48,9 @@ const EnterpriseFeatures: React.FC = () => {
       });
       setAiResponse(response);
     } catch (error) {
-      const fallbackResponse = await freeAIService.getLocalAIResponse(query, {});
-      setAiResponse(fallbackResponse);
+      // Usa il metodo pubblico invece di quello privato
+      const fallbackResponse = await freeAIService.analyzeFinancialData({ query });
+      setAiResponse(fallbackResponse.insights.join('\n'));
     } finally {
       setLoading(false);
     }
