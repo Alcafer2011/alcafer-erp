@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   Users, FileText, TrendingUp, Briefcase, 
-  AlertTriangle, CheckCircle, Clock
+  AlertTriangle, CheckCircle, Clock, Zap
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -9,8 +9,11 @@ import { supabase } from '../lib/supabase';
 import { usePermissions } from '../hooks/usePermissions';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import HelpTooltip from '../components/common/HelpTooltip';
-import AIInsights from '../components/dashboard/AIInsights'; // Importa il componente AI
-import AIAssistant from '../components/dashboard/AIAssistant'; // Importa l'assistente AI
+import AIInsights from '../components/dashboard/AIInsights';
+import AIAssistant from '../components/dashboard/AIAssistant';
+import EnterpriseFeatures from '../components/dashboard/EnterpriseFeatures';
+import { freeAnalyticsService } from '../services/freeAnalyticsService';
+import { cronJobService } from '../services/cronJobService';
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState({
@@ -38,6 +41,7 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    initializeEnterpriseServices();
   }, []);
 
   const fetchDashboardData = async () => {
@@ -106,10 +110,27 @@ const Dashboard: React.FC = () => {
       ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 8);
 
       setRecentActivity(activity);
+
+      // Traccia analytics
+      freeAnalyticsService.trackBusinessEvent('dashboard_viewed');
+
     } catch (error) {
       console.error('Errore nel caricamento dei dati dashboard:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const initializeEnterpriseServices = async () => {
+    try {
+      // Inizializza servizi enterprise gratuiti
+      await freeAnalyticsService.initializeGA4();
+      await freeAnalyticsService.initializePlausible();
+      await cronJobService.setupItalianAutomation();
+      
+      console.log('🚀 Servizi enterprise inizializzati');
+    } catch (error) {
+      console.error('Errore inizializzazione servizi:', error);
     }
   };
 
@@ -212,8 +233,14 @@ const Dashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="mt-2 text-gray-600">Panoramica generale dell'attività aziendale</p>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard Enterprise</h1>
+          <p className="mt-2 text-gray-600 flex items-center gap-2">
+            Panoramica generale con funzionalità avanzate
+            <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+              <Zap className="h-3 w-3" />
+              100% Gratuito
+            </span>
+          </p>
         </div>
         <div className="flex gap-3">
           {permissions.canViewFinancials && (
@@ -256,6 +283,9 @@ const Dashboard: React.FC = () => {
           );
         })}
       </div>
+
+      {/* Funzionalità Enterprise */}
+      <EnterpriseFeatures />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Attività recenti */}
