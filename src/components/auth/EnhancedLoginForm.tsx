@@ -51,7 +51,7 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
     password += '0123456789'[Math.floor(Math.random() * 10)];
     password += '!@#$%&*'[Math.floor(Math.random() * 7)];
     
-    for (let i = 4; i < 16; i++) {
+    for (let i = 4; i < 12; i++) {
       password += chars[Math.floor(Math.random() * chars.length)];
     }
     
@@ -161,6 +161,13 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
           });
 
           // Login automatico
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: data.user.email!,
+            password: formData.password,
+          });
+          
+          if (signInError) throw signInError;
+          
           onSuccess();
         }
       }

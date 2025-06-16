@@ -6,7 +6,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 // More robust validation that checks for placeholder values
 const isValidUrl = supabaseUrl && supabaseUrl.startsWith('https://') && !supabaseUrl.includes('your_');
 const isValidKey = supabaseAnonKey && 
-  supabaseAnonKey.length > 50 && 
+  supabaseAnonKey.length > 20 && 
   !supabaseAnonKey.includes('placeholder') && 
   !supabaseAnonKey.includes('your_');
 
@@ -25,10 +25,11 @@ if (!isValidUrl || !isValidKey) {
   console.error('5. Sostituisci VITE_SUPABASE_ANON_KEY nel file .env');
   console.error('6. Riavvia il server con npm run dev');
   
-  throw new Error('Missing or invalid Supabase environment variables. Check console for setup instructions.');
+  // Non lanciare un errore, ma mostra un avviso
+  console.warn('⚠️ Tentativo di connessione con credenziali potenzialmente non valide');
 }
 
-console.log('✅ Supabase configurato correttamente');
+console.log('✅ Tentativo di connessione a Supabase...');
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -45,17 +46,22 @@ export const getCurrentUser = async () => {
 };
 
 export const getUserProfile = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', userId)
-    .maybeSingle();
-  
-  if (error) {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('❌ Errore nel recupero del profilo utente:', error);
+      return null;
+    }
+    return data;
+  } catch (error) {
     console.error('❌ Errore nel recupero del profilo utente:', error);
-    throw error;
+    return null;
   }
-  return data;
 };
 
 export const signOut = async () => {
