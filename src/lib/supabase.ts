@@ -3,9 +3,29 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Variabili Supabase mancanti:', { supabaseUrl: !!supabaseUrl, supabaseAnonKey: !!supabaseAnonKey });
-  throw new Error('Missing Supabase environment variables');
+// More robust validation that checks for placeholder values
+const isValidUrl = supabaseUrl && supabaseUrl.startsWith('https://') && !supabaseUrl.includes('your_');
+const isValidKey = supabaseAnonKey && 
+  supabaseAnonKey.length > 50 && 
+  !supabaseAnonKey.includes('placeholder') && 
+  !supabaseAnonKey.includes('your_');
+
+if (!isValidUrl || !isValidKey) {
+  console.error('❌ Variabili Supabase mancanti o non valide:', { 
+    supabaseUrl: !!supabaseUrl, 
+    supabaseAnonKey: !!supabaseAnonKey,
+    urlValid: isValidUrl,
+    keyValid: isValidKey
+  });
+  console.error('🔧 Per risolvere:');
+  console.error('1. Vai su https://supabase.com/dashboard');
+  console.error('2. Seleziona il progetto wcntwbujilcyqjchlezx');
+  console.error('3. Vai in Settings > API');
+  console.error('4. Copia la "Project API key (anon public)"');
+  console.error('5. Sostituisci VITE_SUPABASE_ANON_KEY nel file .env');
+  console.error('6. Riavvia il server con npm run dev');
+  
+  throw new Error('Missing or invalid Supabase environment variables. Check console for setup instructions.');
 }
 
 console.log('✅ Supabase configurato correttamente');
