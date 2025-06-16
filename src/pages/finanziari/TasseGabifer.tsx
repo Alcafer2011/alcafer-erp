@@ -99,7 +99,7 @@ const TasseGabifer: React.FC = () => {
   const calcolaRegimeForfettario = (fatturato: number) => {
     // Regime forfettario 2024 - Codice ATECO 25.50.00 (Fabbricazione di articoli in metallo)
     const coefficienteRedditivita = 0.67; // 67% per lavorazione metalli
-    const aliquotaImposta = 0.15; // 15% (5% per i primi 5 anni se nuova attività)
+    const aliquotaImposta = 0.15; // 15% (NON 5% per i primi 5 anni)
     const contributiINPS = 0.2598; // 25.98% su reddito imponibile
 
     const redditoImponibile = fatturato * coefficienteRedditivita;
@@ -425,7 +425,7 @@ const TasseGabifer: React.FC = () => {
         
         <div className="text-sm text-purple-700 space-y-1">
           <p>• <strong>No IVA:</strong> Fatturazione senza IVA (art. 1, comma 58, L. 190/2014)</p>
-          <p>• <strong>Imposta Unica:</strong> 15% sul reddito imponibile (5% primi 5 anni)</p>
+          <p>• <strong>Imposta Unica:</strong> 15% sul reddito imponibile</p>
           <p>• <strong>Semplificazioni:</strong> Contabilità semplificata, no spesometro</p>
           <p>• <strong>Limite:</strong> Fatturato massimo €85.000/anno</p>
           <p>• <strong>Contributi:</strong> INPS gestione separata su reddito imponibile</p>
