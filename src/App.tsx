@@ -32,6 +32,7 @@ function App() {
   const { isAuthenticated, loading, userProfile, user } = useAuth();
   const [cookieConsent, setCookieConsent] = useState<CookiePreferences | null>(null);
   const [showLogin, setShowLogin] = useState(false);
+  const [processingConfirmation, setProcessingConfirmation] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -83,12 +84,14 @@ function App() {
     console.log('✅ Login completato con successo');
   };
 
-  if (loading) {
+  if (loading || processingConfirmation) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner size="lg" />
-          <p className="mt-4 text-gray-600">Caricamento...</p>
+          <p className="mt-4 text-gray-600">
+            {processingConfirmation ? 'Confermando il tuo account...' : 'Caricamento...'}
+          </p>
         </div>
       </div>
     );

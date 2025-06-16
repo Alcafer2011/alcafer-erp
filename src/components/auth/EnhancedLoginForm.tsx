@@ -115,7 +115,6 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
           email: formData.email,
           password: formData.password,
           options: {
-            emailRedirectTo: undefined, // Nessun redirect email
             data: {
               nome: formData.nome,
               cognome: formData.cognome,

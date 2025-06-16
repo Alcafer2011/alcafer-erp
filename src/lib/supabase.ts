@@ -35,7 +35,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: false // IMPORTANTE: disabilitato per evitare problemi con email
   }
 });
 
