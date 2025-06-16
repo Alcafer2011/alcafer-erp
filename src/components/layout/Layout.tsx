@@ -85,7 +85,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="flex flex-col h-full">
       <div className="flex h-16 items-center px-4 border-b border-gray-200">
         <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-          Alcafer ERP
+          Alcafer & Gabifer ERP
         </h1>
         <button
           onClick={() => setSidebarOpen(false)}

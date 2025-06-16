@@ -82,10 +82,10 @@ export class NotificationService {
       <p><strong>Scadenza:</strong> ${scadenza}</p>
       <p>Ricordati di mettere da parte l'importo necessario.</p>
       <hr>
-      <p><small>Messaggio automatico da Alcafer ERP</small></p>
+      <p><small>Messaggio automatico da Alcafer & Gabifer ERP</small></p>
     `;
 
-    const whatsappMessage = `🚨 PROMEMORIA FISCALE\n\nDitta: ${ditta.toUpperCase()}\nImporto: €${importo.toLocaleString('it-IT')}\nScadenza: ${scadenza}\n\nMetti da parte l'importo!\n\n- Alcafer ERP`;
+    const whatsappMessage = `🚨 PROMEMORIA FISCALE\n\nDitta: ${ditta.toUpperCase()}\nImporto: €${importo.toLocaleString('it-IT')}\nScadenza: ${scadenza}\n\nMetti da parte l'importo!\n\n- Alcafer & Gabifer ERP`;
 
     await Promise.all([
       this.sendEmail({
@@ -118,10 +118,10 @@ export class NotificationService {
       </ul>
       <p>Controlla i prezzi nella sezione Materiali Metallici se necessario.</p>
       <hr>
-      <p><small>Aggiornamento automatico da Alcafer ERP</small></p>
+      <p><small>Aggiornamento automatico da Alcafer & Gabifer ERP</small></p>
     `;
 
-    const whatsappMessage = `📊 AGGIORNAMENTO PREZZI\n\n${updates.map(u => `${u.material}: €${u.oldPrice.toFixed(3)} → €${u.newPrice.toFixed(3)}`).join('\n')}\n\nControlla l'app per dettagli.\n\n- Alcafer ERP`;
+    const whatsappMessage = `📊 AGGIORNAMENTO PREZZI\n\n${updates.map(u => `${u.material}: €${u.oldPrice.toFixed(3)} → €${u.newPrice.toFixed(3)}`).join('\n')}\n\nControlla l'app per dettagli.\n\n- Alcafer & Gabifer ERP`;
 
     await Promise.all([
       this.sendEmail({
@@ -146,7 +146,7 @@ export class NotificationService {
       ${details ? `<p><strong>Dettagli:</strong> ${details}</p>` : ''}
       ${!success ? '<p style="color: red;">⚠️ Controlla il sistema e riprova il backup manualmente.</p>' : '<p style="color: green;">✅ Tutti i dati sono stati salvati correttamente.</p>'}
       <hr>
-      <p><small>Notifica automatica da Alcafer ERP</small></p>
+      <p><small>Notifica automatica da Alcafer & Gabifer ERP</small></p>
     `;
 
     await this.sendEmail({
@@ -163,20 +163,20 @@ export class NotificationService {
 
     const emailResult = await this.sendEmail({
       to: adminEmail,
-      subject: '🧪 Test Notifiche Alcafer ERP',
+      subject: '🧪 Test Notifiche Alcafer & Gabifer ERP',
       htmlContent: `
         <h2>🧪 Test Notifiche</h2>
         <p>Questo è un messaggio di test per verificare che le notifiche email funzionino correttamente.</p>
         <p><strong>Data test:</strong> ${new Date().toLocaleString('it-IT')}</p>
         <p>✅ Se ricevi questo messaggio, le notifiche email sono configurate correttamente!</p>
         <hr>
-        <p><small>Test automatico da Alcafer ERP</small></p>
+        <p><small>Test automatico da Alcafer & Gabifer ERP</small></p>
       `
     });
 
     const whatsappResult = await this.sendWhatsApp({
       to: adminPhone,
-      message: `🧪 TEST NOTIFICHE\n\nQuesto è un messaggio di test per verificare che WhatsApp funzioni correttamente.\n\nData: ${new Date().toLocaleString('it-IT')}\n\n✅ Se ricevi questo messaggio, tutto funziona!\n\n- Alcafer ERP`
+      message: `🧪 TEST NOTIFICHE\n\nQuesto è un messaggio di test per verificare che WhatsApp funzioni correttamente.\n\nData: ${new Date().toLocaleString('it-IT')}\n\n✅ Se ricevi questo messaggio, tutto funziona!\n\n- Alcafer & Gabifer ERP`
     });
 
     return {

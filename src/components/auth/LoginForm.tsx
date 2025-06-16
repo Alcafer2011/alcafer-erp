@@ -203,7 +203,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
       >
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white text-center">
-          <h1 className="text-2xl font-bold">Alcafer ERP</h1>
+          <h1 className="text-2xl font-bold">Alcafer & Gabifer ERP</h1>
           <p className="text-blue-100 mt-1">Sistema di Gestione Aziendale</p>
         </div>
 

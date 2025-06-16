@@ -57,7 +57,7 @@ export class EmailService {
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Conferma il tuo account - Alcafer ERP</title>
+        <title>Conferma il tuo account - Alcafer & Gabifer ERP</title>
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -73,14 +73,14 @@ export class EmailService {
       <body>
         <div class="container">
           <div class="header">
-            <h1>🚀 Benvenuto in Alcafer ERP</h1>
+            <h1>🚀 Benvenuto in Alcafer & Gabifer ERP</h1>
             <p>Sistema di Gestione Aziendale</p>
           </div>
           
           <div class="content">
             <h2>Ciao ${nome}! 👋</h2>
             
-            <p>Grazie per esserti registrato su <strong>Alcafer ERP</strong>. Per completare la registrazione e accedere al sistema, devi confermare il tuo indirizzo email.</p>
+            <p>Grazie per esserti registrato su <strong>Alcafer & Gabifer ERP</strong>. Per completare la registrazione e accedere al sistema, devi confermare il tuo indirizzo email.</p>
             
             <div style="text-align: center; margin: 30px 0;">
               <a href="${confirmationUrl}" class="button">
@@ -111,7 +111,7 @@ export class EmailService {
           
           <div class="footer">
             <p>Se non hai richiesto questa registrazione, ignora questa email.</p>
-            <p><strong>Alcafer ERP</strong> - Sistema di Gestione Aziendale</p>
+            <p><strong>Alcafer & Gabifer ERP</strong> - Sistema di Gestione Aziendale</p>
             <p>📧 ${import.meta.env.VITE_ADMIN_EMAIL as string} | 📱 ${import.meta.env.VITE_ADMIN_PHONE as string}</p>
           </div>
         </div>
@@ -121,10 +121,10 @@ export class EmailService {
 
     const result = await this.sendEmail({
       to: email,
-      subject: '🚀 Conferma il tuo account - Alcafer ERP',
+      subject: '🚀 Conferma il tuo account - Alcafer & Gabifer ERP',
       htmlContent,
       textContent: `
-        Benvenuto in Alcafer ERP!
+        Benvenuto in Alcafer & Gabifer ERP!
         
         Ciao ${nome},
         
@@ -135,7 +135,7 @@ export class EmailService {
         
         Se non hai richiesto questa registrazione, ignora questa email.
         
-        Alcafer ERP - Sistema di Gestione Aziendale
+        Alcafer & Gabifer ERP - Sistema di Gestione Aziendale
       `
     });
 
@@ -154,7 +154,7 @@ export class EmailService {
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Benvenuto in Alcafer ERP!</title>
+        <title>Benvenuto in Alcafer & Gabifer ERP!</title>
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -169,13 +169,13 @@ export class EmailService {
         <div class="container">
           <div class="header">
             <h1>🎉 Account Confermato!</h1>
-            <p>Benvenuto in Alcafer ERP</p>
+            <p>Benvenuto in Alcafer & Gabifer ERP</p>
           </div>
           
           <div class="content">
             <h2>Ciao ${nome}! 🚀</h2>
             
-            <p>Il tuo account è stato confermato con successo! Ora puoi accedere a tutte le funzionalità di <strong>Alcafer ERP</strong>.</p>
+            <p>Il tuo account è stato confermato con successo! Ora puoi accedere a tutte le funzionalità di <strong>Alcafer & Gabifer ERP</strong>.</p>
             
             <h3>🔧 Cosa puoi fare ora:</h3>
             
@@ -201,7 +201,7 @@ export class EmailService {
             
             <p style="text-align: center; margin: 30px 0;">
               <a href="${window.location.origin}" class="button">
-                🚀 Accedi ad Alcafer ERP
+                🚀 Accedi ad Alcafer & Gabifer ERP
               </a>
             </p>
             
@@ -210,7 +210,7 @@ export class EmailService {
           
           <div class="footer">
             <p>Hai domande? Contattaci!</p>
-            <p><strong>Alcafer ERP</strong> - Sistema di Gestione Aziendale</p>
+            <p><strong>Alcafer & Gabifer ERP</strong> - Sistema di Gestione Aziendale</p>
             <p>📧 ${import.meta.env.VITE_ADMIN_EMAIL as string} | 📱 ${import.meta.env.VITE_ADMIN_PHONE as string}</p>
           </div>
         </div>
@@ -220,14 +220,14 @@ export class EmailService {
 
     return this.sendEmail({
       to: email,
-      subject: '🎉 Benvenuto in Alcafer ERP - Account Confermato!',
+      subject: '🎉 Benvenuto in Alcafer & Gabifer ERP - Account Confermato!',
       htmlContent,
       textContent: `
         Account Confermato!
         
         Ciao ${nome},
         
-        Il tuo account Alcafer ERP è stato confermato con successo!
+        Il tuo account Alcafer & Gabifer ERP è stato confermato con successo!
         
         Ora puoi accedere a tutte le funzionalità:
         - Gestione Clienti
@@ -237,7 +237,7 @@ export class EmailService {
         
         Accedi ora: ${window.location.origin}
         
-        Alcafer ERP - Sistema di Gestione Aziendale
+        Alcafer & Gabifer ERP - Sistema di Gestione Aziendale
       `
     });
   }

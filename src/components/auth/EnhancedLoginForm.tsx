@@ -218,7 +218,7 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
           <div className="absolute top-4 right-4">
             <Shield className="h-6 w-6 text-blue-200" />
           </div>
-          <h1 className="text-2xl font-bold">Alcafer ERP</h1>
+          <h1 className="text-2xl font-bold">Alcafer & Gabifer ERP</h1>
           <p className="text-blue-100 mt-1">Sistema Sicuro di Gestione</p>
           <div className="flex items-center justify-center gap-2 mt-2">
             <Fingerprint className="h-4 w-4" />

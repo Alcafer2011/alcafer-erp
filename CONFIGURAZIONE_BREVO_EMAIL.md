@@ -14,7 +14,7 @@ Ho configurato il sistema per usare **Brevo** invece di Supabase per l'invio del
 - **Brevo invia un'email professionale** con link di conferma
 
 ### 2. **Email di Conferma**
-- **Design professionale** con branding Alcafer ERP
+- **Design professionale** con branding Alcafer & Gabifer ERP
 - **Link personalizzato** che rimanda alla tua app
 - **Scadenza 24 ore** per sicurezza
 
@@ -46,7 +46,7 @@ VITE_BREVO_API_KEY=your_brevo_api_key_here
 
 ### **Email di Conferma:**
 - ✅ Design professionale con gradiente blu
-- ✅ Logo e branding Alcafer ERP
+- ✅ Logo e branding Alcafer & Gabifer ERP
 - ✅ Pulsante di conferma prominente
 - ✅ Link di backup se il pulsante non funziona
 - ✅ Avviso di scadenza 24 ore
