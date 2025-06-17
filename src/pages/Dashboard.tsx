@@ -68,13 +68,13 @@ const Dashboard: React.FC = () => {
       const lavoriCompletati = lavori?.filter(l => l.stato === 'completato').length || 0;
       const importoTotaleLavori = lavori?.reduce((sum, l) => sum + (l.importo_totale || 0), 0) || 0;
 
-      // Attività recenti
+      // Attività recenti - preventivi (senza ordinamento per created_at che non esiste)
       const { data: recentPreventivi } = await supabase
         .from('preventivi')
         .select('*, cliente:clienti(*)')
-        .order('created_at', { ascending: false })
         .limit(5);
 
+      // Attività recenti - lavori
       const { data: recentLavori } = await supabase
         .from('lavori')
         .select('*')
@@ -97,7 +97,7 @@ const Dashboard: React.FC = () => {
           type: 'preventivo',
           title: `Preventivo ${p.numero_preventivo || p.id}`,
           description: `Cliente: ${p.cliente?.nome || 'N/A'}`,
-          date: p.created_at,
+          date: new Date().toISOString(), // Usa data corrente dato che non abbiamo created_at
           status: p.stato,
         })),
         ...(recentLavori || []).map(l => ({
