@@ -130,7 +130,17 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
         if (data.user) {
           console.log('✅ Utente creato su Supabase:', data.user.id);
 
-          // Crea profilo utente
+          // LOGIN AUTOMATICO PRIMA DI CREARE IL PROFILO
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: formData.email,
+            password: formData.password,
+          });
+          
+          if (signInError) throw signInError;
+          
+          console.log('✅ Login automatico completato');
+
+          // Ora crea il profilo utente (l'utente è autenticato)
           const { error: profileError } = await supabase
             .from('users')
             .insert([{
@@ -149,7 +159,6 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
 
           console.log('✅ Profilo utente creato con successo');
           
-          // ACCESSO AUTOMATICO DOPO REGISTRAZIONE
           toast.success('🎉 Registrazione completata! Benvenuto in Alcafer ERP!', {
             duration: 6000,
           });
@@ -160,14 +169,6 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
             dataNascita: '', confirmPassword: ''
           });
 
-          // Login automatico
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: data.user.email!,
-            password: formData.password,
-          });
-          
-          if (signInError) throw signInError;
-          
           onSuccess();
         }
       }
