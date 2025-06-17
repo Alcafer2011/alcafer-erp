@@ -3,12 +3,12 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, Users, FileText, Briefcase, Settings, 
   Menu, X, LogOut, HelpCircle, ChevronDown, Calculator,
-  TrendingUp, PieChart, Receipt, Wrench, UserCheck
+  TrendingUp, PieChart, Receipt, Wrench, UserCheck, Building2,
+  Package, Truck, UserCog
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { usePermissions } from '../../hooks/usePermissions';
-import { signOut } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
 interface LayoutProps {
@@ -19,16 +19,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>(['main']);
-  const { userProfile } = useAuth();
+  const { userProfile, switchUser } = useAuth();
   const permissions = usePermissions();
 
   const handleLogout = async () => {
-    try {
-      await signOut();
-      toast.success('Logout effettuato con successo');
-    } catch (error) {
-      toast.error('Errore durante il logout');
-    }
+    toast.success('Logout effettuato con successo');
   };
 
   const toggleSection = (section: string) => {
@@ -55,13 +50,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'Clienti', href: '/clienti', icon: Users, show: true },
         { name: 'Preventivi', href: '/preventivi', icon: FileText, show: permissions.canModifyPreventivi },
         { name: 'Lavori', href: '/lavori', icon: Briefcase, show: permissions.canModifyLavori },
+        { name: 'Fornitori', href: '/fornitori', icon: Truck, show: permissions.canViewFornitori },
       ]
     },
     {
       section: 'costi',
       title: 'Costi e Materiali',
       items: [
-        { name: 'Materiali Metallici', href: '/materiali-metallici', icon: Settings, show: permissions.canModifyCostiMateriali },
+        { name: 'Materiali Metallici', href: '/materiali-metallici', icon: Package, show: permissions.canModifyCostiMateriali },
         { name: 'Materiali Vari', href: '/materiali-vari', icon: Settings, show: permissions.canModifyCostiMateriali },
         { name: 'Leasing Strumentali', href: '/leasing', icon: Wrench, show: permissions.canModifyLeasing },
         { name: 'Manovalanza', href: '/manovalanza', icon: UserCheck, show: permissions.canModifyManovalanza },
@@ -75,6 +71,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'Dividendi', href: '/finanziari/dividendi', icon: PieChart, show: permissions.canViewFinancials },
         { name: 'Tasse e IVA Alcafer', href: '/finanziari/tasse-alcafer', icon: Receipt, show: permissions.canModifyTaxes },
         { name: 'Tasse e IVA Gabifer', href: '/finanziari/tasse-gabifer', icon: Receipt, show: permissions.canModifyTaxes },
+      ]
+    },
+    {
+      section: 'admin',
+      title: 'Amministrazione',
+      items: [
+        { name: 'Gestione Utenti', href: '/utenti', icon: UserCog, show: permissions.canViewUsers },
       ]
     }
   ];
@@ -165,6 +168,34 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </p>
           </div>
         </div>
+
+        {/* Switch User (solo per demo) */}
+        {userProfile?.ruolo === 'alessandro' && (
+          <div className="mb-3 p-2 bg-yellow-50 rounded-lg border border-yellow-200">
+            <p className="text-xs text-yellow-800 mb-2">Demo - Cambia Utente:</p>
+            <div className="flex gap-1">
+              <button
+                onClick={() => switchUser('alessandro')}
+                className={`px-2 py-1 text-xs rounded ${userProfile.ruolo === 'alessandro' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+              >
+                A
+              </button>
+              <button
+                onClick={() => switchUser('gabriel')}
+                className={`px-2 py-1 text-xs rounded ${userProfile.ruolo === 'gabriel' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+              >
+                G
+              </button>
+              <button
+                onClick={() => switchUser('hanna')}
+                className={`px-2 py-1 text-xs rounded ${userProfile.ruolo === 'hanna' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+              >
+                H
+              </button>
+            </div>
+          </div>
+        )}
+
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"

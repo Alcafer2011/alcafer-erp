@@ -9,51 +9,87 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Ottieni la sessione corrente
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadUserProfile(session.user.id);
-      } else {
+    // Simula autenticazione automatica per demo
+    // In produzione, qui ci sarebbe la vera logica di autenticazione
+    const initializeAuth = async () => {
+      try {
+        // Simula un utente autenticato (Alessandro per default)
+        const mockUser: User = {
+          id: 'alessandro-id',
+          email: 'alessandro@alcafer.com',
+          created_at: new Date().toISOString(),
+          app_metadata: {},
+          user_metadata: {},
+          aud: 'authenticated',
+          confirmation_sent_at: new Date().toISOString()
+        };
+
+        const mockProfile: UserProfile = {
+          id: 'alessandro-id',
+          email: 'alessandro@alcafer.com',
+          nome: 'Alessandro',
+          cognome: 'Calabria',
+          data_nascita: '1990-01-01',
+          ruolo: 'alessandro',
+          created_at: new Date().toISOString()
+        };
+
+        setUser(mockUser);
+        setUserProfile(mockProfile);
+      } catch (error) {
+        console.error('❌ Errore inizializzazione auth:', error);
+      } finally {
         setLoading(false);
       }
-    });
+    };
 
-    // Ascolta i cambiamenti di autenticazione
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔐 Auth state changed:', event, session?.user?.id);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await loadUserProfile(session.user.id);
-        } else {
-          setUserProfile(null);
-          setLoading(false);
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
+    initializeAuth();
   }, []);
 
-  const loadUserProfile = async (userId: string) => {
-    try {
-      console.log('👤 Caricamento profilo per utente:', userId);
-      const profile = await getUserProfile(userId);
-      
-      if (profile) {
-        console.log('✅ Profilo caricato:', profile);
-        setUserProfile(profile);
-      } else {
-        console.warn('⚠️ Nessun profilo trovato per l\'utente:', userId);
-        setUserProfile(null);
+  const switchUser = (newUserRole: 'alessandro' | 'gabriel' | 'hanna') => {
+    const userProfiles = {
+      alessandro: {
+        id: 'alessandro-id',
+        email: 'alessandro@alcafer.com',
+        nome: 'Alessandro',
+        cognome: 'Calabria',
+        data_nascita: '1990-01-01',
+        ruolo: 'alessandro' as const,
+        created_at: new Date().toISOString()
+      },
+      gabriel: {
+        id: 'gabriel-id',
+        email: 'gabriel@alcafer.com',
+        nome: 'Gabriel',
+        cognome: 'Prunaru',
+        data_nascita: '1992-05-15',
+        ruolo: 'gabriel' as const,
+        created_at: new Date().toISOString()
+      },
+      hanna: {
+        id: 'hanna-id',
+        email: 'hanna@alcafer.com',
+        nome: 'Hanna',
+        cognome: 'Mazhar',
+        data_nascita: '1988-12-03',
+        ruolo: 'hanna' as const,
+        created_at: new Date().toISOString()
       }
-    } catch (error) {
-      console.error('❌ Errore nel caricamento del profilo:', error);
-      setUserProfile(null);
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    const newProfile = userProfiles[newUserRole];
+    const newUser: User = {
+      id: newProfile.id,
+      email: newProfile.email,
+      created_at: new Date().toISOString(),
+      app_metadata: {},
+      user_metadata: {},
+      aud: 'authenticated',
+      confirmation_sent_at: new Date().toISOString()
+    };
+
+    setUser(newUser);
+    setUserProfile(newProfile);
   };
 
   return {
@@ -64,5 +100,6 @@ export const useAuth = () => {
     isAlessandro: userProfile?.ruolo === 'alessandro',
     isGabriel: userProfile?.ruolo === 'gabriel',
     isHanna: userProfile?.ruolo === 'hanna',
+    switchUser
   };
 };
