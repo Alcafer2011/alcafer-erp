@@ -100,8 +100,7 @@ export class FreeAIService {
   }
 
   // 🧠 AI LOCALE AVANZATA (GRATUITO)
-  // Cambiato da private a public per risolvere l'errore TS2341
-  getLocalAIResponse(message: string, context: any): string {
+  public getLocalAIResponse(message: string, context: any): string {
     const responses = {
       // Analisi finanziarie
       'analisi': [
@@ -151,7 +150,7 @@ export class FreeAIService {
       return responses.materiali[Math.floor(Math.random() * responses.materiali.length)];
     }
 
-    // Risposta generica intelligente
+    // Risposta generica intellig ente
     return `Basandomi sui dati di Alcafer ERP, posso aiutarti con analisi finanziarie, previsioni di mercato, ottimizzazione dei costi e gestione materiali. Cosa ti serve sapere nello specifico?`;
   }
 

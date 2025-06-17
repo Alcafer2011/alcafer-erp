@@ -1,14 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, FileText, User } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { Preventivo } from '../types/database';
 import PreventivoModal from '../components/PreventivoModal';
+import { usePermissions } from '../hooks/usePermissions';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import HelpTooltip from '../components/common/HelpTooltip';
+import toast from 'react-hot-toast';
 
 const Preventivi: React.FC = () => {
   const [preventivi, setPreventivi] = useState<Preventivo[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedPreventivo, setSelectedPreventivo] = useState<Preventivo | null>(null);
+  const permissions = usePermissions();
 
   useEffect(() => {
     fetchPreventivi();
@@ -28,6 +34,7 @@ const Preventivi: React.FC = () => {
       setPreventivi(data || []);
     } catch (error) {
       console.error('Errore nel caricamento dei preventivi:', error);
+      toast.error('Errore nel caricamento dei preventivi');
     } finally {
       setLoading(false);
     }
@@ -43,10 +50,11 @@ const Preventivi: React.FC = () => {
         .eq('id', id);
 
       if (error) throw error;
+      toast.success('Preventivo eliminato con successo');
       fetchPreventivi();
     } catch (error) {
       console.error('Errore nell\'eliminazione del preventivo:', error);
-      alert('Errore nell\'eliminazione del preventivo');
+      toast.error('Errore nell\'eliminazione del preventivo');
     }
   };
 
@@ -68,11 +76,11 @@ const Preventivi: React.FC = () => {
 
   const getStatoColor = (stato: string) => {
     switch (stato) {
-      case 'approvato':
+      case 'accettato':
         return 'bg-green-100 text-green-800';
       case 'rifiutato':
         return 'bg-red-100 text-red-800';
-      case 'in_attesa':
+      case 'inviato':
         return 'bg-yellow-100 text-yellow-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -82,117 +90,167 @@ const Preventivi: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!permissions.canModifyPreventivi) {
+    return (
+      <div className="text-center py-12">
+        <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Accesso Limitato</h3>
+        <p className="text-gray-500">Non hai i permessi per visualizzare questa sezione.</p>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-8">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Preventivi</h1>
           <p className="mt-2 text-gray-600">Gestisci i tuoi preventivi</p>
         </div>
-        <button onClick={handleNew} className="btn-primary flex items-center gap-2">
+        <button 
+          onClick={handleNew}
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+        >
           <Plus className="h-4 w-4" />
           Nuovo Preventivo
         </button>
       </div>
 
-      <div className="card">
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {preventivi.length === 0 ? (
           <div className="text-center py-12">
-            <FileText className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Nessun preventivo</h3>
-            <p className="mt-1 text-sm text-gray-500">Inizia creando il tuo primo preventivo.</p>
-            <div className="mt-6">
-              <button onClick={handleNew} className="btn-primary">
-                <Plus className="h-4 w-4 mr-2" />
-                Nuovo Preventivo
-              </button>
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FileText className="h-12 w-12 text-gray-400" />
             </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Nessun preventivo</h3>
+            <p className="text-gray-500 mb-6">Inizia creando il tuo primo preventivo</p>
+            <button 
+              onClick={handleNew}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+            >
+              <Plus className="h-4 w-4 inline mr-2" />
+              Nuovo Preventivo
+            </button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cliente
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Importo
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Stato
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    File
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Azioni
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {preventivi.map((preventivo) => (
-                  <tr key={preventivo.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <User className="h-4 w-4 mr-2 text-gray-400" />
-                        <div className="text-sm font-medium text-gray-900">
-                          {preventivo.cliente?.nome || 'Cliente non specificato'}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {preventivo.importo ? `€${preventivo.importo.toLocaleString('it-IT', { minimumFractionDigits: 2 })}` : '-'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatoColor(preventivo.stato || 'bozza')}`}>
-                        {preventivo.stato || 'bozza'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {preventivo.file_path ? (
-                        <span className="text-primary-600">File presente</span>
-                      ) : (
-                        <span className="text-gray-400">Nessun file</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(preventivo)}
-                          className="text-primary-600 hover:text-primary-900"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(preventivo.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
+          <>
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Preventivi ({preventivi.length})
+                </h3>
+                <HelpTooltip content="Gestisci i preventivi per i tuoi clienti" />
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Cliente
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Numero
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Importo
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Stato
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ditta
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Azioni
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  <AnimatePresence>
+                    {preventivi.map((preventivo, index) => (
+                      <motion.tr
+                        key={preventivo.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mr-3">
+                              <span className="text-white text-xs font-bold">
+                                {preventivo.cliente?.nome?.charAt(0) || '?'}
+                              </span>
+                            </div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {preventivo.cliente?.nome || 'Cliente non specificato'}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {preventivo.numero_preventivo || '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {preventivo.importo ? `€${preventivo.importo.toLocaleString('it-IT', { minimumFractionDigits: 2 })}` : '-'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatoColor(preventivo.stato || 'bozza')}`}>
+                            {preventivo.stato || 'bozza'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            preventivo.ditta === 'alcafer' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                          }`}>
+                            {preventivo.ditta?.toUpperCase() || 'ALCAFER'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => handleEdit(preventivo)}
+                              className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Modifica preventivo"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(preventivo.id)}
+                              className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Elimina preventivo"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
-      {modalOpen && (
-        <PreventivoModal
-          preventivo={selectedPreventivo}
-          onClose={handleModalClose}
-        />
-      )}
+      <AnimatePresence>
+        {modalOpen && (
+          <PreventivoModal
+            preventivo={selectedPreventivo}
+            onClose={handleModalClose}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
