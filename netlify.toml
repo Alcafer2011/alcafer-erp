@@ -22,3 +22,9 @@
   for = "/assets/*"
   [headers.values]
     Cache-Control = "max-age=31536000"
+
+[[plugins]]
+  package = "@netlify/plugin-lighthouse"
+
+  [plugins.inputs]
+    output_path = "reports/lighthouse.html"

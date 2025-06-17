@@ -24,9 +24,6 @@ if (!isValidUrl || !isValidKey) {
   console.error('4. Copia la "Project API key (anon public)"');
   console.error('5. Sostituisci VITE_SUPABASE_ANON_KEY nel file .env');
   console.error('6. Riavvia il server con npm run dev');
-  
-  // Non lanciare un errore, ma mostra un avviso
-  console.warn('⚠️ Tentativo di connessione con credenziali potenzialmente non valide');
 }
 
 console.log('✅ Tentativo di connessione a Supabase...');

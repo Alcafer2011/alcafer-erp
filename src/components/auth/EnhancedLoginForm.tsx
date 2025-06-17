@@ -120,7 +120,8 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
               cognome: formData.cognome,
               data_nascita: formData.dataNascita,
               ruolo: userAuth.role,
-            }
+            },
+            emailRedirectTo: `${window.location.origin}/auth/callback`
           }
         });
 

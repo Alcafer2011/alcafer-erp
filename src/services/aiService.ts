@@ -27,7 +27,7 @@ export class AIService {
     try {
       return await freeAIService.chatWithGemini(message, context);
     } catch (error) {
-      // Usa il metodo pubblico invece di quello privato
+      // Usa il metodo pubblico
       const analysis = await freeAIService.analyzeFinancialData({
         query: message,
         context: context

@@ -150,7 +150,7 @@ export class FreeAIService {
       return responses.materiali[Math.floor(Math.random() * responses.materiali.length)];
     }
 
-    // Risposta generica intellig ente
+    // Risposta generica intelligente
     return `Basandomi sui dati di Alcafer ERP, posso aiutarti con analisi finanziarie, previsioni di mercato, ottimizzazione dei costi e gestione materiali. Cosa ti serve sapere nello specifico?`;
   }
 
