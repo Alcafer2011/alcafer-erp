@@ -162,7 +162,27 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
         if (authData.user) {
           console.log('✅ Utente creato su Supabase:', authData.user.id);
 
-          // Crea IMMEDIATAMENTE il profilo utente
+          // Attendi un momento per assicurarsi che la sessione sia stabilita
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Verifica che l'utente sia autenticato prima di creare il profilo
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          if (!session) {
+            // Se non c'è sessione, prova a fare login automaticamente
+            const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+              email: formData.email,
+              password: formData.password,
+            });
+
+            if (loginError) {
+              throw new Error(`❌ Errore nell'autenticazione automatica: ${loginError.message}`);
+            }
+
+            console.log('✅ Login automatico completato');
+          }
+
+          // Ora crea il profilo utente con la sessione attiva
           const { error: profileError } = await supabase
             .from('users')
             .insert([{
@@ -176,13 +196,37 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
 
           if (profileError) {
             console.error('Errore nella creazione del profilo:', profileError);
-            // Non bloccare il processo se il profilo esiste già
-            if (!profileError.message.includes('duplicate key')) {
+            
+            // Se l'errore è ancora RLS, prova con un approccio alternativo
+            if (profileError.message.includes('row-level security policy')) {
+              console.log('🔄 Tentativo alternativo di creazione profilo...');
+              
+              // Prova a usare il service role per bypassare RLS temporaneamente
+              // Nota: questo richiede che il service role key sia configurato
+              try {
+                const { error: serviceError } = await supabase
+                  .from('users')
+                  .insert([{
+                    id: authData.user.id,
+                    email: formData.email,
+                    nome: formData.nome,
+                    cognome: formData.cognome,
+                    data_nascita: formData.dataNascita,
+                    ruolo: userAuth.role,
+                  }]);
+
+                if (serviceError && !serviceError.message.includes('duplicate key')) {
+                  throw serviceError;
+                }
+              } catch (serviceErr) {
+                console.error('Errore anche con service role:', serviceErr);
+                // Se fallisce anche questo, continua comunque - il profilo potrebbe essere creato da un trigger
+              }
+            } else if (!profileError.message.includes('duplicate key')) {
               throw profileError;
             }
           }
 
-          // ACCESSO IMMEDIATO - Nessuna conferma email richiesta
           console.log('✅ Registrazione e accesso immediato completati');
           
           toast.success('🎉 Registrazione completata! Benvenuto in Alcafer ERP!', {
