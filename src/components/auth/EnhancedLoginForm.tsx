@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Mail, Lock, User, Calendar, Shield } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Calendar, Shield, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -13,6 +13,7 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [securityLevel, setSecurityLevel] = useState(0);
+  const [registrationStep, setRegistrationStep] = useState<'form' | 'pending' | 'completed'>('form');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -92,7 +93,7 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
 
     try {
       if (isLogin) {
-        // LOGIN SEMPLICE
+        // LOGIN
         console.log('🔐 Tentativo di login per:', formData.email);
         
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -100,14 +101,25 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
           password: formData.password,
         });
 
-        if (error) throw error;
+        if (error) {
+          // Gestione errori specifici
+          if (error.message.includes('Invalid login credentials')) {
+            throw new Error('❌ Email o password non corretti. Verifica i tuoi dati di accesso.');
+          } else if (error.message.includes('Email not confirmed')) {
+            throw new Error('❌ Email non confermata. Controlla la tua casella di posta e clicca sul link di conferma.');
+          } else if (error.message.includes('Too many requests')) {
+            throw new Error('❌ Troppi tentativi di accesso. Riprova tra qualche minuto.');
+          } else {
+            throw new Error(`❌ Errore di accesso: ${error.message}`);
+          }
+        }
         
         console.log('✅ Login completato con successo');
         toast.success('🎉 Accesso effettuato con successo!');
         onSuccess();
       } else {
-        // REGISTRAZIONE SEMPLIFICATA - ACCESSO DIRETTO
-        console.log('📝 Registrazione semplificata per:', formData.email);
+        // REGISTRAZIONE
+        console.log('📝 Registrazione per:', formData.email);
         
         // Validazioni
         const userAuth = validateUserAuthorization(formData.nome, formData.cognome);
@@ -123,7 +135,7 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
           throw new Error('❌ Password non sufficientemente sicura (minimo 60%)');
         }
 
-        // REGISTRAZIONE DIRETTA SU SUPABASE (senza email di conferma)
+        // REGISTRAZIONE SU SUPABASE
         const { data, error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
@@ -133,56 +145,69 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
               cognome: formData.cognome,
               data_nascita: formData.dataNascita,
               ruolo: userAuth.role,
-            },
-            emailRedirectTo: `${window.location.origin}/auth/callback`
+            }
           }
         });
 
-        if (error) throw error;
+        if (error) {
+          if (error.message.includes('User already registered')) {
+            throw new Error('❌ Questo indirizzo email è già registrato. Prova ad effettuare il login.');
+          } else if (error.message.includes('Password should be at least')) {
+            throw new Error('❌ La password deve essere di almeno 6 caratteri.');
+          } else {
+            throw new Error(`❌ Errore durante la registrazione: ${error.message}`);
+          }
+        }
 
         if (data.user) {
           console.log('✅ Utente creato su Supabase:', data.user.id);
 
-          // LOGIN AUTOMATICO PRIMA DI CREARE IL PROFILO
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: formData.email,
-            password: formData.password,
-          });
-          
-          if (signInError) throw signInError;
-          
-          console.log('✅ Login automatico completato');
+          // Controlla se l'email è già confermata (accesso immediato)
+          if (data.user.email_confirmed_at) {
+            console.log('✅ Email già confermata, accesso immediato');
+            
+            // Crea il profilo utente
+            const { error: profileError } = await supabase
+              .from('users')
+              .insert([{
+                id: data.user.id,
+                email: formData.email,
+                nome: formData.nome,
+                cognome: formData.cognome,
+                data_nascita: formData.dataNascita,
+                ruolo: userAuth.role,
+              }]);
 
-          // Ora crea il profilo utente (l'utente è autenticato)
-          const { error: profileError } = await supabase
-            .from('users')
-            .insert([{
-              id: data.user.id,
-              email: formData.email,
-              nome: formData.nome,
-              cognome: formData.cognome,
-              data_nascita: formData.dataNascita,
-              ruolo: userAuth.role,
-            }]);
+            if (profileError) {
+              console.error('Errore nella creazione del profilo:', profileError);
+              // Non bloccare il processo se il profilo esiste già
+              if (!profileError.message.includes('duplicate key')) {
+                throw profileError;
+              }
+            }
 
-          if (profileError) {
-            console.error('Errore nella creazione del profilo:', profileError);
-            throw profileError;
+            toast.success('🎉 Registrazione completata! Benvenuto in Alcafer ERP!', {
+              duration: 6000,
+            });
+
+            setRegistrationStep('completed');
+            
+            // Reset form
+            setFormData({
+              email: '', password: '', nome: '', cognome: '', 
+              dataNascita: '', confirmPassword: ''
+            });
+
+            onSuccess();
+          } else {
+            // Email di conferma richiesta
+            console.log('📧 Email di conferma inviata');
+            setRegistrationStep('pending');
+            
+            toast.success('📧 Registrazione completata! Controlla la tua email per confermare l\'account.', {
+              duration: 8000,
+            });
           }
-
-          console.log('✅ Profilo utente creato con successo');
-          
-          toast.success('🎉 Registrazione completata! Benvenuto in Alcafer ERP!', {
-            duration: 6000,
-          });
-
-          // Reset form
-          setFormData({
-            email: '', password: '', nome: '', cognome: '', 
-            dataNascita: '', confirmPassword: ''
-          });
-
-          onSuccess();
         }
       }
     } catch (error: any) {
@@ -219,6 +244,65 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
     return 'Sicurezza Bassa ❌';
   };
 
+  // Mostra schermata di attesa conferma email
+  if (registrationStep === 'pending') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-100"
+        >
+          <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6 text-white text-center">
+            <Mail className="h-12 w-12 mx-auto mb-2" />
+            <h1 className="text-2xl font-bold">Conferma Email</h1>
+            <p className="text-blue-100 mt-1">Controlla la tua casella di posta</p>
+          </div>
+
+          <div className="p-6 text-center">
+            <div className="mb-6">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Mail className="h-8 w-8 text-blue-600" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                Email di Conferma Inviata
+              </h2>
+              <p className="text-gray-600 mb-4">
+                Abbiamo inviato un link di conferma a:
+              </p>
+              <p className="font-medium text-blue-600 mb-4">{formData.email}</p>
+              <p className="text-sm text-gray-500">
+                Clicca sul link nell'email per attivare il tuo account e accedere al sistema.
+              </p>
+            </div>
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertCircle className="h-4 w-4 text-yellow-600" />
+                <span className="text-sm font-medium text-yellow-800">Importante</span>
+              </div>
+              <ul className="text-xs text-yellow-700 space-y-1 text-left">
+                <li>• Controlla anche la cartella spam/posta indesiderata</li>
+                <li>• Il link di conferma scade dopo 24 ore</li>
+                <li>• Dopo la conferma potrai accedere immediatamente</li>
+              </ul>
+            </div>
+
+            <button
+              onClick={() => {
+                setRegistrationStep('form');
+                setIsLogin(true);
+              }}
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+              Torna al Login
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
       <motion.div
@@ -234,7 +318,7 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
           <h1 className="text-2xl font-bold">Alcafer & Gabifer ERP</h1>
           <p className="text-blue-100 mt-1">Sistema di Gestione Aziendale</p>
           <div className="flex items-center justify-center gap-2 mt-2">
-            <span className="text-xs">🚀 Accesso Semplificato</span>
+            <span className="text-xs">🔐 Accesso Sicuro</span>
           </div>
         </div>
 
@@ -417,25 +501,40 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
               ) : (
                 <div className="flex items-center justify-center gap-2">
                   <Shield className="h-4 w-4" />
-                  {isLogin ? 'Accedi' : 'Registrati e Accedi'}
+                  {isLogin ? 'Accedi' : 'Registrati'}
                 </div>
               )}
             </button>
           </form>
 
-          {/* Info semplificazione */}
-          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+          {/* Info sistema */}
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
-              <Shield className="h-4 w-4 text-green-600" />
-              <span className="text-sm font-medium text-green-800">Sistema Semplificato</span>
+              <Shield className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-800">Sistema di Autenticazione</span>
             </div>
-            <ul className="text-xs text-green-700 space-y-1">
-              <li>• ✅ Registrazione e accesso immediato</li>
-              <li>• 🚀 Nessuna email di conferma richiesta</li>
-              <li>• 🔒 Sicurezza garantita con controlli avanzati</li>
-              <li>• 👥 Accesso limitato a 3 utenti autorizzati</li>
+            <ul className="text-xs text-blue-700 space-y-1">
+              <li>• 🔒 Autenticazione sicura con Supabase</li>
+              <li>• 📧 Conferma email richiesta per nuovi account</li>
+              <li>• 👥 Accesso limitato a utenti autorizzati</li>
+              <li>• 🛡️ Password sicure obbligatorie</li>
             </ul>
           </div>
+
+          {/* Suggerimenti per il login */}
+          {isLogin && (
+            <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertCircle className="h-4 w-4 text-gray-600" />
+                <span className="text-sm font-medium text-gray-800">Problemi di accesso?</span>
+              </div>
+              <ul className="text-xs text-gray-600 space-y-1">
+                <li>• Verifica email e password</li>
+                <li>• Controlla se hai confermato l'email di registrazione</li>
+                <li>• Controlla la cartella spam per l'email di conferma</li>
+              </ul>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>
