@@ -59,17 +59,30 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
   };
 
   const validateUserAuthorization = (nome: string, cognome: string) => {
-    const fullName = `${nome.toLowerCase()} ${cognome.toLowerCase()}`;
+    const nomeNormalized = nome.toLowerCase().trim();
+    const cognomeNormalized = cognome.toLowerCase().trim();
     
     const authorizedUsers = [
-      { name: 'alessandro calabria', role: 'alessandro' },
-      { name: 'gabriel prunaru', role: 'gabriel' },
-      { name: 'hanna mazhar', role: 'hanna' }
+      { 
+        names: ['alessandro'], 
+        surnames: ['calabria'], 
+        role: 'alessandro' 
+      },
+      { 
+        names: ['gabriel', 'gabriele'], 
+        surnames: ['prunaru'], 
+        role: 'gabriel' 
+      },
+      { 
+        names: ['hanna', 'anna'], 
+        surnames: ['mazhar'], 
+        role: 'hanna' 
+      }
     ];
     
     return authorizedUsers.find(user => 
-      fullName.includes(user.name.split(' ')[0]) && 
-      fullName.includes(user.name.split(' ')[1])
+      user.names.some(name => nomeNormalized.includes(name)) && 
+      user.surnames.some(surname => cognomeNormalized.includes(surname))
     );
   };
 
@@ -99,7 +112,7 @@ const EnhancedLoginForm: React.FC<EnhancedLoginFormProps> = ({ onSuccess }) => {
         // Validazioni
         const userAuth = validateUserAuthorization(formData.nome, formData.cognome);
         if (!userAuth) {
-          throw new Error('❌ Utente non autorizzato alla registrazione');
+          throw new Error('❌ Utente non autorizzato alla registrazione. Contattare l\'amministratore.');
         }
 
         if (formData.password !== formData.confirmPassword) {
