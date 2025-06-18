@@ -111,14 +111,16 @@ export const useAuth = () => {
   // Funzione per il login
   const login = async (email: string, password: string) => {
     try {
-      // Determina quale utente autenticare in base all'email
-      if (email.toLowerCase().includes('aless')) {
+      // Determina quale utente autenticare in base all'email o nome
+      const emailLower = email.toLowerCase();
+      
+      if (emailLower.includes('aless') || emailLower === 'assistenza.alcafer@gmail.com') {
         switchUser('alessandro');
         return { success: true, user: 'alessandro' };
-      } else if (email.toLowerCase().includes('gabr') || email.toLowerCase().includes('gabi')) {
+      } else if (emailLower.includes('gabr') || emailLower.includes('gabi') || emailLower === 'gabifervoghera@gmail.com') {
         switchUser('gabriel');
         return { success: true, user: 'gabriel' };
-      } else if (email.toLowerCase().includes('hann') || email.toLowerCase().includes('nuta')) {
+      } else if (emailLower.includes('hann') || emailLower.includes('nuta') || emailLower === 'nuta1985@icloud.com') {
         switchUser('hanna');
         return { success: true, user: 'hanna' };
       } else {
