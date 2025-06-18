@@ -23,8 +23,6 @@ const LeasingStrumentali: React.FC = () => {
     consumo_kw: 0
   });
   const [showAddForm, setShowAddForm] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const [showSpotify, setShowSpotify] = useState(false);
   const permissions = usePermissions();
 
@@ -50,28 +48,8 @@ const LeasingStrumentali: React.FC = () => {
   useEffect(() => {
     fetchLeasingStrumentali();
     
-    // Inizializza l'elemento audio
-    const audio = new Audio('https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0c6ff1bab.mp3?filename=relaxing-mountains-rivers-streams-running-water-18178.mp3');
-    audio.loop = true;
-    setAudioElement(audio);
-    
-    // Avvia automaticamente la musica
-    audio.play().catch(e => {
-      console.error('Errore nella riproduzione audio:', e);
-      toast.error('Impossibile riprodurre la musica automaticamente. Clicca sul pulsante per attivarla.');
-    });
-    setIsPlaying(true);
-    
     // Mostra suggerimento per aggiungere alla home screen
     showAddToHomeScreenPrompt();
-    
-    return () => {
-      // Pulisci l'audio quando il componente viene smontato
-      if (audioElement) {
-        audioElement.pause();
-        audioElement.currentTime = 0;
-      }
-    };
   }, []);
 
   const showAddToHomeScreenPrompt = () => {
@@ -96,20 +74,6 @@ const LeasingStrumentali: React.FC = () => {
           duration: 6000,
         });
       }
-    }
-  };
-
-  const toggleMusic = () => {
-    if (audioElement) {
-      if (isPlaying) {
-        audioElement.pause();
-      } else {
-        audioElement.play().catch(e => {
-          console.error('Errore nella riproduzione audio:', e);
-          toast.error('Impossibile riprodurre la musica. Prova a interagire prima con la pagina.');
-        });
-      }
-      setIsPlaying(!isPlaying);
     }
   };
 
@@ -295,13 +259,6 @@ const LeasingStrumentali: React.FC = () => {
           <p className="mt-2 text-gray-600">Gestisci i costi mensili di attrezzature e servizi</p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={toggleMusic}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
-          >
-            <Music className="h-4 w-4" />
-            {isPlaying ? 'Ferma Musica' : 'Musica Rilassante'}
-          </button>
           <button
             onClick={() => setShowSpotify(!showSpotify)}
             className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"

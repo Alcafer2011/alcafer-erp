@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Edit, Home, Zap, Droplet, Flame, Trash2, Plus } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { usePermissions } from '../hooks/usePermissions';
 import LoadingSpinner from '../components/common/LoadingSpinner';
