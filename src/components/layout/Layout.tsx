@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  Home, Users, FileText, Briefcase, Settings, 
-  Menu, X, LogOut, HelpCircle, ChevronDown, Calculator,
-  TrendingUp, PieChart, Receipt, Wrench, UserCheck, Building2,
-  Package, Truck, UserCog, Droplet, Flame, Target, Music, Volume2,
-  Play, Pause, SkipForward, SkipBack, Disc, Headphones, Heart, Clock, ListMusic, Shuffle, Repeat, Share2
-} from 'lucide-react';
+import { Home, Users, FileText, Briefcase, Settings, Menu, X, LogOut, HelpCircle, ChevronDown, Calculator, TrendingUp, PieChart, Receipt, Wrench, UserCheck, Building2, Package, Truck, UserCog, Droplet, Flame, Target, Music, Volume2, Play, Pause, SkipForward, SkipBack, Disc, Headphones, Heart, Clock, ListMusic, Shuffle, Repeat, Share2, PenTool as Tool } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -153,6 +147,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'Clienti', href: '/clienti', icon: Users, show: true },
         { name: 'Preventivi', href: '/preventivi', icon: FileText, show: permissions.canModifyPreventivi },
         { name: 'Lavori', href: '/lavori', icon: Briefcase, show: permissions.canModifyLavori },
+        { name: 'Posa in Opera', href: '/posa-in-opera', icon: Tool, show: permissions.canModifyLavori },
         { name: 'Fornitori', href: '/fornitori', icon: Truck, show: permissions.canViewFornitori },
       ]
     },

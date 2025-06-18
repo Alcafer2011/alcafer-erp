@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, Edit, Trash2, Clock, Calendar, DollarSign, 
-  User, Briefcase, CheckCircle, AlertTriangle, Tool
-} from 'lucide-react';
+import { Plus, Edit, Trash2, Clock, Calendar, DollarSign, User, Briefcase, CheckCircle, AlertTriangle, PenTool as Tool } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { Lavoro } from '../types/database';
