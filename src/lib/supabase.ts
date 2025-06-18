@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string || 'https://wcntwbujilcyqjchlezx.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjbnR3YnVqaWxjeXFqY2hsZXp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3MzA5MzMsImV4cCI6MjA2NTMwNjkzM30.j_wdgBQOAI9ZwPhhryFJ0dZA1GqGLHq0XFAMHmyv458';
+const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE as string || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjbnR3YnVqaWxjeXFqY2hsZXp4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTczMDkzMywiZXhwIjoyMDY1MzA2OTMzfQ.TyZLLKLpLre7uSRe6ulEfiV8fZUxhJjprSju8k-4i9w';
 
 // More robust validation that checks for placeholder values
 const isValidUrl = supabaseUrl && supabaseUrl.startsWith('https://') && !supabaseUrl.includes('your_');
@@ -33,6 +34,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false // IMPORTANTE: disabilitato per evitare problemi con email
+  }
+});
+
+// Client con service role per operazioni admin
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: false
   }
 });
 
@@ -88,5 +97,30 @@ export const checkSupabaseConnection = async () => {
   } catch (error) {
     console.error('❌ Errore durante il test di connessione:', error);
     return false;
+  }
+};
+
+// Funzione per verificare se l'utente ha un profilo valido
+export const userHasValidProfile = async () => {
+  const user = await getCurrentUser();
+  if (!user) return false;
+  
+  const profile = await getUserProfile(user.id);
+  return !!profile;
+};
+
+// Funzione per ottenere tutti i macchinari leasing
+export const getLeasingStrumentali = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('leasing_strumentali')
+      .select('*')
+      .order('nome_strumento');
+    
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Errore nel recupero dei macchinari leasing:', error);
+    return [];
   }
 };

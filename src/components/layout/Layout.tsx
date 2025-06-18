@@ -16,7 +16,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>(['main']);
-  const { userProfile, switchUser } = useAuth();
+  const { userProfile, switchUser, signOut } = useAuth();
   const permissions = usePermissions();
   const [activeUsers, setActiveUsers] = useState<string[]>(['alessandro']);
   const [showAddToHome, setShowAddToHome] = useState(true);
@@ -120,6 +120,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   const handleLogout = async () => {
+    await signOut();
     toast.success('Logout effettuato con successo');
   };
 
@@ -297,32 +298,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </div>
 
-        {/* Switch User (solo per demo) */}
-        {userProfile?.ruolo === 'alessandro' && (
-          <div className="mb-3 p-2 bg-yellow-50 rounded-lg border border-yellow-200">
-            <p className="text-xs text-yellow-800 mb-2">Demo - Cambia Utente:</p>
-            <div className="flex gap-1">
-              <button
-                onClick={() => switchUser('alessandro')}
-                className={`px-2 py-1 text-xs rounded ${userProfile.ruolo === 'alessandro' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                A
-              </button>
-              <button
-                onClick={() => switchUser('gabriel')}
-                className={`px-2 py-1 text-xs rounded ${userProfile.ruolo === 'gabriel' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                G
-              </button>
-              <button
-                onClick={() => switchUser('hanna')}
-                className={`px-2 py-1 text-xs rounded ${userProfile.ruolo === 'hanna' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                H
-              </button>
-            </div>
+        {/* Switch User */}
+        <div className="mb-3 p-2 bg-yellow-50 rounded-lg border border-yellow-200">
+          <p className="text-xs text-yellow-800 mb-2">Cambia Utente:</p>
+          <div className="flex gap-1">
+            <button
+              onClick={() => switchUser('alessandro')}
+              className={`px-2 py-1 text-xs rounded ${userProfile?.ruolo === 'alessandro' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+            >
+              A
+            </button>
+            <button
+              onClick={() => switchUser('gabriel')}
+              className={`px-2 py-1 text-xs rounded ${userProfile?.ruolo === 'gabriel' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+            >
+              G
+            </button>
+            <button
+              onClick={() => switchUser('hanna')}
+              className={`px-2 py-1 text-xs rounded ${userProfile?.ruolo === 'hanna' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+            >
+              H
+            </button>
           </div>
-        )}
+        </div>
 
         <button
           onClick={handleLogout}

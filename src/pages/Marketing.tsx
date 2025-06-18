@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   TrendingUp, Users, Target, BarChart2, Share2, 
   Award, Globe, Mail, MessageSquare, Zap, Download,
   Smartphone, Briefcase, CheckCircle, AlertTriangle,
-  Send, Sparkles, FileText, Lightbulb, PenTool
+  Sparkles, Send, RefreshCw, FileText, Loader
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import HelpTooltip from '../components/common/HelpTooltip';
@@ -11,14 +11,199 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import toast from 'react-hot-toast';
 
 const Marketing: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'strategie' | 'clienti' | 'report' | 'aiGenerator'>('strategie');
+  const [activeTab, setActiveTab] = useState<'strategie' | 'clienti' | 'report'>('strategie');
   const [generatingReport, setGeneratingReport] = useState(false);
   const [reportType, setReportType] = useState<'cliente' | 'fornitore' | null>(null);
   const [reportQuery, setReportQuery] = useState('');
+  
+  // AI Strategy Generator
   const [generatingStrategy, setGeneratingStrategy] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [aiResponse, setAiResponse] = useState<string | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [strategyType, setStrategyType] = useState<'email' | 'social' | 'seo' | 'custom'>('email');
+  const [customPrompt, setCustomPrompt] = useState('');
+  const [generatedStrategy, setGeneratedStrategy] = useState<string | null>(null);
+
+  // Strategie predefinite
+  const strategyTemplates = {
+    email: `# Strategia Email Marketing per Alcafer & Gabifer
+
+## Obiettivi
+- Aumentare la visibilità del brand
+- Generare nuovi lead qualificati
+- Mantenere i clienti esistenti informati
+
+## Piano d'Azione
+1. **Creazione Lista Contatti**
+   - Segmentare i contatti per settore (automotive, edilizia, ecc.)
+   - Implementare form di iscrizione sul sito web
+   - Importare contatti da fiere e eventi di settore
+
+2. **Contenuti Email**
+   - Newsletter mensile con novità del settore
+   - Case study di progetti completati
+   - Offerte speciali e promozioni stagionali
+   - Aggiornamenti su nuovi macchinari e capacità produttive
+
+3. **Automazioni**
+   - Sequenza di benvenuto per nuovi iscritti
+   - Follow-up automatici dopo preventivi
+   - Promemoria per manutenzioni periodiche
+   - Email di auguri per festività e anniversari
+
+4. **Metriche da Monitorare**
+   - Tasso di apertura (target: >25%)
+   - Tasso di click (target: >3%)
+   - Tasso di conversione (target: >1%)
+   - Tasso di disiscrizione (target: <0.5%)
+
+## Calendario Editoriale
+- **Gennaio**: Novità e trend del settore per il nuovo anno
+- **Aprile**: Promozione primaverile per progetti esterni
+- **Settembre**: Preparazione per progetti invernali
+- **Dicembre**: Auguri e retrospettiva dell'anno
+
+## Strumenti Consigliati
+- Brevo (ex Sendinblue) - Piano gratuito fino a 300 email/giorno
+- MailerLite - Piano gratuito fino a 1.000 contatti
+- Integrazione con CRM aziendale per tracciamento lead
+
+## Budget Stimato
+- €0/mese con strumenti gratuiti
+- €15-30/mese per funzionalità avanzate (opzionale)`,
+
+    social: `# Strategia Social Media per Alcafer & Gabifer
+
+## Piattaforme Prioritarie
+1. **LinkedIn** - Focus B2B e networking professionale
+2. **Instagram** - Showcase visivo dei progetti
+3. **YouTube** - Video tutorial e presentazioni tecniche
+
+## Strategia per Piattaforma
+
+### LinkedIn
+- **Contenuti**: Articoli tecnici, case study, aggiornamenti aziendali
+- **Frequenza**: 2-3 post settimanali
+- **Obiettivo**: Generare lead B2B e rafforzare la reputazione professionale
+- **Azioni specifiche**:
+  - Ottimizzare la pagina aziendale con parole chiave di settore
+  - Coinvolgere i dipendenti nella condivisione dei contenuti
+  - Partecipare attivamente a gruppi di settore
+
+### Instagram
+- **Contenuti**: Foto di progetti, time-lapse di lavorazioni, "dietro le quinte"
+- **Frequenza**: 3-4 post settimanali + stories quotidiane
+- **Obiettivo**: Mostrare la qualità delle lavorazioni e l'expertise tecnica
+- **Azioni specifiche**:
+  - Utilizzare hashtag di settore (#MetalWorking, #SteelFabrication)
+  - Creare highlight per categorie di progetti
+  - Condividere testimonianze visive dei clienti
+
+### YouTube
+- **Contenuti**: Video tutorial, presentazioni di macchinari, case study
+- **Frequenza**: 1-2 video mensili
+- **Obiettivo**: Posizionarsi come esperti del settore
+- **Azioni specifiche**:
+  - Creare serie tematiche (es. "Tecniche di Saldatura", "Materiali Innovativi")
+  - Ottimizzare i video per SEO con descrizioni dettagliate
+  - Promuovere i video sulle altre piattaforme social
+
+## Calendario Contenuti
+- **Lunedì**: Post tecnico su LinkedIn
+- **Mercoledì**: Showcase progetto su Instagram
+- **Venerdì**: Condivisione novità di settore su tutte le piattaforme
+
+## Metriche da Monitorare
+- Crescita follower (target: +5%/mese)
+- Engagement rate (target: >2%)
+- Traffico al sito web dai social (target: +10%/mese)
+- Lead generati (target: 5-10/mese)
+
+## Strumenti Consigliati
+- Canva - Per la creazione di grafiche (piano gratuito)
+- Later - Per la programmazione dei post (piano gratuito)
+- Google Analytics - Per il monitoraggio del traffico
+
+## Budget Stimato
+- €0/mese con strumenti gratuiti
+- €50-100/mese per sponsorizzazioni mirate (opzionale)`,
+
+    seo: `# Strategia SEO Locale per Alcafer & Gabifer
+
+## Obiettivi
+- Migliorare la visibilità nelle ricerche locali
+- Aumentare il traffico organico al sito web
+- Generare lead qualificati dalla zona di Pavia e provincia
+
+## Analisi Keyword
+### Keyword Primarie
+- lavorazione metalli pavia
+- carpenteria metallica lombardia
+- costruzioni in ferro pavia
+- lavorazione acciaio inox pavia
+
+### Keyword Secondarie
+- cancelli in ferro battuto
+- strutture metalliche su misura
+- saldatura acciaio certificata
+- taglio laser metalli lombardia
+
+## Ottimizzazioni On-Page
+1. **Pagine da Ottimizzare**
+   - Home page: focus su "lavorazione metalli pavia"
+   - Servizi: pagine dedicate per ogni tipo di lavorazione
+   - Portfolio: showcase progetti con descrizioni ottimizzate
+   - Contatti: CTA chiare e form di richiesta preventivo
+
+2. **Elementi da Ottimizzare**
+   - Meta title e description con keyword primarie
+   - Heading (H1, H2, H3) con keyword rilevanti
+   - URL strutturati e descrittivi
+   - Alt text per le immagini
+   - Schema markup per attività locale
+
+## Ottimizzazioni Tecniche
+- Migliorare velocità di caricamento (target: <3s)
+- Ottimizzare per mobile (design responsive)
+- Implementare SSL (https)
+- Creare sitemap XML
+- Risolvere eventuali errori di crawling
+
+## Strategia di Contenuti
+- Blog aziendale con articoli su:
+  - Guide tecniche sui materiali
+  - Case study di progetti realizzati
+  - FAQ sulle lavorazioni metalliche
+  - Novità del settore
+
+## Google My Business
+- Completare e verificare il profilo
+- Aggiungere foto di alta qualità dei progetti e dell'officina
+- Sollecitare recensioni positive dai clienti
+- Pubblicare post regolari con novità e offerte
+
+## Link Building Locale
+- Iscrizione a directory locali di qualità
+- Collaborazioni con associazioni di categoria
+- Partecipazione a eventi locali con copertura online
+- Testimonianze e menzioni da clienti locali
+
+## Monitoraggio e KPI
+- Posizionamento per keyword target (controllo mensile)
+- Traffico organico (target: +20% in 6 mesi)
+- Tasso di conversione da organico (target: >2%)
+- Visibilità locale su Google Maps
+
+## Strumenti Consigliati
+- Google Search Console (gratuito)
+- Google Analytics (gratuito)
+- Ubersuggest (piano gratuito)
+- PageSpeed Insights (gratuito)
+
+## Timeline
+- Mese 1-2: Audit e ottimizzazioni tecniche
+- Mese 2-3: Ottimizzazioni on-page e contenuti
+- Mese 3-6: Link building e ottimizzazione GMB
+- Mese 6+: Monitoraggio e ottimizzazione continua`
+  };
 
   const handleGenerateReport = () => {
     if (!reportType || !reportQuery.trim()) {
@@ -38,306 +223,78 @@ const Marketing: React.FC = () => {
   const downloadStrategy = (strategy: string) => {
     toast.success(`Strategia "${strategy}" scaricata come PDF`);
   };
-
-  const handleGenerateAIStrategy = () => {
-    if (!aiPrompt.trim() && !selectedTemplate) {
-      toast.error('Inserisci una descrizione o seleziona un template');
+  
+  const handleGenerateStrategy = () => {
+    if (strategyType === 'custom' && !customPrompt.trim()) {
+      toast.error('Inserisci una descrizione per la strategia personalizzata');
       return;
     }
-
-    setGeneratingStrategy(true);
-    setAiResponse(null);
     
-    // Simula generazione AI
+    setGeneratingStrategy(true);
+    
+    // Simula generazione con AI
     setTimeout(() => {
-      let response = '';
+      let strategy = '';
       
-      if (selectedTemplate === 'email_marketing') {
-        response = `# Strategia Email Marketing per Alcafer & Gabifer
+      if (strategyType === 'custom') {
+        // Genera una strategia personalizzata basata sul prompt
+        strategy = `# Strategia Personalizzata: ${customPrompt}
 
 ## Obiettivi
-- Aumentare la visibilità del brand nel settore metalmeccanico
-- Generare nuovi lead qualificati
-- Mantenere relazioni con clienti esistenti
-- Comunicare novità e promozioni
+- Aumentare la visibilità del brand Alcafer & Gabifer
+- Generare nuovi lead qualificati nel settore metalmeccanico
+- Migliorare la conversione dei contatti in clienti
+
+## Analisi della Situazione Attuale
+- Presenza online limitata ma con potenziale di crescita
+- Expertise tecnica elevata da comunicare efficacemente
+- Concorrenza locale presente ma non dominante
 
 ## Piano d'Azione
+1. **Fase 1: Analisi e Preparazione** (1-2 mesi)
+   - Analisi dettagliata del mercato target
+   - Definizione del posizionamento distintivo
+   - Preparazione degli asset di comunicazione
 
-### 1. Segmentazione Database
-- **Clienti attuali**: Suddivisi per volume d'acquisto e settore
-- **Clienti potenziali**: Categorizzati per settore e dimensione azienda
-- **Clienti inattivi**: Non hanno effettuato ordini negli ultimi 12 mesi
+2. **Fase 2: Implementazione** (2-4 mesi)
+   - Lancio delle iniziative di marketing selezionate
+   - Monitoraggio iniziale e aggiustamenti
+   - Formazione del personale coinvolto
 
-### 2. Tipi di Email da Implementare
-- **Newsletter mensile**: Novità del settore, aggiornamenti aziendali
-- **Email informative**: Nuovi servizi, aggiornamenti tecnologici
-- **Offerte speciali**: Promozioni stagionali, sconti su materiali specifici
-- **Follow-up post-preventivo**: Automatizzate 7 giorni dopo l'invio di un preventivo
-- **Email di riattivazione**: Per clienti inattivi da più di 6 mesi
+3. **Fase 3: Ottimizzazione** (4-6 mesi)
+   - Analisi dei risultati iniziali
+   - Ottimizzazione delle azioni più efficaci
+   - Abbandono delle iniziative meno performanti
 
-### 3. Contenuti Suggeriti
-- Case study di progetti realizzati
-- Aggiornamenti su nuovi macchinari o tecnologie
-- Trend del mercato metalmeccanico
-- Consigli tecnici e best practice
-- Testimonianze di clienti soddisfatti
+## Canali e Tattiche
+- **Online**: ${customPrompt.includes('online') || customPrompt.includes('digitale') ? 'Priorità alta' : 'Priorità media'}
+- **Offline**: ${customPrompt.includes('offline') || customPrompt.includes('tradizionale') ? 'Priorità alta' : 'Priorità media'}
+- **Networking**: ${customPrompt.includes('networking') || customPrompt.includes('relazioni') ? 'Priorità alta' : 'Priorità bassa'}
 
-### 4. Calendario Editoriale
-- **Settimana 1**: Newsletter mensile
-- **Settimana 2**: Email informativa tecnica
-- **Settimana 3**: Offerta speciale o promozione
-- **Settimana 4**: Case study o testimonianza cliente
-
-### 5. Metriche da Monitorare
-- Tasso di apertura (target: >25%)
-- Tasso di click (target: >3%)
-- Tasso di conversione (target: >1%)
-- Tasso di disiscrizione (target: <0.5%)
-
-## Strumenti Consigliati
-- Brevo (ex Sendinblue): Piattaforma completa con piano gratuito fino a 300 email/giorno
-- MailerLite: Interfaccia intuitiva, automazioni avanzate
-- HubSpot: CRM integrato per tracciare lead e conversioni
-
-## Tempistiche di Implementazione
-- Settimana 1-2: Setup piattaforma e importazione contatti
-- Settimana 3-4: Creazione template e prime campagne
-- Mese 2: Implementazione automazioni
-- Mese 3: Analisi risultati e ottimizzazione`;
-      } 
-      else if (selectedTemplate === 'social_media') {
-        response = `# Strategia Social Media per Alcafer & Gabifer
-
-## Piattaforme Prioritarie
-1. **LinkedIn** - Focus principale per B2B
-2. **Instagram** - Contenuti visivi di progetti e lavorazioni
-3. **YouTube** - Video tutorial e presentazioni tecniche
-
-## Strategia LinkedIn
-
-### Obiettivi
-- Posizionarsi come esperti nel settore metalmeccanico
-- Generare lead B2B qualificati
-- Networking con potenziali clienti e partner
-
-### Piano Editoriale
-- **Lunedì**: Aggiornamenti di settore, news rilevanti
-- **Mercoledì**: Showcase di progetti completati con dettagli tecnici
-- **Venerdì**: Contenuti educativi, tips & tricks, best practice
-
-### Contenuti Suggeriti
-- Case study dettagliati di progetti complessi
-- Articoli tecnici su materiali e lavorazioni
-- Post su innovazioni tecnologiche nel settore
-- Aggiornamenti su certificazioni e standard di qualità
-- Contenuti "behind the scenes" del processo produttivo
-
-## Strategia Instagram
-
-### Obiettivi
-- Mostrare la qualità delle lavorazioni
-- Umanizzare il brand
-- Attrarre talenti per potenziali assunzioni
-
-### Contenuti Suggeriti
-- Foto di alta qualità dei progetti completati
-- Video time-lapse delle lavorazioni
-- Stories dei macchinari in azione
-- Presentazione del team e della cultura aziendale
-- Reel con tecniche di lavorazione particolari
-
-### Hashtag Strategici
-#MetalworkingItaly #ItalianMetalcraft #CustomMetalwork #SteelFabrication #MetalworkingExcellence #MadeInItaly #IndustrialDesign
-
-## Strategia YouTube
-
-### Obiettivi
-- Educare potenziali clienti
-- Dimostrare competenza tecnica
-- Migliorare SEO e visibilità online
-
-### Contenuti Suggeriti
-- Tutorial su manutenzione di strutture metalliche
-- Video esplicativi su differenti tipi di materiali e loro applicazioni
-- Tour virtuali dell'officina
-- Interviste con esperti del settore
-- Timelapse di progetti complessi dalla progettazione alla realizzazione
-
-## Calendario di Pubblicazione
-- LinkedIn: 3 post a settimana
-- Instagram: 2 post a settimana + 3-5 stories
-- YouTube: 1 video al mese
-
-## Metriche da Monitorare
-- Engagement rate (commenti, condivisioni, like)
-- Crescita follower
-- Traffico al sito web dai social
-- Lead generati
-- Tasso di conversione`;
-      } 
-      else if (selectedTemplate === 'seo_local') {
-        response = `# Strategia SEO Locale per Alcafer & Gabifer
-
-## Analisi Iniziale
-
-### Keywords Target
-- **Primarie**: carpenteria metallica lombardia, lavorazione metalli pavia, costruzioni in ferro lombardia
-- **Secondarie**: cancelli in ferro battuto, strutture metalliche su misura, lavorazioni acciaio inox
-- **Long-tail**: preventivo carpenteria metallica pavia, realizzazione strutture in ferro per capannoni lombardia
-
-### Competitor Locali
-- Analisi dei primi 5 competitor nei risultati di ricerca locali
-- Valutazione dei loro punti di forza e debolezza SEO
-- Identificazione opportunità di differenziazione
-
-## Ottimizzazione Google My Business
-
-### Azioni Immediate
-1. Completare al 100% il profilo GMB con:
-   - Orari precisi e aggiornati
-   - Categoria principale e secondarie accurate
-   - Descrizione ottimizzata con keywords locali
-   - Servizi dettagliati con prezzi indicativi
-   - Attributi rilevanti (es. preventivi gratuiti, consegna)
-
-2. Piano Foto:
-   - Caricamento 20+ foto professionali dell'officina
-   - Foto dei macchinari in azione
-   - Foto del team al lavoro
-   - Esempi di progetti completati con didascalie ottimizzate
-
-3. Recensioni:
-   - Implementare sistema di richiesta recensioni post-lavoro
-   - Rispondere a tutte le recensioni entro 24 ore
-   - Obiettivo: 5 nuove recensioni positive al mese
-
-## Ottimizzazione Sito Web
-
-### Ottimizzazioni On-Page
-1. Creazione pagine localizzate:
-   - Landing page per ogni comune principale servito
-   - Contenuti unici con riferimenti locali specifici
-   - Ottimizzazione meta tag con keywords locali
-
-2. Contenuti tecnici:
-   - Blog con articoli su progetti locali realizzati
-   - Guide tecniche per diversi settori (edilizia, arredamento, etc.)
-   - FAQ ottimizzate per featured snippets
-
-3. Ottimizzazioni tecniche:
-   - Schema markup locale (LocalBusiness)
-   - Ottimizzazione velocità caricamento mobile
-   - Implementazione breadcrumbs con schema markup
-
-## Link Building Locale
-
-### Strategie
-1. Directory locali:
-   - Registrazione in 20+ directory di qualità
-   - Associazioni di categoria locali
-   - Camera di Commercio e portali istituzionali
-
-2. Collaborazioni locali:
-   - Articoli guest su blog di settore
-   - Interviste con media locali
-   - Sponsorizzazioni eventi locali con backlink
-
-3. Creazione contenuti linkable:
-   - Guida completa alle normative locali per strutture metalliche
-   - Infografica sui benefici delle strutture in acciaio vs altri materiali
-   - Case study dettagliati di progetti locali significativi
-
-## Monitoraggio e KPI
-
-### Metriche da Monitorare
-- Posizionamento keywords locali (settimanale)
-- Traffico organico da località target (mensile)
-- Conversioni da ricerche locali (mensile)
-- Impressioni e azioni su Google My Business (settimanale)
-- Backlink da domini locali (mensile)
-
-### Obiettivi a 6 Mesi
-- Top 3 per 5 keywords primarie locali
-- Aumento 50% traffico organico locale
-- 30+ recensioni Google con media 4.8+
-- 15+ backlink da domini locali di qualità`;
-      }
-      else {
-        // Genera risposta basata sul prompt dell'utente
-        const baseResponse = `# Strategia di Marketing Personalizzata: ${aiPrompt}
-
-## Analisi Situazione Attuale
-
-### Punti di Forza
-- Esperienza consolidata nel settore metalmeccanico
-- Capacità di realizzare lavorazioni complesse e personalizzate
-- Macchinari all'avanguardia per lavorazioni di precisione
-- Doppia struttura aziendale (Alcafer e Gabifer) che offre flessibilità
-
-### Opportunità di Mercato
-- Crescente domanda di componenti metallici personalizzati
-- Trend positivo nel settore dell'edilizia sostenibile
-- Possibilità di espansione in nicchie specializzate
-- Digitalizzazione del settore ancora in fase iniziale
-
-## Piano Strategico
-
-### Obiettivi
-- Aumentare la visibilità del brand nel territorio lombardo
-- Incrementare il portfolio clienti del 20% nei prossimi 12 mesi
-- Migliorare la percezione di qualità e affidabilità
-- Ottimizzare il processo di acquisizione lead
-
-### Azioni Concrete
-1. **Presenza Online Migliorata**
-   - Ottimizzazione SEO per keywords locali e di settore
-   - Creazione contenuti tecnici di valore per il blog aziendale
-   - Showcase progetti completati con dettagli tecnici e testimonianze
-
-2. **Campagne Marketing Mirate**
-   - Campagne Google Ads geolocalizzate (raggio 100km)
-   - Remarketing per visitatori del sito che non hanno completato il form
-   - LinkedIn Ads per decision maker B2B nel settore industriale
-
-3. **Networking e Partnership**
-   - Partecipazione a fiere di settore locali (MECSPE, Made in Steel)
-   - Collaborazioni con studi di architettura e progettazione
-   - Membership in associazioni di categoria con visibilità
-
-## Implementazione e Timeline
-
-### Fase 1: Preparazione (Mese 1-2)
-- Audit completo presenza online
-- Definizione buyer personas dettagliate
-- Setup strumenti di analisi e tracking
-
-### Fase 2: Lancio (Mese 3-4)
-- Implementazione ottimizzazioni sito web
-- Avvio prime campagne pubblicitarie
-- Creazione materiale marketing
-
-### Fase 3: Ottimizzazione (Mese 5-12)
-- Analisi risultati e aggiustamenti strategia
-- Scaling campagne performanti
-- Implementazione programma referral clienti
+## Budget Consigliato
+- Investimento iniziale: €1.000-2.000
+- Costo mensile: €300-500
+- ROI previsto: 3-5x nell'arco di 12 mesi
 
 ## Metriche di Successo
-- Incremento traffico qualificato al sito: target +40%
-- Tasso conversione form contatto: target 3.5%
-- Costo acquisizione cliente: target -15%
-- ROI campagne marketing: target 300%`;
+- Nuovi contatti qualificati: +20% in 6 mesi
+- Tasso di conversione: miglioramento del 15%
+- Valore medio commesse: +10%
 
-        response = baseResponse;
-      }
-      
-      setAiResponse(response);
-      setGeneratingStrategy(false);
-      
-      if (selectedTemplate) {
-        toast.success(`Strategia ${selectedTemplate === 'email_marketing' ? 'Email Marketing' : selectedTemplate === 'social_media' ? 'Social Media' : 'SEO Locale'} generata con successo!`);
+## Prossimi Passi
+1. Approvazione della strategia
+2. Allocazione del budget
+3. Definizione del calendario esecutivo
+4. Assegnazione delle responsabilità
+5. Implementazione e monitoraggio`;
       } else {
-        toast.success('Strategia personalizzata generata con successo!');
+        // Usa uno dei template predefiniti
+        strategy = strategyTemplates[strategyType];
       }
+      
+      setGeneratedStrategy(strategy);
+      setGeneratingStrategy(false);
+      toast.success('Strategia generata con successo!');
     }, 3000);
   };
 
@@ -351,10 +308,10 @@ const Marketing: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 mb-6 overflow-x-auto">
+      <div className="flex border-b border-gray-200 mb-6">
         <button
           onClick={() => setActiveTab('strategie')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'strategie' 
               ? 'border-blue-600 text-blue-600' 
               : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -367,7 +324,7 @@ const Marketing: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('clienti')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'clienti' 
               ? 'border-green-600 text-green-600' 
               : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -380,7 +337,7 @@ const Marketing: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('report')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'report' 
               ? 'border-purple-600 text-purple-600' 
               : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -391,24 +348,193 @@ const Marketing: React.FC = () => {
             Report Affidabilità
           </div>
         </button>
-        <button
-          onClick={() => setActiveTab('aiGenerator')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'aiGenerator' 
-              ? 'border-amber-600 text-amber-600' 
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          <div className="flex items-center gap-1">
-            <Sparkles className="h-4 w-4" />
-            Generatore AI
-          </div>
-        </button>
       </div>
 
       {/* Strategie Marketing */}
       {activeTab === 'strategie' && (
         <div className="space-y-6">
+          {/* AI Strategy Generator */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl shadow-sm p-6"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-purple-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Generatore Strategie AI</h3>
+              </div>
+              <HelpTooltip content="Genera strategie di marketing personalizzate con l'intelligenza artificiale" />
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tipo di Strategia
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setStrategyType('email')}
+                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                        strategyType === 'email'
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <Mail className="h-4 w-4" />
+                      Email Marketing
+                    </button>
+                    <button
+                      onClick={() => setStrategyType('social')}
+                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                        strategyType === 'social'
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <Share2 className="h-4 w-4" />
+                      Social Media
+                    </button>
+                    <button
+                      onClick={() => setStrategyType('seo')}
+                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                        strategyType === 'seo'
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <Globe className="h-4 w-4" />
+                      SEO Locale
+                    </button>
+                    <button
+                      onClick={() => setStrategyType('custom')}
+                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                        strategyType === 'custom'
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <Zap className="h-4 w-4" />
+                      Personalizzata
+                    </button>
+                  </div>
+                </div>
+                
+                {strategyType === 'custom' && (
+                  <div>
+                    <label htmlFor="customPrompt" className="block text-sm font-medium text-gray-700 mb-2">
+                      Descrivi la Strategia Desiderata
+                    </label>
+                    <textarea
+                      id="customPrompt"
+                      value={customPrompt}
+                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      placeholder="Es. Voglio una strategia per aumentare la visibilità online nel settore metalmeccanico, con focus su clienti B2B in Lombardia..."
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                      rows={5}
+                    />
+                  </div>
+                )}
+                
+                {strategyType !== 'custom' && (
+                  <div className="bg-purple-50 p-4 rounded-lg">
+                    <h4 className="text-sm font-medium text-purple-800 mb-2">
+                      {strategyType === 'email' && 'Strategia Email Marketing'}
+                      {strategyType === 'social' && 'Strategia Social Media'}
+                      {strategyType === 'seo' && 'Strategia SEO Locale'}
+                    </h4>
+                    <p className="text-sm text-purple-700">
+                      {strategyType === 'email' && 'Genera una strategia completa di email marketing per acquisire e fidelizzare clienti nel settore metalmeccanico.'}
+                      {strategyType === 'social' && 'Crea una strategia social media efficace per mostrare i progetti e l\'expertise tecnica dell\'azienda.'}
+                      {strategyType === 'seo' && 'Ottimizza la presenza online locale per essere trovati dai clienti nella zona di Pavia e provincia.'}
+                    </p>
+                  </div>
+                )}
+                
+                <button
+                  onClick={handleGenerateStrategy}
+                  disabled={generatingStrategy || (strategyType === 'custom' && !customPrompt.trim())}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-medium transition-colors disabled:bg-purple-300 flex items-center justify-center gap-2"
+                >
+                  {generatingStrategy ? (
+                    <>
+                      <Loader className="h-5 w-5 animate-spin" />
+                      Generazione in corso...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-5 w-5" />
+                      Genera Strategia con AI
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              <div>
+                {generatedStrategy ? (
+                  <div className="bg-white border border-purple-200 rounded-lg p-4 h-full overflow-y-auto max-h-[500px]">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-md font-semibold text-gray-900">Strategia Generata</h4>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setGeneratedStrategy(null)}
+                          className="text-xs text-gray-600 hover:text-gray-800"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            const blob = new Blob([generatedStrategy], { type: 'text/plain' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `strategia-${strategyType}-alcafer.md`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                            toast.success('Strategia scaricata come file Markdown');
+                          }}
+                          className="text-xs text-purple-600 hover:text-purple-800"
+                        >
+                          <Download className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="prose prose-sm max-w-none">
+                      <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono bg-gray-50 p-4 rounded-lg">
+                        {generatedStrategy}
+                      </pre>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 rounded-lg p-6 h-full flex flex-col items-center justify-center text-center">
+                    <Sparkles className="h-12 w-12 text-purple-300 mb-4" />
+                    <h4 className="text-lg font-medium text-gray-700 mb-2">Generatore Strategie AI</h4>
+                    <p className="text-sm text-gray-500 mb-4">
+                      Seleziona un tipo di strategia e clicca su "Genera Strategia" per creare un piano di marketing personalizzato con l'intelligenza artificiale.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 w-full max-w-xs">
+                      <div className="bg-white p-2 rounded-lg border border-gray-200">
+                        <p className="text-xs font-medium text-gray-700">Completamente gratuito</p>
+                      </div>
+                      <div className="bg-white p-2 rounded-lg border border-gray-200">
+                        <p className="text-xs font-medium text-gray-700">Pronto all'uso</p>
+                      </div>
+                      <div className="bg-white p-2 rounded-lg border border-gray-200">
+                        <p className="text-xs font-medium text-gray-700">Personalizzabile</p>
+                      </div>
+                      <div className="bg-white p-2 rounded-lg border border-gray-200">
+                        <p className="text-xs font-medium text-gray-700">Esportabile</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -1212,224 +1338,6 @@ const Marketing: React.FC = () => {
                     <li>• Sviluppo referenze verticali per effetto domino</li>
                   </ul>
                 </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
-
-      {/* AI Generator */}
-      {activeTab === 'aiGenerator' && (
-        <div className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-sm p-6"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-amber-600" />
-                <h3 className="font-semibold text-gray-900">Generatore Strategie AI</h3>
-              </div>
-              <HelpTooltip content="Genera strategie di marketing personalizzate con l'intelligenza artificiale" />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div className="p-4 bg-amber-50 rounded-lg">
-                  <h4 className="text-sm font-medium text-amber-800 mb-3">Genera Strategia Personalizzata</h4>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-medium text-amber-700 mb-1">
-                        Template Predefiniti
-                      </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <button
-                          onClick={() => setSelectedTemplate('email_marketing')}
-                          className={`py-2 px-3 rounded-lg text-xs font-medium transition-colors ${
-                            selectedTemplate === 'email_marketing'
-                              ? 'bg-amber-600 text-white'
-                              : 'bg-white text-amber-700 border border-amber-200 hover:bg-amber-50'
-                          }`}
-                        >
-                          Email Marketing
-                        </button>
-                        <button
-                          onClick={() => setSelectedTemplate('social_media')}
-                          className={`py-2 px-3 rounded-lg text-xs font-medium transition-colors ${
-                            selectedTemplate === 'social_media'
-                              ? 'bg-amber-600 text-white'
-                              : 'bg-white text-amber-700 border border-amber-200 hover:bg-amber-50'
-                          }`}
-                        >
-                          Social Media
-                        </button>
-                        <button
-                          onClick={() => setSelectedTemplate('seo_local')}
-                          className={`py-2 px-3 rounded-lg text-xs font-medium transition-colors ${
-                            selectedTemplate === 'seo_local'
-                              ? 'bg-amber-600 text-white'
-                              : 'bg-white text-amber-700 border border-amber-200 hover:bg-amber-50'
-                          }`}
-                        >
-                          SEO Locale
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="aiPrompt" className="block text-xs font-medium text-amber-700 mb-1">
-                        Descrivi la tua esigenza
-                      </label>
-                      <textarea
-                        id="aiPrompt"
-                        value={aiPrompt}
-                        onChange={(e) => setAiPrompt(e.target.value)}
-                        placeholder="Es. Voglio aumentare la visibilità online dell'azienda nel settore metalmeccanico..."
-                        className="w-full px-3 py-2 text-sm border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                        rows={4}
-                      />
-                    </div>
-                    
-                    <button
-                      onClick={handleGenerateAIStrategy}
-                      disabled={generatingStrategy}
-                      className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
-                    >
-                      {generatingStrategy ? (
-                        <>
-                          <LoadingSpinner size="sm" color="text-white" />
-                          Generazione in corso...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-4 w-4" />
-                          Genera Strategia
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <h4 className="text-sm font-medium text-blue-800 mb-2">Suggerimenti</h4>
-                  <ul className="space-y-2 text-sm text-blue-700">
-                    <li className="flex items-start gap-2">
-                      <Lightbulb className="h-4 w-4 mt-0.5 text-blue-600" />
-                      <span>Specifica il settore target (es. automotive, edilizia)</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Lightbulb className="h-4 w-4 mt-0.5 text-blue-600" />
-                      <span>Indica il budget disponibile per il marketing</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Lightbulb className="h-4 w-4 mt-0.5 text-blue-600" />
-                      <span>Menziona gli obiettivi specifici (es. +20% clienti)</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Lightbulb className="h-4 w-4 mt-0.5 text-blue-600" />
-                      <span>Descrivi i punti di forza dell'azienda</span>
-                    </li>
-                  </ul>
-                </div>
-                
-                <div className="p-4 bg-green-50 rounded-lg">
-                  <h4 className="text-sm font-medium text-green-800 mb-2">Cosa Include la Strategia</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="flex items-center gap-2 p-2 bg-white rounded-lg">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-xs text-green-700">Analisi situazione</span>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 bg-white rounded-lg">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-xs text-green-700">Obiettivi chiari</span>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 bg-white rounded-lg">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-xs text-green-700">Azioni concrete</span>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 bg-white rounded-lg">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-xs text-green-700">Timeline</span>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 bg-white rounded-lg">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-xs text-green-700">Budget indicativo</span>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 bg-white rounded-lg">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-xs text-green-700">KPI misurabili</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                {generatingStrategy ? (
-                  <div className="h-full flex items-center justify-center p-8 bg-gray-50 rounded-lg">
-                    <div className="text-center">
-                      <LoadingSpinner size="lg" color="text-amber-600" />
-                      <p className="mt-4 text-gray-600">Generazione strategia in corso...</p>
-                      <p className="text-sm text-gray-500 mt-2">L'AI sta analizzando i dati e creando una strategia personalizzata</p>
-                    </div>
-                  </div>
-                ) : aiResponse ? (
-                  <div className="bg-white border border-gray-200 rounded-lg p-4 h-full overflow-y-auto max-h-[600px]">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-amber-600" />
-                        <h4 className="font-medium text-gray-900">Strategia Generata</h4>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(aiResponse);
-                            toast.success('Strategia copiata negli appunti');
-                          }}
-                          className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
-                          title="Copia negli appunti"
-                        >
-                          <PenTool className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            const blob = new Blob([aiResponse], { type: 'text/plain' });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'strategia-marketing.md';
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(url);
-                            toast.success('Strategia scaricata come file');
-                          }}
-                          className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
-                          title="Scarica come file"
-                        >
-                          <Download className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="prose prose-sm max-w-none">
-                      <pre className="whitespace-pre-wrap text-sm text-gray-800 font-sans">{aiResponse}</pre>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="h-full flex items-center justify-center p-8 bg-gray-50 rounded-lg">
-                    <div className="text-center max-w-md">
-                      <Sparkles className="h-12 w-12 text-amber-500 mx-auto mb-4" />
-                      <h4 className="text-lg font-medium text-gray-900 mb-2">Generatore AI di Strategie</h4>
-                      <p className="text-gray-600 mb-4">
-                        Utilizza l'intelligenza artificiale per creare strategie di marketing personalizzate per la tua azienda metalmeccanica.
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Seleziona un template predefinito o descrivi le tue esigenze specifiche per ottenere una strategia su misura.
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </motion.div>
