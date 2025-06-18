@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, Users, FileText, Briefcase, Settings, 
   Menu, X, LogOut, HelpCircle, ChevronDown, Calculator,
   TrendingUp, PieChart, Receipt, Wrench, UserCheck, Building2,
-  Package, Truck, UserCog, Droplet, Flame
+  Package, Truck, UserCog, Droplet, Flame, Target
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { usePermissions } from '../../hooks/usePermissions';
+import AddToHomeScreen from '../common/AddToHomeScreen';
 import toast from 'react-hot-toast';
 
 interface LayoutProps {
@@ -21,6 +22,25 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [expandedSections, setExpandedSections] = useState<string[]>(['main']);
   const { userProfile, switchUser } = useAuth();
   const permissions = usePermissions();
+  const [activeUsers, setActiveUsers] = useState<string[]>(['alessandro']);
+  const [showAddToHome, setShowAddToHome] = useState(true);
+
+  useEffect(() => {
+    // Simula altri utenti attivi
+    const interval = setInterval(() => {
+      // Aggiunge o rimuove casualmente utenti attivi per simulare accessi multipli
+      const randomUser = Math.random() > 0.5 ? 'gabriel' : 'hanna';
+      setActiveUsers(prev => {
+        if (prev.includes(randomUser)) {
+          return prev.filter(u => u !== randomUser);
+        } else {
+          return [...prev, randomUser];
+        }
+      });
+    }, 30000); // Cambia ogni 30 secondi
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogout = async () => {
     toast.success('Logout effettuato con successo');
@@ -57,9 +77,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       section: 'costi',
       title: 'Costi e Materiali',
       items: [
-        { name: 'Materiali Metallici', href: '/materiali-metallici', icon: Package, show: permissions.canModifyCostiMateriali },
+        { name: 'Materiali Metallici', href: '/materiali-metallici', icon: Package, show: true },
         { name: 'Materiali Vari', href: '/materiali-vari', icon: Settings, show: permissions.canModifyCostiMateriali },
-        { name: 'Leasing Strumentali', href: '/leasing', icon: Wrench, show: permissions.canModifyLeasing },
+        { name: 'Leasing Strumentali', href: '/leasing', icon: Wrench, show: true },
         { name: 'Manovalanza', href: '/manovalanza', icon: UserCheck, show: true },
         { name: 'Costi Utenze', href: '/costi-utenze', icon: Flame, show: permissions.canModifyUtenze },
       ]
@@ -72,6 +92,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'Dividendi', href: '/finanziari/dividendi', icon: PieChart, show: permissions.canViewFinancials },
         { name: 'Tasse e IVA Alcafer', href: '/finanziari/tasse-alcafer', icon: Receipt, show: permissions.canModifyTaxes },
         { name: 'Tasse e IVA Gabifer', href: '/finanziari/tasse-gabifer', icon: Receipt, show: permissions.canModifyTaxes },
+      ]
+    },
+    {
+      section: 'marketing',
+      title: 'Marketing',
+      items: [
+        { name: 'Strategie Marketing', href: '/marketing', icon: Target, show: true },
       ]
     },
     {
@@ -152,6 +179,28 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </nav>
 
       <div className="border-t border-gray-200 p-4">
+        {/* Utenti attivi */}
+        <div className="mb-3">
+          <p className="text-xs text-gray-500 mb-2">Utenti online:</p>
+          <div className="flex -space-x-2">
+            {activeUsers.includes('alessandro') && (
+              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center border-2 border-white" title="Alessandro">
+                <span className="text-xs font-bold text-red-800">A</span>
+              </div>
+            )}
+            {activeUsers.includes('gabriel') && (
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center border-2 border-white" title="Gabriel">
+                <span className="text-xs font-bold text-blue-800">G</span>
+              </div>
+            )}
+            {activeUsers.includes('hanna') && (
+              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center border-2 border-white" title="Hanna">
+                <span className="text-xs font-bold text-green-800">H</span>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="flex items-center gap-3 mb-3">
           <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
             <span className="text-white text-sm font-bold">
@@ -265,6 +314,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </main>
       </div>
+
+      {/* Add to Home Screen Prompt */}
+      {showAddToHome && (
+        <AddToHomeScreen onClose={() => setShowAddToHome(false)} />
+      )}
     </div>
   );
 };

@@ -6,6 +6,7 @@ import { LeasingStrumentale } from '../types/database';
 import { usePermissions } from '../hooks/usePermissions';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import HelpTooltip from '../components/common/HelpTooltip';
+import SpotifyPlayer from '../components/common/SpotifyPlayer';
 import toast from 'react-hot-toast';
 
 const LeasingStrumentali: React.FC = () => {
@@ -22,8 +23,9 @@ const LeasingStrumentali: React.FC = () => {
     consumo_kw: 0
   });
   const [showAddForm, setShowAddForm] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [showSpotify, setShowSpotify] = useState(false);
   const permissions = usePermissions();
 
   // Elenco di strumenti predefiniti
@@ -49,9 +51,19 @@ const LeasingStrumentali: React.FC = () => {
     fetchLeasingStrumentali();
     
     // Inizializza l'elemento audio
-    const audio = new Audio('https://soundcloud.com/relaxdaily/relaxing-music-calm-studying?utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing');
+    const audio = new Audio('https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0c6ff1bab.mp3?filename=relaxing-mountains-rivers-streams-running-water-18178.mp3');
     audio.loop = true;
     setAudioElement(audio);
+    
+    // Avvia automaticamente la musica
+    audio.play().catch(e => {
+      console.error('Errore nella riproduzione audio:', e);
+      toast.error('Impossibile riprodurre la musica automaticamente. Clicca sul pulsante per attivarla.');
+    });
+    setIsPlaying(true);
+    
+    // Mostra suggerimento per aggiungere alla home screen
+    showAddToHomeScreenPrompt();
     
     return () => {
       // Pulisci l'audio quando il componente viene smontato
@@ -61,6 +73,31 @@ const LeasingStrumentali: React.FC = () => {
       }
     };
   }, []);
+
+  const showAddToHomeScreenPrompt = () => {
+    // Rileva il sistema operativo
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      
+      let message = '';
+      
+      if (isIOS) {
+        message = 'Per aggiungere questa app alla tua home screen: tocca l\'icona di condivisione (📤) e poi "Aggiungi a Home"';
+      } else if (isAndroid) {
+        message = 'Per aggiungere questa app alla tua home screen: tocca i tre puntini (⋮) e poi "Aggiungi a schermata Home"';
+      }
+      
+      if (message) {
+        toast(message, {
+          icon: '📱',
+          duration: 6000,
+        });
+      }
+    }
+  };
 
   const toggleMusic = () => {
     if (audioElement) {
@@ -85,10 +122,15 @@ const LeasingStrumentali: React.FC = () => {
 
       if (error) throw error;
       
-      // Se non ci sono dati, mostra messaggio invece di inizializzare automaticamente
+      // Se non ci sono dati, inizializza automaticamente
       if (!data || data.length === 0) {
-        console.log('Nessun strumento trovato. Usa il pulsante "Aggiungi Strumento" per iniziare.');
-        setLeasingStrumentali([]);
+        await initializeStrumentiPredefiniti();
+        const { data: initialData } = await supabase
+          .from('leasing_strumentali')
+          .select('*')
+          .order('nome_strumento');
+        
+        setLeasingStrumentali(initialData || []);
       } else {
         setLeasingStrumentali(data);
       }
@@ -122,7 +164,6 @@ const LeasingStrumentali: React.FC = () => {
       }
       
       toast.success('Strumenti predefiniti inizializzati');
-      fetchLeasingStrumentali();
     } catch (error) {
       console.error('Errore nell\'inizializzazione degli strumenti:', error);
       toast.error('Errore nell\'inizializzazione degli strumenti');
@@ -261,6 +302,13 @@ const LeasingStrumentali: React.FC = () => {
             <Music className="h-4 w-4" />
             {isPlaying ? 'Ferma Musica' : 'Musica Rilassante'}
           </button>
+          <button
+            onClick={() => setShowSpotify(!showSpotify)}
+            className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+          >
+            <Music className="h-4 w-4" />
+            Spotify
+          </button>
           {leasingStrumentali.length === 0 && (
             <button
               onClick={initializeStrumentiPredefiniti}
@@ -279,6 +327,19 @@ const LeasingStrumentali: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Spotify Player */}
+      <AnimatePresence>
+        {showSpotify && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+          >
+            <SpotifyPlayer />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Form Aggiungi Strumento */}
       <AnimatePresence>

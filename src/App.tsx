@@ -15,6 +15,7 @@ import Manovalanza from './pages/Manovalanza';
 import CostiUtenze from './pages/CostiUtenze';
 import Fornitori from './pages/Fornitori';
 import Utenti from './pages/Utenti';
+import Marketing from './pages/Marketing';
 import FinanziariInfo from './pages/finanziari/FinanziariInfo';
 import Dividendi from './pages/finanziari/Dividendi';
 import TasseAlcafer from './pages/finanziari/TasseAlcafer';
@@ -42,6 +43,17 @@ function App() {
     };
     
     checkConnection();
+    
+    // Registra il service worker per PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js').then(registration => {
+          console.log('ServiceWorker registrato con successo:', registration.scope);
+        }).catch(error => {
+          console.log('Registrazione ServiceWorker fallita:', error);
+        });
+      });
+    }
   }, []);
 
   if (loading) {
@@ -110,6 +122,7 @@ function App() {
             <Route path="/costi-utenze" element={<CostiUtenze />} />
             <Route path="/fornitori" element={<Fornitori />} />
             <Route path="/utenti" element={<Utenti />} />
+            <Route path="/marketing" element={<Marketing />} />
             <Route path="/finanziari/info" element={<FinanziariInfo />} />
             <Route path="/finanziari/dividendi" element={<Dividendi />} />
             <Route path="/finanziari/tasse-alcafer" element={<TasseAlcafer />} />

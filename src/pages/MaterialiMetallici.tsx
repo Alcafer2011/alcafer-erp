@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, Package, TrendingUp, RefreshCw, Music } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, TrendingUp, RefreshCw, Music, Calculator } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase, getCurrentUser } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { MaterialeMetallico, PrezzoMateriale } from '../types/database';
 import { usePermissions } from '../hooks/usePermissions';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import HelpTooltip from '../components/common/HelpTooltip';
+import SpotifyPlayer from '../components/common/SpotifyPlayer';
+import MaterialCalculator from '../components/common/MaterialCalculator';
 import toast from 'react-hot-toast';
 
 const MaterialiMetallici: React.FC = () => {
@@ -13,8 +15,19 @@ const MaterialiMetallici: React.FC = () => {
   const [prezziMateriali, setPrezziMateriali] = useState<PrezzoMateriale[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingPrices, setUpdatingPrices] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [showSpotify, setShowSpotify] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newMateriale, setNewMateriale] = useState({
+    tipo_materiale: '',
+    kg_totali: 0,
+    prezzo_kg: 0,
+    numero_ddt: '',
+    data_trasporto: new Date().toISOString().split('T')[0],
+    fornitore: ''
+  });
   const permissions = usePermissions();
 
   // Prezzi realistici per Lombardia, Piemonte, Emilia Romagna (2024)
@@ -35,13 +48,35 @@ const MaterialiMetallici: React.FC = () => {
     { tipo: 'Alluminio 6060', prezzo: 2.78, regione: 'Emilia Romagna' }
   ];
 
+  // Dati per il calcolo del peso
+  const pesoMateriali = {
+    'Ferro S235 grezzo': { densita: 7.85, lunghezzaBarra: 6 }, // kg/dm³, metri
+    'Acciaio inox AISI 304': { densita: 8.0, lunghezzaBarra: 6 },
+    'Alluminio 6060': { densita: 2.7, lunghezzaBarra: 6 },
+    'Acciaio al carbonio': { densita: 7.85, lunghezzaBarra: 6 },
+    'Ferro zincato': { densita: 7.85, lunghezzaBarra: 6 },
+    'Acciaio corten': { densita: 7.85, lunghezzaBarra: 6 },
+    'Alluminio anodizzato': { densita: 2.7, lunghezzaBarra: 6 },
+    'Acciaio inox AISI 316': { densita: 8.0, lunghezzaBarra: 6 }
+  };
+
   useEffect(() => {
     fetchData();
     
     // Inizializza l'elemento audio
-    const audio = new Audio('https://soundcloud.com/relaxdaily/relaxing-music-calm-studying?utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing');
+    const audio = new Audio('https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0c6ff1bab.mp3?filename=relaxing-mountains-rivers-streams-running-water-18178.mp3');
     audio.loop = true;
     setAudioElement(audio);
+    
+    // Avvia automaticamente la musica
+    audio.play().catch(e => {
+      console.error('Errore nella riproduzione audio:', e);
+      toast.error('Impossibile riprodurre la musica automaticamente. Clicca sul pulsante per attivarla.');
+    });
+    setIsPlaying(true);
+    
+    // Mostra suggerimento per aggiungere alla home screen
+    showAddToHomeScreenPrompt();
     
     return () => {
       // Pulisci l'audio quando il componente viene smontato
@@ -51,6 +86,31 @@ const MaterialiMetallici: React.FC = () => {
       }
     };
   }, []);
+
+  const showAddToHomeScreenPrompt = () => {
+    // Rileva il sistema operativo
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      
+      let message = '';
+      
+      if (isIOS) {
+        message = 'Per aggiungere questa app alla tua home screen: tocca l\'icona di condivisione (📤) e poi "Aggiungi a Home"';
+      } else if (isAndroid) {
+        message = 'Per aggiungere questa app alla tua home screen: tocca i tre puntini (⋮) e poi "Aggiungi a schermata Home"';
+      }
+      
+      if (message) {
+        toast(message, {
+          icon: '📱',
+          duration: 6000,
+        });
+      }
+    }
+  };
 
   const toggleMusic = () => {
     if (audioElement) {
@@ -92,7 +152,7 @@ const MaterialiMetallici: React.FC = () => {
       }
 
       // Se non ci sono prezzi e l'utente ha i permessi, prova a inizializzare
-      if ((!prezziResult.data || prezziResult.data.length === 0) && permissions.canModifyCostiMateriali) {
+      if ((!prezziResult.data || prezziResult.data.length === 0)) {
         await initializePrezziRegionali();
         const { data } = await supabase.from('prezzi_materiali').select('*').order('tipo_materiale');
         setPrezziMateriali(data || []);
@@ -226,6 +286,93 @@ const MaterialiMetallici: React.FC = () => {
     }
   };
 
+  const handleAddMateriale = async () => {
+    if (!newMateriale.tipo_materiale) {
+      toast.error('Il tipo di materiale è obbligatorio');
+      return;
+    }
+
+    if (!newMateriale.numero_ddt) {
+      toast.error('Il numero DDT è obbligatorio');
+      return;
+    }
+
+    try {
+      // Trova il prezzo del materiale selezionato
+      const prezzoMateriale = prezziMateriali.find(p => p.tipo_materiale === newMateriale.tipo_materiale);
+      
+      if (!prezzoMateriale) {
+        toast.error('Prezzo del materiale non trovato');
+        return;
+      }
+      
+      const importoTotale = newMateriale.kg_totali * prezzoMateriale.prezzo_kg;
+      
+      const { error } = await supabase
+        .from('materiali_metallici')
+        .insert([{
+          tipo_materiale: newMateriale.tipo_materiale,
+          kg_totali: newMateriale.kg_totali,
+          prezzo_kg: prezzoMateriale.prezzo_kg,
+          importo_totale: importoTotale,
+          numero_ddt: newMateriale.numero_ddt,
+          data_trasporto: newMateriale.data_trasporto,
+          fornitore: newMateriale.fornitore || null
+        }]);
+
+      if (error) throw error;
+      
+      toast.success('Materiale aggiunto con successo');
+      setNewMateriale({
+        tipo_materiale: '',
+        kg_totali: 0,
+        prezzo_kg: 0,
+        numero_ddt: '',
+        data_trasporto: new Date().toISOString().split('T')[0],
+        fornitore: ''
+      });
+      setShowAddForm(false);
+      fetchData();
+    } catch (error) {
+      console.error('Errore nell\'aggiunta del materiale:', error);
+      toast.error('Errore nell\'aggiunta del materiale');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Sei sicuro di voler eliminare questo materiale?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('materiali_metallici')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      toast.success('Materiale eliminato con successo');
+      fetchData();
+    } catch (error) {
+      console.error('Errore nell\'eliminazione del materiale:', error);
+      toast.error('Errore nell\'eliminazione');
+    }
+  };
+
+  const calculateWeight = (tipo: string, diametro: number, lunghezza: number, quantita: number) => {
+    const materiale = pesoMateriali[tipo as keyof typeof pesoMateriali];
+    
+    if (!materiale) return 0;
+    
+    // Formula: volume (dm³) * densità (kg/dm³)
+    // Volume cilindro: π * r² * h
+    const raggio = diametro / 20; // da mm a dm e diviso 2 per avere il raggio
+    const lunghezzaDm = lunghezza / 10; // da cm a dm
+    const volume = Math.PI * raggio * raggio * lunghezzaDm;
+    const peso = volume * materiale.densita * quantita;
+    
+    return peso;
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -250,6 +397,20 @@ const MaterialiMetallici: React.FC = () => {
             {isPlaying ? 'Ferma Musica' : 'Musica Rilassante'}
           </button>
           <button
+            onClick={() => setShowSpotify(!showSpotify)}
+            className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+          >
+            <Music className="h-4 w-4" />
+            Spotify
+          </button>
+          <button
+            onClick={() => setShowCalculator(!showCalculator)}
+            className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+          >
+            <Calculator className="h-4 w-4" />
+            Calcolatore
+          </button>
+          <button
             onClick={updateAllPrices}
             disabled={updatingPrices}
             className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 disabled:opacity-50"
@@ -266,8 +427,197 @@ const MaterialiMetallici: React.FC = () => {
               </>
             )}
           </button>
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Aggiungi Materiale
+          </button>
         </div>
       </div>
+
+      {/* Spotify Player */}
+      <AnimatePresence>
+        {showSpotify && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+          >
+            <SpotifyPlayer />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Calcolatore Materiali */}
+      <AnimatePresence>
+        {showCalculator && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+          >
+            <MaterialCalculator 
+              materiali={prezziMateriali} 
+              pesoMateriali={pesoMateriali}
+              onAddMaterial={(material) => {
+                setNewMateriale({
+                  ...newMateriale,
+                  tipo_materiale: material.tipo,
+                  kg_totali: material.peso
+                });
+                setShowAddForm(true);
+                toast.success('Materiale calcolato. Completa i dettagli per aggiungerlo.');
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Form Aggiungi Materiale */}
+      <AnimatePresence>
+        {showAddForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-white rounded-xl shadow-sm overflow-hidden"
+          >
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Aggiungi Nuovo Materiale
+              </h3>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label htmlFor="tipo_materiale" className="block text-sm font-medium text-gray-700 mb-1">
+                    Tipo Materiale *
+                  </label>
+                  <select
+                    id="tipo_materiale"
+                    value={newMateriale.tipo_materiale}
+                    onChange={(e) => {
+                      const selectedMaterial = e.target.value;
+                      const prezzoMateriale = prezziMateriali.find(p => p.tipo_materiale === selectedMaterial);
+                      setNewMateriale(prev => ({ 
+                        ...prev, 
+                        tipo_materiale: selectedMaterial,
+                        prezzo_kg: prezzoMateriale?.prezzo_kg || 0
+                      }));
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Seleziona materiale</option>
+                    {prezziMateriali.map(prezzo => (
+                      <option key={prezzo.id} value={prezzo.tipo_materiale}>
+                        {prezzo.tipo_materiale} - €{prezzo.prezzo_kg.toFixed(3)}/kg
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="kg_totali" className="block text-sm font-medium text-gray-700 mb-1">
+                    Peso Totale (kg) *
+                  </label>
+                  <input
+                    type="number"
+                    id="kg_totali"
+                    value={newMateriale.kg_totali}
+                    onChange={(e) => setNewMateriale(prev => ({ ...prev, kg_totali: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="0.000"
+                    min="0"
+                    step="0.001"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="fornitore" className="block text-sm font-medium text-gray-700 mb-1">
+                    Fornitore
+                  </label>
+                  <input
+                    type="text"
+                    id="fornitore"
+                    value={newMateriale.fornitore}
+                    onChange={(e) => setNewMateriale(prev => ({ ...prev, fornitore: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Nome fornitore"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label htmlFor="numero_ddt" className="block text-sm font-medium text-gray-700 mb-1">
+                    Numero DDT *
+                  </label>
+                  <input
+                    type="text"
+                    id="numero_ddt"
+                    value={newMateriale.numero_ddt}
+                    onChange={(e) => setNewMateriale(prev => ({ ...prev, numero_ddt: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Numero documento di trasporto"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="data_trasporto" className="block text-sm font-medium text-gray-700 mb-1">
+                    Data Trasporto *
+                  </label>
+                  <input
+                    type="date"
+                    id="data_trasporto"
+                    value={newMateriale.data_trasporto}
+                    onChange={(e) => setNewMateriale(prev => ({ ...prev, data_trasporto: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+              </div>
+              
+              {/* Anteprima importo */}
+              {newMateriale.tipo_materiale && newMateriale.kg_totali > 0 && (
+                <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="text-sm font-medium text-blue-800 mb-2">Anteprima Importo</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-blue-600">Prezzo al kg:</p>
+                      <p className="text-sm font-medium">
+                        €{newMateriale.prezzo_kg.toFixed(3)}/kg
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-blue-600">Importo totale:</p>
+                      <p className="text-sm font-medium">
+                        €{(newMateriale.kg_totali * newMateriale.prezzo_kg).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex justify-end mt-4">
+                <button
+                  onClick={() => setShowAddForm(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors mr-2"
+                >
+                  Annulla
+                </button>
+                <button
+                  onClick={handleAddMateriale}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  Aggiungi
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Sezione Prezzi Materiali */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -331,7 +681,10 @@ const MaterialiMetallici: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900">
               Materiali Utilizzati nei Lavori
             </h3>
-            <button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2">
+            <button 
+              onClick={() => setShowAddForm(true)}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+            >
               <Plus className="h-4 w-4" />
               Aggiungi Materiale
             </button>
@@ -343,7 +696,10 @@ const MaterialiMetallici: React.FC = () => {
             <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Nessun materiale registrato</h3>
             <p className="text-gray-500 mb-6">Inizia registrando i materiali utilizzati nei lavori</p>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+            <button 
+              onClick={() => setShowAddForm(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+            >
               <Plus className="h-4 w-4 inline mr-2" />
               Registra Materiale
             </button>
@@ -397,7 +753,7 @@ const MaterialiMetallici: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {materiale.kg_totali} kg
+                        {materiale.kg_totali.toFixed(3)} kg
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         €{materiale.prezzo_kg.toFixed(3)}/kg
@@ -422,6 +778,7 @@ const MaterialiMetallici: React.FC = () => {
                             <Edit className="h-4 w-4" />
                           </button>
                           <button
+                            onClick={() => handleDelete(materiale.id)}
                             className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
                             title="Elimina materiale"
                           >
