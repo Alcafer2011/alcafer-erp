@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, Package, TrendingUp, RefreshCw, Calculator, Map, Info } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, TrendingUp, RefreshCw, Map, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { MaterialeMetallico, PrezzoMateriale } from '../types/database';
 import { usePermissions } from '../hooks/usePermissions';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import HelpTooltip from '../components/common/HelpTooltip';
-import MaterialCalculator from '../components/common/MaterialCalculator';
 import toast from 'react-hot-toast';
 
 const MaterialiMetallici: React.FC = () => {
@@ -15,7 +14,6 @@ const MaterialiMetallici: React.FC = () => {
   const [prezziRegionali, setPrezziRegionali] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingPrices, setUpdatingPrices] = useState(false);
-  const [showCalculator, setShowCalculator] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState('Lombardia');
   const [newMateriale, setNewMateriale] = useState({
@@ -110,73 +108,616 @@ const MaterialiMetallici: React.FC = () => {
     ]
   };
 
-  // Tipi di profilati commerciali
-  const profilatiCommerciali = {
-    'Ferro S235 grezzo': [
-      'Tondo Ø 8mm', 'Tondo Ø 10mm', 'Tondo Ø 12mm', 'Tondo Ø 14mm', 'Tondo Ø 16mm', 'Tondo Ø 18mm', 'Tondo Ø 20mm',
-      'Quadro 10x10mm', 'Quadro 12x12mm', 'Quadro 14x14mm', 'Quadro 16x16mm', 'Quadro 20x20mm',
-      'Piatto 20x5mm', 'Piatto 25x5mm', 'Piatto 30x5mm', 'Piatto 40x5mm', 'Piatto 50x5mm',
-      'Angolare 30x30x3mm', 'Angolare 40x40x4mm', 'Angolare 50x50x5mm',
-      'Tubolare tondo Ø 21.3x2mm', 'Tubolare tondo Ø 26.9x2mm', 'Tubolare tondo Ø 33.7x2mm',
-      'Tubolare quadro 20x20x2mm', 'Tubolare quadro 30x30x2mm', 'Tubolare quadro 40x40x2mm',
-      'Tubolare rettangolare 30x20x2mm', 'Tubolare rettangolare 40x20x2mm', 'Tubolare rettangolare 50x30x2mm'
-    ],
-    'Ferro S275 grezzo': [
-      'Tondo Ø 10mm', 'Tondo Ø 12mm', 'Tondo Ø 16mm', 'Tondo Ø 20mm', 'Tondo Ø 25mm',
-      'Quadro 12x12mm', 'Quadro 16x16mm', 'Quadro 20x20mm',
-      'Piatto 30x5mm', 'Piatto 40x5mm', 'Piatto 50x5mm',
-      'Angolare 40x40x4mm', 'Angolare 50x50x5mm', 'Angolare 60x60x6mm',
-      'Tubolare tondo Ø 33.7x2.5mm', 'Tubolare tondo Ø 42.4x2.5mm',
-      'Tubolare quadro 30x30x2.5mm', 'Tubolare quadro 40x40x2.5mm',
-      'Tubolare rettangolare 40x20x2.5mm', 'Tubolare rettangolare 50x30x2.5mm'
-    ],
-    'Ferro S355 grezzo': [
-      'Tondo Ø 12mm', 'Tondo Ø 16mm', 'Tondo Ø 20mm', 'Tondo Ø 25mm', 'Tondo Ø 30mm',
-      'Quadro 16x16mm', 'Quadro 20x20mm', 'Quadro 25x25mm',
-      'Piatto 40x8mm', 'Piatto 50x8mm', 'Piatto 60x8mm',
-      'Angolare 50x50x5mm', 'Angolare 60x60x6mm', 'Angolare 70x70x7mm',
-      'Tubolare tondo Ø 42.4x3mm', 'Tubolare tondo Ø 48.3x3mm',
-      'Tubolare quadro 40x40x3mm', 'Tubolare quadro 50x50x3mm',
-      'Tubolare rettangolare 50x30x3mm', 'Tubolare rettangolare 60x40x3mm'
-    ],
-    'Acciaio inox AISI 304': [
-      'Tondo Ø 8mm', 'Tondo Ø 10mm', 'Tondo Ø 12mm', 'Tondo Ø 16mm',
-      'Quadro 10x10mm', 'Quadro 12x12mm', 'Quadro 16x16mm',
-      'Piatto 20x5mm', 'Piatto 30x5mm', 'Piatto 40x5mm',
-      'Angolare 30x30x3mm', 'Angolare 40x40x4mm',
-      'Tubolare tondo Ø 21.3x2mm', 'Tubolare tondo Ø 26.9x2mm',
-      'Tubolare quadro 20x20x2mm', 'Tubolare quadro 30x30x2mm',
-      'Tubolare rettangolare 30x20x2mm', 'Tubolare rettangolare 40x20x2mm'
-    ],
-    'Acciaio inox AISI 316': [
-      'Tondo Ø 8mm', 'Tondo Ø 10mm', 'Tondo Ø 12mm', 'Tondo Ø 16mm',
-      'Quadro 10x10mm', 'Quadro 12x12mm', 'Quadro 16x16mm',
-      'Piatto 20x5mm', 'Piatto 30x5mm', 'Piatto 40x5mm',
-      'Angolare 30x30x3mm', 'Angolare 40x40x4mm',
-      'Tubolare tondo Ø 21.3x2mm', 'Tubolare tondo Ø 26.9x2mm',
-      'Tubolare quadro 20x20x2mm', 'Tubolare quadro 30x30x2mm',
-      'Tubolare rettangolare 30x20x2mm', 'Tubolare rettangolare 40x20x2mm'
-    ],
-    'Alluminio 6060': [
-      'Tondo Ø 10mm', 'Tondo Ø 12mm', 'Tondo Ø 16mm', 'Tondo Ø 20mm',
-      'Quadro 10x10mm', 'Quadro 15x15mm', 'Quadro 20x20mm',
-      'Piatto 20x5mm', 'Piatto 30x5mm', 'Piatto 40x5mm',
-      'Angolare 20x20x2mm', 'Angolare 30x30x3mm',
-      'Tubolare tondo Ø 20x2mm', 'Tubolare tondo Ø 25x2mm',
-      'Tubolare quadro 20x20x2mm', 'Tubolare quadro 30x30x2mm',
-      'Tubolare rettangolare 30x20x2mm', 'Tubolare rettangolare 40x20x2mm'
-    ],
-    'Lamiera decapata': [
-      'Spessore 0.8mm', 'Spessore 1mm', 'Spessore 1.2mm', 'Spessore 1.5mm', 
-      'Spessore 2mm', 'Spessore 2.5mm', 'Spessore 3mm'
-    ],
-    'Lamiera striata': [
-      'Spessore 3/5mm', 'Spessore 4/6mm', 'Spessore 5/7mm'
-    ],
-    'Lamiera nera': [
-      'Spessore 1mm', 'Spessore 1.5mm', 'Spessore 2mm', 
-      'Spessore 2.5mm', 'Spessore 3mm', 'Spessore 4mm'
-    ]
+  // Database completo di profilati metallici
+  const prontuarioMetallico = {
+    // TONDO
+    'Tondo': {
+      'Ferro S235 grezzo': [
+        { diametro: 5, peso: 0.154 },
+        { diametro: 6, peso: 0.222 },
+        { diametro: 8, peso: 0.395 },
+        { diametro: 10, peso: 0.617 },
+        { diametro: 12, peso: 0.888 },
+        { diametro: 14, peso: 1.21 },
+        { diametro: 16, peso: 1.58 },
+        { diametro: 18, peso: 2.00 },
+        { diametro: 20, peso: 2.47 },
+        { diametro: 22, peso: 2.98 },
+        { diametro: 24, peso: 3.55 },
+        { diametro: 25, peso: 3.85 },
+        { diametro: 26, peso: 4.17 },
+        { diametro: 28, peso: 4.83 },
+        { diametro: 30, peso: 5.55 },
+        { diametro: 32, peso: 6.31 },
+        { diametro: 35, peso: 7.55 },
+        { diametro: 36, peso: 7.99 },
+        { diametro: 38, peso: 8.90 },
+        { diametro: 40, peso: 9.87 },
+        { diametro: 42, peso: 10.9 },
+        { diametro: 45, peso: 12.5 },
+        { diametro: 48, peso: 14.2 },
+        { diametro: 50, peso: 15.4 },
+        { diametro: 55, peso: 18.7 },
+        { diametro: 60, peso: 22.2 },
+        { diametro: 65, peso: 26.0 },
+        { diametro: 70, peso: 30.2 },
+        { diametro: 80, peso: 39.5 },
+        { diametro: 90, peso: 50.0 },
+        { diametro: 100, peso: 61.7 },
+        { diametro: 110, peso: 74.6 },
+        { diametro: 120, peso: 88.8 }
+      ],
+      'Acciaio inox AISI 304': [
+        { diametro: 5, peso: 0.154 * 1.02 },
+        { diametro: 6, peso: 0.222 * 1.02 },
+        { diametro: 8, peso: 0.395 * 1.02 },
+        { diametro: 10, peso: 0.617 * 1.02 },
+        { diametro: 12, peso: 0.888 * 1.02 },
+        { diametro: 14, peso: 1.21 * 1.02 },
+        { diametro: 16, peso: 1.58 * 1.02 },
+        { diametro: 18, peso: 2.00 * 1.02 },
+        { diametro: 20, peso: 2.47 * 1.02 },
+        { diametro: 22, peso: 2.98 * 1.02 },
+        { diametro: 25, peso: 3.85 * 1.02 },
+        { diametro: 30, peso: 5.55 * 1.02 },
+        { diametro: 35, peso: 7.55 * 1.02 },
+        { diametro: 40, peso: 9.87 * 1.02 },
+        { diametro: 45, peso: 12.5 * 1.02 },
+        { diametro: 50, peso: 15.4 * 1.02 },
+        { diametro: 60, peso: 22.2 * 1.02 }
+      ],
+      'Alluminio 6060': [
+        { diametro: 6, peso: 0.222 * 0.34 },
+        { diametro: 8, peso: 0.395 * 0.34 },
+        { diametro: 10, peso: 0.617 * 0.34 },
+        { diametro: 12, peso: 0.888 * 0.34 },
+        { diametro: 14, peso: 1.21 * 0.34 },
+        { diametro: 16, peso: 1.58 * 0.34 },
+        { diametro: 18, peso: 2.00 * 0.34 },
+        { diametro: 20, peso: 2.47 * 0.34 },
+        { diametro: 25, peso: 3.85 * 0.34 },
+        { diametro: 30, peso: 5.55 * 0.34 },
+        { diametro: 35, peso: 7.55 * 0.34 },
+        { diametro: 40, peso: 9.87 * 0.34 }
+      ]
+    },
+    
+    // QUADRO
+    'Quadro': {
+      'Ferro S235 grezzo': [
+        { lato: 5, peso: 0.196 },
+        { lato: 6, peso: 0.283 },
+        { lato: 8, peso: 0.502 },
+        { lato: 10, peso: 0.785 },
+        { lato: 12, peso: 1.13 },
+        { lato: 14, peso: 1.54 },
+        { lato: 16, peso: 2.01 },
+        { lato: 18, peso: 2.54 },
+        { lato: 20, peso: 3.14 },
+        { lato: 22, peso: 3.80 },
+        { lato: 25, peso: 4.91 },
+        { lato: 30, peso: 7.07 },
+        { lato: 35, peso: 9.62 },
+        { lato: 40, peso: 12.6 },
+        { lato: 45, peso: 15.9 },
+        { lato: 50, peso: 19.6 },
+        { lato: 60, peso: 28.3 },
+        { lato: 70, peso: 38.5 },
+        { lato: 80, peso: 50.3 },
+        { lato: 90, peso: 63.6 },
+        { lato: 100, peso: 78.5 }
+      ],
+      'Acciaio inox AISI 304': [
+        { lato: 5, peso: 0.196 * 1.02 },
+        { lato: 6, peso: 0.283 * 1.02 },
+        { lato: 8, peso: 0.502 * 1.02 },
+        { lato: 10, peso: 0.785 * 1.02 },
+        { lato: 12, peso: 1.13 * 1.02 },
+        { lato: 14, peso: 1.54 * 1.02 },
+        { lato: 16, peso: 2.01 * 1.02 },
+        { lato: 18, peso: 2.54 * 1.02 },
+        { lato: 20, peso: 3.14 * 1.02 },
+        { lato: 25, peso: 4.91 * 1.02 },
+        { lato: 30, peso: 7.07 * 1.02 },
+        { lato: 40, peso: 12.6 * 1.02 },
+        { lato: 50, peso: 19.6 * 1.02 }
+      ],
+      'Alluminio 6060': [
+        { lato: 8, peso: 0.502 * 0.34 },
+        { lato: 10, peso: 0.785 * 0.34 },
+        { lato: 12, peso: 1.13 * 0.34 },
+        { lato: 15, peso: 1.77 * 0.34 },
+        { lato: 20, peso: 3.14 * 0.34 },
+        { lato: 25, peso: 4.91 * 0.34 },
+        { lato: 30, peso: 7.07 * 0.34 },
+        { lato: 40, peso: 12.6 * 0.34 }
+      ]
+    },
+    
+    // PIATTO
+    'Piatto': {
+      'Ferro S235 grezzo': [
+        { base: 20, altezza: 3, peso: 0.471 },
+        { base: 20, altezza: 4, peso: 0.628 },
+        { base: 20, altezza: 5, peso: 0.785 },
+        { base: 25, altezza: 3, peso: 0.589 },
+        { base: 25, altezza: 4, peso: 0.785 },
+        { base: 25, altezza: 5, peso: 0.982 },
+        { base: 25, altezza: 6, peso: 1.18 },
+        { base: 25, altezza: 8, peso: 1.57 },
+        { base: 30, altezza: 3, peso: 0.707 },
+        { base: 30, altezza: 4, peso: 0.942 },
+        { base: 30, altezza: 5, peso: 1.18 },
+        { base: 30, altezza: 6, peso: 1.41 },
+        { base: 30, altezza: 8, peso: 1.88 },
+        { base: 30, altezza: 10, peso: 2.36 },
+        { base: 35, altezza: 4, peso: 1.10 },
+        { base: 35, altezza: 5, peso: 1.37 },
+        { base: 35, altezza: 6, peso: 1.65 },
+        { base: 35, altezza: 8, peso: 2.20 },
+        { base: 35, altezza: 10, peso: 2.75 },
+        { base: 40, altezza: 3, peso: 0.942 },
+        { base: 40, altezza: 4, peso: 1.26 },
+        { base: 40, altezza: 5, peso: 1.57 },
+        { base: 40, altezza: 6, peso: 1.88 },
+        { base: 40, altezza: 8, peso: 2.51 },
+        { base: 40, altezza: 10, peso: 3.14 },
+        { base: 40, altezza: 12, peso: 3.77 },
+        { base: 40, altezza: 15, peso: 4.71 },
+        { base: 40, altezza: 20, peso: 6.28 },
+        { base: 45, altezza: 5, peso: 1.77 },
+        { base: 45, altezza: 8, peso: 2.83 },
+        { base: 45, altezza: 10, peso: 3.53 },
+        { base: 50, altezza: 3, peso: 1.18 },
+        { base: 50, altezza: 4, peso: 1.57 },
+        { base: 50, altezza: 5, peso: 1.96 },
+        { base: 50, altezza: 6, peso: 2.36 },
+        { base: 50, altezza: 8, peso: 3.14 },
+        { base: 50, altezza: 10, peso: 3.93 },
+        { base: 50, altezza: 12, peso: 4.71 },
+        { base: 50, altezza: 15, peso: 5.89 },
+        { base: 50, altezza: 20, peso: 7.85 },
+        { base: 50, altezza: 25, peso: 9.82 },
+        { base: 60, altezza: 5, peso: 2.36 },
+        { base: 60, altezza: 6, peso: 2.83 },
+        { base: 60, altezza: 8, peso: 3.77 },
+        { base: 60, altezza: 10, peso: 4.71 },
+        { base: 60, altezza: 12, peso: 5.65 },
+        { base: 60, altezza: 15, peso: 7.07 },
+        { base: 60, altezza: 20, peso: 9.42 },
+        { base: 60, altezza: 25, peso: 11.8 },
+        { base: 60, altezza: 30, peso: 14.1 },
+        { base: 70, altezza: 5, peso: 2.75 },
+        { base: 70, altezza: 6, peso: 3.30 },
+        { base: 70, altezza: 8, peso: 4.40 },
+        { base: 70, altezza: 10, peso: 5.50 },
+        { base: 70, altezza: 12, peso: 6.59 },
+        { base: 70, altezza: 15, peso: 8.24 },
+        { base: 70, altezza: 20, peso: 11.0 },
+        { base: 80, altezza: 5, peso: 3.14 },
+        { base: 80, altezza: 6, peso: 3.77 },
+        { base: 80, altezza: 8, peso: 5.03 },
+        { base: 80, altezza: 10, peso: 6.28 },
+        { base: 80, altezza: 12, peso: 7.54 },
+        { base: 80, altezza: 15, peso: 9.42 },
+        { base: 80, altezza: 20, peso: 12.6 },
+        { base: 100, altezza: 5, peso: 3.93 },
+        { base: 100, altezza: 6, peso: 4.71 },
+        { base: 100, altezza: 8, peso: 6.28 },
+        { base: 100, altezza: 10, peso: 7.85 },
+        { base: 100, altezza: 12, peso: 9.42 },
+        { base: 100, altezza: 15, peso: 11.8 },
+        { base: 100, altezza: 20, peso: 15.7 },
+        { base: 100, altezza: 25, peso: 19.6 },
+        { base: 100, altezza: 30, peso: 23.6 },
+        { base: 120, altezza: 6, peso: 5.65 },
+        { base: 120, altezza: 8, peso: 7.54 },
+        { base: 120, altezza: 10, peso: 9.42 },
+        { base: 120, altezza: 12, peso: 11.3 },
+        { base: 120, altezza: 15, peso: 14.1 },
+        { base: 120, altezza: 20, peso: 18.8 },
+        { base: 150, altezza: 6, peso: 7.07 },
+        { base: 150, altezza: 8, peso: 9.42 },
+        { base: 150, altezza: 10, peso: 11.8 },
+        { base: 150, altezza: 12, peso: 14.1 },
+        { base: 150, altezza: 15, peso: 17.7 },
+        { base: 150, altezza: 20, peso: 23.6 },
+        { base: 200, altezza: 8, peso: 12.6 },
+        { base: 200, altezza: 10, peso: 15.7 },
+        { base: 200, altezza: 12, peso: 18.8 },
+        { base: 200, altezza: 15, peso: 23.6 },
+        { base: 200, altezza: 20, peso: 31.4 }
+      ],
+      'Acciaio inox AISI 304': [
+        { base: 20, altezza: 3, peso: 0.471 * 1.02 },
+        { base: 20, altezza: 4, peso: 0.628 * 1.02 },
+        { base: 20, altezza: 5, peso: 0.785 * 1.02 },
+        { base: 25, altezza: 3, peso: 0.589 * 1.02 },
+        { base: 25, altezza: 4, peso: 0.785 * 1.02 },
+        { base: 25, altezza: 5, peso: 0.982 * 1.02 },
+        { base: 30, altezza: 3, peso: 0.707 * 1.02 },
+        { base: 30, altezza: 4, peso: 0.942 * 1.02 },
+        { base: 30, altezza: 5, peso: 1.18 * 1.02 },
+        { base: 40, altezza: 3, peso: 0.942 * 1.02 },
+        { base: 40, altezza: 4, peso: 1.26 * 1.02 },
+        { base: 40, altezza: 5, peso: 1.57 * 1.02 },
+        { base: 50, altezza: 3, peso: 1.18 * 1.02 },
+        { base: 50, altezza: 4, peso: 1.57 * 1.02 },
+        { base: 50, altezza: 5, peso: 1.96 * 1.02 }
+      ],
+      'Alluminio 6060': [
+        { base: 20, altezza: 3, peso: 0.471 * 0.34 },
+        { base: 20, altezza: 5, peso: 0.785 * 0.34 },
+        { base: 25, altezza: 3, peso: 0.589 * 0.34 },
+        { base: 25, altezza: 5, peso: 0.982 * 0.34 },
+        { base: 30, altezza: 3, peso: 0.707 * 0.34 },
+        { base: 30, altezza: 5, peso: 1.18 * 0.34 },
+        { base: 40, altezza: 3, peso: 0.942 * 0.34 },
+        { base: 40, altezza: 5, peso: 1.57 * 0.34 },
+        { base: 50, altezza: 5, peso: 1.96 * 0.34 }
+      ]
+    },
+    
+    // ANGOLARE
+    'Angolare': {
+      'Ferro S235 grezzo': [
+        { lato: 20, spessore: 3, peso: 0.888 },
+        { lato: 25, spessore: 3, peso: 1.12 },
+        { lato: 25, spessore: 4, peso: 1.47 },
+        { lato: 30, spessore: 3, peso: 1.36 },
+        { lato: 30, spessore: 4, peso: 1.78 },
+        { lato: 35, spessore: 3, peso: 1.60 },
+        { lato: 35, spessore: 4, peso: 2.09 },
+        { lato: 35, spessore: 5, peso: 2.57 },
+        { lato: 40, spessore: 3, peso: 1.84 },
+        { lato: 40, spessore: 4, peso: 2.42 },
+        { lato: 40, spessore: 5, peso: 2.97 },
+        { lato: 45, spessore: 3, peso: 2.08 },
+        { lato: 45, spessore: 4, peso: 2.74 },
+        { lato: 45, spessore: 5, peso: 3.38 },
+        { lato: 50, spessore: 3, peso: 2.33 },
+        { lato: 50, spessore: 4, peso: 3.06 },
+        { lato: 50, spessore: 5, peso: 3.77 },
+        { lato: 50, spessore: 6, peso: 4.47 },
+        { lato: 60, spessore: 4, peso: 3.70 },
+        { lato: 60, spessore: 5, peso: 4.57 },
+        { lato: 60, spessore: 6, peso: 5.42 },
+        { lato: 60, spessore: 8, peso: 7.09 },
+        { lato: 70, spessore: 5, peso: 5.37 },
+        { lato: 70, spessore: 6, peso: 6.38 },
+        { lato: 70, spessore: 7, peso: 7.38 },
+        { lato: 70, spessore: 8, peso: 8.33 },
+        { lato: 70, spessore: 9, peso: 9.27 },
+        { lato: 70, spessore: 10, peso: 10.2 },
+        { lato: 80, spessore: 6, peso: 7.34 },
+        { lato: 80, spessore: 7, peso: 8.51 },
+        { lato: 80, spessore: 8, peso: 9.63 },
+        { lato: 80, spessore: 10, peso: 11.9 },
+        { lato: 90, spessore: 6, peso: 8.30 },
+        { lato: 90, spessore: 7, peso: 9.61 },
+        { lato: 90, spessore: 8, peso: 10.9 },
+        { lato: 90, spessore: 9, peso: 12.2 },
+        { lato: 90, spessore: 10, peso: 13.4 },
+        { lato: 100, spessore: 8, peso: 12.2 },
+        { lato: 100, spessore: 10, peso: 15.0 },
+        { lato: 100, spessore: 12, peso: 17.8 },
+        { lato: 120, spessore: 8, peso: 14.7 },
+        { lato: 120, spessore: 10, peso: 18.2 },
+        { lato: 120, spessore: 12, peso: 21.6 },
+        { lato: 150, spessore: 10, peso: 23.0 },
+        { lato: 150, spessore: 12, peso: 27.3 },
+        { lato: 150, spessore: 15, peso: 33.8 }
+      ],
+      'Acciaio inox AISI 304': [
+        { lato: 20, spessore: 3, peso: 0.888 * 1.02 },
+        { lato: 25, spessore: 3, peso: 1.12 * 1.02 },
+        { lato: 30, spessore: 3, peso: 1.36 * 1.02 },
+        { lato: 40, spessore: 4, peso: 2.42 * 1.02 },
+        { lato: 50, spessore: 5, peso: 3.77 * 1.02 }
+      ],
+      'Alluminio 6060': [
+        { lato: 20, spessore: 2, peso: 0.888 * 0.34 * 0.67 },
+        { lato: 25, spessore: 2, peso: 1.12 * 0.34 * 0.67 },
+        { lato: 30, spessore: 3, peso: 1.36 * 0.34 },
+        { lato: 40, spessore: 3, peso: 1.84 * 0.34 }
+      ]
+    },
+    
+    // TUBOLARE TONDO
+    'Tubolare Tondo': {
+      'Ferro S235 grezzo': [
+        { diametro: 21.3, spessore: 2, peso: 0.95 },
+        { diametro: 21.3, spessore: 2.3, peso: 1.08 },
+        { diametro: 21.3, spessore: 2.6, peso: 1.20 },
+        { diametro: 21.3, spessore: 3.2, peso: 1.44 },
+        { diametro: 26.9, spessore: 2, peso: 1.23 },
+        { diametro: 26.9, spessore: 2.3, peso: 1.40 },
+        { diametro: 26.9, spessore: 2.6, peso: 1.56 },
+        { diametro: 26.9, spessore: 3.2, peso: 1.87 },
+        { diametro: 33.7, spessore: 2, peso: 1.56 },
+        { diametro: 33.7, spessore: 2.6, peso: 2.00 },
+        { diametro: 33.7, spessore: 3.2, peso: 2.41 },
+        { diametro: 33.7, spessore: 4, peso: 2.93 },
+        { diametro: 42.4, spessore: 2, peso: 1.99 },
+        { diametro: 42.4, spessore: 2.6, peso: 2.55 },
+        { diametro: 42.4, spessore: 3.2, peso: 3.09 },
+        { diametro: 42.4, spessore: 4, peso: 3.79 },
+        { diametro: 48.3, spessore: 2, peso: 2.28 },
+        { diametro: 48.3, spessore: 2.6, peso: 2.93 },
+        { diametro: 48.3, spessore: 3.2, peso: 3.56 },
+        { diametro: 48.3, spessore: 4, peso: 4.37 },
+        { diametro: 60.3, spessore: 2, peso: 2.87 },
+        { diametro: 60.3, spessore: 2.6, peso: 3.70 },
+        { diametro: 60.3, spessore: 3.2, peso: 4.51 },
+        { diametro: 60.3, spessore: 4, peso: 5.55 },
+        { diametro: 76.1, spessore: 2, peso: 3.65 },
+        { diametro: 76.1, spessore: 2.6, peso: 4.71 },
+        { diametro: 76.1, spessore: 3.2, peso: 5.75 },
+        { diametro: 76.1, spessore: 4, peso: 7.11 },
+        { diametro: 88.9, spessore: 3.2, peso: 6.76 },
+        { diametro: 88.9, spessore: 4, peso: 8.38 },
+        { diametro: 88.9, spessore: 5, peso: 10.3 },
+        { diametro: 101.6, spessore: 3.6, peso: 8.70 },
+        { diametro: 101.6, spessore: 4, peso: 9.63 },
+        { diametro: 101.6, spessore: 5, peso: 11.9 },
+        { diametro: 114.3, spessore: 3.6, peso: 9.83 },
+        { diametro: 114.3, spessore: 4, peso: 10.9 },
+        { diametro: 114.3, spessore: 5, peso: 13.5 },
+        { diametro: 139.7, spessore: 4, peso: 13.4 },
+        { diametro: 139.7, spessore: 5, peso: 16.6 },
+        { diametro: 139.7, spessore: 6.3, peso: 20.7 },
+        { diametro: 168.3, spessore: 4, peso: 16.2 },
+        { diametro: 168.3, spessore: 5, peso: 20.1 },
+        { diametro: 168.3, spessore: 6.3, peso: 25.2 },
+        { diametro: 193.7, spessore: 5, peso: 23.2 },
+        { diametro: 193.7, spessore: 6.3, peso: 29.0 },
+        { diametro: 219.1, spessore: 5, peso: 26.3 },
+        { diametro: 219.1, spessore: 6.3, peso: 33.0 }
+      ],
+      'Acciaio inox AISI 304': [
+        { diametro: 21.3, spessore: 2, peso: 0.95 * 1.02 },
+        { diametro: 26.9, spessore: 2, peso: 1.23 * 1.02 },
+        { diametro: 33.7, spessore: 2, peso: 1.56 * 1.02 },
+        { diametro: 42.4, spessore: 2, peso: 1.99 * 1.02 },
+        { diametro: 48.3, spessore: 2, peso: 2.28 * 1.02 },
+        { diametro: 60.3, spessore: 2, peso: 2.87 * 1.02 }
+      ]
+    },
+    
+    // TUBOLARE QUADRO
+    'Tubolare Quadro': {
+      'Ferro S235 grezzo': [
+        { lato: 15, spessore: 1.5, peso: 0.639 },
+        { lato: 15, spessore: 2, peso: 0.824 },
+        { lato: 20, spessore: 1.5, peso: 0.879 },
+        { lato: 20, spessore: 2, peso: 1.14 },
+        { lato: 25, spessore: 1.5, peso: 1.12 },
+        { lato: 25, spessore: 2, peso: 1.46 },
+        { lato: 30, spessore: 1.5, peso: 1.36 },
+        { lato: 30, spessore: 2, peso: 1.78 },
+        { lato: 30, spessore: 3, peso: 2.57 },
+        { lato: 35, spessore: 1.5, peso: 1.60 },
+        { lato: 35, spessore: 2, peso: 2.10 },
+        { lato: 35, spessore: 3, peso: 3.03 },
+        { lato: 40, spessore: 1.5, peso: 1.84 },
+        { lato: 40, spessore: 2, peso: 2.41 },
+        { lato: 40, spessore: 3, peso: 3.49 },
+        { lato: 40, spessore: 4, peso: 4.50 },
+        { lato: 50, spessore: 1.5, peso: 2.32 },
+        { lato: 50, spessore: 2, peso: 3.05 },
+        { lato: 50, spessore: 3, peso: 4.42 },
+        { lato: 50, spessore: 4, peso: 5.72 },
+        { lato: 50, spessore: 5, peso: 6.95 },
+        { lato: 60, spessore: 2, peso: 3.69 },
+        { lato: 60, spessore: 3, peso: 5.41 },
+        { lato: 60, spessore: 4, peso: 7.05 },
+        { lato: 60, spessore: 5, peso: 8.58 },
+        { lato: 70, spessore: 2, peso: 4.33 },
+        { lato: 70, spessore: 3, peso: 6.38 },
+        { lato: 70, spessore: 4, peso: 8.33 },
+        { lato: 70, spessore: 5, peso: 10.2 },
+        { lato: 80, spessore: 2, peso: 4.97 },
+        { lato: 80, spessore: 3, peso: 7.34 },
+        { lato: 80, spessore: 4, peso: 9.63 },
+        { lato: 80, spessore: 5, peso: 11.8 },
+        { lato: 90, spessore: 3, peso: 8.31 },
+        { lato: 90, spessore: 4, peso: 10.9 },
+        { lato: 90, spessore: 5, peso: 13.4 },
+        { lato: 100, spessore: 3, peso: 9.27 },
+        { lato: 100, spessore: 4, peso: 12.2 },
+        { lato: 100, spessore: 5, peso: 15.0 },
+        { lato: 100, spessore: 6, peso: 17.8 },
+        { lato: 120, spessore: 3, peso: 11.2 },
+        { lato: 120, spessore: 4, peso: 14.8 },
+        { lato: 120, spessore: 5, peso: 18.2 },
+        { lato: 120, spessore: 6, peso: 21.6 },
+        { lato: 140, spessore: 4, peso: 17.3 },
+        { lato: 140, spessore: 5, peso: 21.4 },
+        { lato: 140, spessore: 6, peso: 25.4 },
+        { lato: 150, spessore: 4, peso: 18.6 },
+        { lato: 150, spessore: 5, peso: 23.0 },
+        { lato: 150, spessore: 6, peso: 27.3 },
+        { lato: 150, spessore: 8, peso: 35.5 },
+        { lato: 160, spessore: 4, peso: 19.9 },
+        { lato: 160, spessore: 5, peso: 24.6 },
+        { lato: 160, spessore: 6, peso: 29.2 },
+        { lato: 160, spessore: 8, peso: 38.1 },
+        { lato: 180, spessore: 5, peso: 27.8 },
+        { lato: 180, spessore: 6, peso: 33.0 },
+        { lato: 180, spessore: 8, peso: 43.2 },
+        { lato: 200, spessore: 5, peso: 31.0 },
+        { lato: 200, spessore: 6, peso: 36.8 },
+        { lato: 200, spessore: 8, peso: 48.3 }
+      ],
+      'Acciaio inox AISI 304': [
+        { lato: 20, spessore: 1.5, peso: 0.879 * 1.02 },
+        { lato: 20, spessore: 2, peso: 1.14 * 1.02 },
+        { lato: 25, spessore: 1.5, peso: 1.12 * 1.02 },
+        { lato: 25, spessore: 2, peso: 1.46 * 1.02 },
+        { lato: 30, spessore: 1.5, peso: 1.36 * 1.02 },
+        { lato: 30, spessore: 2, peso: 1.78 * 1.02 },
+        { lato: 40, spessore: 1.5, peso: 1.84 * 1.02 },
+        { lato: 40, spessore: 2, peso: 2.41 * 1.02 },
+        { lato: 50, spessore: 1.5, peso: 2.32 * 1.02 },
+        { lato: 50, spessore: 2, peso: 3.05 * 1.02 }
+      ],
+      'Alluminio 6060': [
+        { lato: 20, spessore: 1.5, peso: 0.879 * 0.34 },
+        { lato: 20, spessore: 2, peso: 1.14 * 0.34 },
+        { lato: 25, spessore: 1.5, peso: 1.12 * 0.34 },
+        { lato: 25, spessore: 2, peso: 1.46 * 0.34 },
+        { lato: 30, spessore: 1.5, peso: 1.36 * 0.34 },
+        { lato: 30, spessore: 2, peso: 1.78 * 0.34 },
+        { lato: 40, spessore: 2, peso: 2.41 * 0.34 },
+        { lato: 50, spessore: 2, peso: 3.05 * 0.34 }
+      ]
+    },
+    
+    // TUBOLARE RETTANGOLARE
+    'Tubolare Rettangolare': {
+      'Ferro S235 grezzo': [
+        { base: 30, altezza: 20, spessore: 1.5, peso: 1.12 },
+        { base: 30, altezza: 20, spessore: 2, peso: 1.46 },
+        { base: 40, altezza: 20, spessore: 1.5, peso: 1.36 },
+        { base: 40, altezza: 20, spessore: 2, peso: 1.78 },
+        { base: 40, altezza: 20, spessore: 3, peso: 2.57 },
+        { base: 40, altezza: 30, spessore: 2, peso: 2.10 },
+        { base: 40, altezza: 30, spessore: 3, peso: 3.03 },
+        { base: 50, altezza: 20, spessore: 1.5, peso: 1.60 },
+        { base: 50, altezza: 20, spessore: 2, peso: 2.10 },
+        { base: 50, altezza: 20, spessore: 3, peso: 3.03 },
+        { base: 50, altezza: 25, spessore: 2, peso: 2.26 },
+        { base: 50, altezza: 25, spessore: 3, peso: 3.26 },
+        { base: 50, altezza: 30, spessore: 2, peso: 2.41 },
+        { base: 50, altezza: 30, spessore: 3, peso: 3.49 },
+        { base: 50, altezza: 30, spessore: 4, peso: 4.50 },
+        { base: 60, altezza: 20, spessore: 2, peso: 2.41 },
+        { base: 60, altezza: 20, spessore: 3, peso: 3.49 },
+        { base: 60, altezza: 30, spessore: 2, peso: 2.73 },
+        { base: 60, altezza: 30, spessore: 3, peso: 3.95 },
+        { base: 60, altezza: 40, spessore: 2, peso: 3.05 },
+        { base: 60, altezza: 40, spessore: 3, peso: 4.42 },
+        { base: 60, altezza: 40, spessore: 4, peso: 5.72 },
+        { base: 70, altezza: 30, spessore: 2, peso: 3.05 },
+        { base: 70, altezza: 30, spessore: 3, peso: 4.42 },
+        { base: 70, altezza: 40, spessore: 2, peso: 3.37 },
+        { base: 70, altezza: 40, spessore: 3, peso: 4.88 },
+        { base: 70, altezza: 50, spessore: 2, peso: 3.69 },
+        { base: 70, altezza: 50, spessore: 3, peso: 5.34 },
+        { base: 80, altezza: 40, spessore: 2, peso: 3.69 },
+        { base: 80, altezza: 40, spessore: 3, peso: 5.34 },
+        { base: 80, altezza: 40, spessore: 4, peso: 6.95 },
+        { base: 80, altezza: 40, spessore: 5, peso: 8.47 },
+        { base: 80, altezza: 60, spessore: 2, peso: 4.33 },
+        { base: 80, altezza: 60, spessore: 3, peso: 6.27 },
+        { base: 80, altezza: 60, spessore: 4, peso: 8.19 },
+        { base: 100, altezza: 40, spessore: 3, peso: 6.27 },
+        { base: 100, altezza: 40, spessore: 4, peso: 8.19 },
+        { base: 100, altezza: 50, spessore: 3, peso: 6.73 },
+        { base: 100, altezza: 50, spessore: 4, peso: 8.80 },
+        { base: 100, altezza: 50, spessore: 5, peso: 10.8 },
+        { base: 100, altezza: 60, spessore: 3, peso: 7.19 },
+        { base: 100, altezza: 60, spessore: 4, peso: 9.42 },
+        { base: 100, altezza: 60, spessore: 5, peso: 11.6 },
+        { base: 120, altezza: 40, spessore: 3, peso: 7.19 },
+        { base: 120, altezza: 40, spessore: 4, peso: 9.42 },
+        { base: 120, altezza: 60, spessore: 3, peso: 8.12 },
+        { base: 120, altezza: 60, spessore: 4, peso: 10.7 },
+        { base: 120, altezza: 60, spessore: 5, peso: 13.1 },
+        { base: 120, altezza: 80, spessore: 3, peso: 9.04 },
+        { base: 120, altezza: 80, spessore: 4, peso: 11.9 },
+        { base: 120, altezza: 80, spessore: 5, peso: 14.7 },
+        { base: 140, altezza: 70, spessore: 4, peso: 12.8 },
+        { base: 140, altezza: 70, spessore: 5, peso: 15.8 },
+        { base: 150, altezza: 50, spessore: 3, peso: 9.04 },
+        { base: 150, altezza: 50, spessore: 4, peso: 11.9 },
+        { base: 150, altezza: 50, spessore: 5, peso: 14.7 },
+        { base: 150, altezza: 100, spessore: 4, peso: 15.3 },
+        { base: 150, altezza: 100, spessore: 5, peso: 18.9 },
+        { base: 150, altezza: 100, spessore: 6, peso: 22.4 },
+        { base: 160, altezza: 80, spessore: 4, peso: 14.8 },
+        { base: 160, altezza: 80, spessore: 5, peso: 18.2 },
+        { base: 160, altezza: 80, spessore: 6, peso: 21.6 },
+        { base: 180, altezza: 60, spessore: 4, peso: 14.8 },
+        { base: 180, altezza: 60, spessore: 5, peso: 18.2 },
+        { base: 180, altezza: 60, spessore: 6, peso: 21.6 },
+        { base: 180, altezza: 80, spessore: 5, peso: 19.8 },
+        { base: 180, altezza: 80, spessore: 6, peso: 23.5 },
+        { base: 180, altezza: 100, spessore: 5, peso: 21.4 },
+        { base: 180, altezza: 100, spessore: 6, peso: 25.4 },
+        { base: 200, altezza: 100, spessore: 5, peso: 23.0 },
+        { base: 200, altezza: 100, spessore: 6, peso: 27.3 },
+        { base: 200, altezza: 100, spessore: 8, peso: 35.5 },
+        { base: 200, altezza: 120, spessore: 5, peso: 24.6 },
+        { base: 200, altezza: 120, spessore: 6, peso: 29.2 },
+        { base: 200, altezza: 120, spessore: 8, peso: 38.1 },
+        { base: 250, altezza: 100, spessore: 6, peso: 32.4 },
+        { base: 250, altezza: 100, spessore: 8, peso: 42.4 },
+        { base: 250, altezza: 150, spessore: 6, peso: 37.3 },
+        { base: 250, altezza: 150, spessore: 8, peso: 48.9 },
+        { base: 300, altezza: 100, spessore: 6, peso: 37.3 },
+        { base: 300, altezza: 100, spessore: 8, peso: 48.9 },
+        { base: 300, altezza: 150, spessore: 6, peso: 42.2 },
+        { base: 300, altezza: 150, spessore: 8, peso: 55.4 },
+        { base: 300, altezza: 200, spessore: 6, peso: 47.1 },
+        { base: 300, altezza: 200, spessore: 8, peso: 61.9 }
+      ],
+      'Acciaio inox AISI 304': [
+        { base: 30, altezza: 20, spessore: 1.5, peso: 1.12 * 1.02 },
+        { base: 30, altezza: 20, spessore: 2, peso: 1.46 * 1.02 },
+        { base: 40, altezza: 20, spessore: 1.5, peso: 1.36 * 1.02 },
+        { base: 40, altezza: 20, spessore: 2, peso: 1.78 * 1.02 },
+        { base: 40, altezza: 30, spessore: 2, peso: 2.10 * 1.02 },
+        { base: 50, altezza: 30, spessore: 2, peso: 2.41 * 1.02 }
+      ],
+      'Alluminio 6060': [
+        { base: 30, altezza: 20, spessore: 2, peso: 1.46 * 0.34 },
+        { base: 40, altezza: 20, spessore: 2, peso: 1.78 * 0.34 },
+        { base: 40, altezza: 30, spessore: 2, peso: 2.10 * 0.34 },
+        { base: 50, altezza: 30, spessore: 2, peso: 2.41 * 0.34 }
+      ]
+    },
+    
+    // LAMIERA
+    'Lamiera': {
+      'Ferro S235 grezzo': [
+        { spessore: 0.5, peso: 3.93 },
+        { spessore: 0.8, peso: 6.28 },
+        { spessore: 1, peso: 7.85 },
+        { spessore: 1.2, peso: 9.42 },
+        { spessore: 1.5, peso: 11.8 },
+        { spessore: 2, peso: 15.7 },
+        { spessore: 2.5, peso: 19.6 },
+        { spessore: 3, peso: 23.6 },
+        { spessore: 4, peso: 31.4 },
+        { spessore: 5, peso: 39.3 },
+        { spessore: 6, peso: 47.1 },
+        { spessore: 8, peso: 62.8 },
+        { spessore: 10, peso: 78.5 },
+        { spessore: 12, peso: 94.2 },
+        { spessore: 15, peso: 118 },
+        { spessore: 20, peso: 157 }
+      ],
+      'Acciaio inox AISI 304': [
+        { spessore: 0.5, peso: 3.93 * 1.02 },
+        { spessore: 0.8, peso: 6.28 * 1.02 },
+        { spessore: 1, peso: 7.85 * 1.02 },
+        { spessore: 1.2, peso: 9.42 * 1.02 },
+        { spessore: 1.5, peso: 11.8 * 1.02 },
+        { spessore: 2, peso: 15.7 * 1.02 },
+        { spessore: 3, peso: 23.6 * 1.02 },
+        { spessore: 4, peso: 31.4 * 1.02 },
+        { spessore: 5, peso: 39.3 * 1.02 }
+      ],
+      'Alluminio 6060': [
+        { spessore: 1, peso: 7.85 * 0.34 },
+        { spessore: 1.5, peso: 11.8 * 0.34 },
+        { spessore: 2, peso: 15.7 * 0.34 },
+        { spessore: 3, peso: 23.6 * 0.34 },
+        { spessore: 4, peso: 31.4 * 0.34 },
+        { spessore: 5, peso: 39.3 * 0.34 }
+      ]
+    }
   };
 
   // Dati per il calcolo del peso
@@ -433,6 +974,105 @@ const MaterialiMetallici: React.FC = () => {
     }
   };
 
+  // Funzione per calcolare il peso in base al tipo di materiale e alle dimensioni
+  const calcolaPesoMateriale = (
+    tipoMateriale: string, 
+    tipoProfilato: string, 
+    dimensioni: any, 
+    lunghezza: number = 100, // cm
+    quantita: number = 1
+  ) => {
+    // Trova il materiale base (es. "Ferro S235 grezzo" da "Ferro S235 grezzo - Tondo Ø 10mm")
+    const materialBase = Object.keys(pesoMateriali).find(m => tipoMateriale.startsWith(m));
+    if (!materialBase) return 0;
+    
+    // Estrai il tipo di profilato e le dimensioni
+    let peso = 0;
+    
+    if (tipoProfilato === 'Tondo') {
+      // Cerca nel prontuario
+      const profilati = prontuarioMetallico.Tondo[materialBase as keyof typeof prontuarioMetallico.Tondo];
+      if (!profilati) return 0;
+      
+      const profilato = profilati.find(p => p.diametro === dimensioni.diametro);
+      if (profilato) {
+        // Peso al metro * lunghezza in metri * quantità
+        peso = profilato.peso * (lunghezza / 100) * quantita;
+      }
+    } 
+    else if (tipoProfilato === 'Quadro') {
+      const profilati = prontuarioMetallico.Quadro[materialBase as keyof typeof prontuarioMetallico.Quadro];
+      if (!profilati) return 0;
+      
+      const profilato = profilati.find(p => p.lato === dimensioni.lato);
+      if (profilato) {
+        peso = profilato.peso * (lunghezza / 100) * quantita;
+      }
+    }
+    else if (tipoProfilato === 'Piatto') {
+      const profilati = prontuarioMetallico.Piatto[materialBase as keyof typeof prontuarioMetallico.Piatto];
+      if (!profilati) return 0;
+      
+      const profilato = profilati.find(p => p.base === dimensioni.base && p.altezza === dimensioni.altezza);
+      if (profilato) {
+        peso = profilato.peso * (lunghezza / 100) * quantita;
+      }
+    }
+    else if (tipoProfilato === 'Angolare') {
+      const profilati = prontuarioMetallico.Angolare[materialBase as keyof typeof prontuarioMetallico.Angolare];
+      if (!profilati) return 0;
+      
+      const profilato = profilati.find(p => p.lato === dimensioni.lato && p.spessore === dimensioni.spessore);
+      if (profilato) {
+        peso = profilato.peso * (lunghezza / 100) * quantita;
+      }
+    }
+    else if (tipoProfilato === 'Tubolare Tondo') {
+      const profilati = prontuarioMetallico['Tubolare Tondo'][materialBase as keyof typeof prontuarioMetallico['Tubolare Tondo']];
+      if (!profilati) return 0;
+      
+      const profilato = profilati.find(p => p.diametro === dimensioni.diametro && p.spessore === dimensioni.spessore);
+      if (profilato) {
+        peso = profilato.peso * (lunghezza / 100) * quantita;
+      }
+    }
+    else if (tipoProfilato === 'Tubolare Quadro') {
+      const profilati = prontuarioMetallico['Tubolare Quadro'][materialBase as keyof typeof prontuarioMetallico['Tubolare Quadro']];
+      if (!profilati) return 0;
+      
+      const profilato = profilati.find(p => p.lato === dimensioni.lato && p.spessore === dimensioni.spessore);
+      if (profilato) {
+        peso = profilato.peso * (lunghezza / 100) * quantita;
+      }
+    }
+    else if (tipoProfilato === 'Tubolare Rettangolare') {
+      const profilati = prontuarioMetallico['Tubolare Rettangolare'][materialBase as keyof typeof prontuarioMetallico['Tubolare Rettangolare']];
+      if (!profilati) return 0;
+      
+      const profilato = profilati.find(p => 
+        p.base === dimensioni.base && 
+        p.altezza === dimensioni.altezza && 
+        p.spessore === dimensioni.spessore
+      );
+      if (profilato) {
+        peso = profilato.peso * (lunghezza / 100) * quantita;
+      }
+    }
+    else if (tipoProfilato === 'Lamiera') {
+      const profilati = prontuarioMetallico.Lamiera[materialBase as keyof typeof prontuarioMetallico.Lamiera];
+      if (!profilati) return 0;
+      
+      const profilato = profilati.find(p => p.spessore === dimensioni.spessore);
+      if (profilato) {
+        // Per le lamiere, il peso è per m², quindi calcoliamo l'area in m²
+        const area = (dimensioni.larghezza / 100) * (lunghezza / 100); // m²
+        peso = profilato.peso * area * quantita;
+      }
+    }
+    
+    return Math.round(peso * 1000) / 1000; // Arrotonda a 3 decimali
+  };
+
   const handleAddMateriale = async () => {
     if (!newMateriale.tipo_materiale) {
       toast.error('Il tipo di materiale è obbligatorio');
@@ -533,19 +1173,90 @@ const MaterialiMetallici: React.FC = () => {
     }
   };
 
-  const calculateWeight = (tipo: string, diametro: number, lunghezza: number, quantita: number) => {
-    const materiale = pesoMateriali[tipo as keyof typeof pesoMateriali];
+  // Genera le opzioni per il menu a tendina dei materiali
+  const generateMaterialOptions = () => {
+    const options = [];
     
-    if (!materiale) return 0;
+    // Per ogni tipo di profilato
+    for (const [tipoProfilato, materialiPerProfilato] of Object.entries(prontuarioMetallico)) {
+      // Per ogni materiale di quel profilato
+      for (const [materiale, profilati] of Object.entries(materialiPerProfilato)) {
+        // Per ogni dimensione di quel profilato
+        for (const profilato of profilati) {
+          let descrizione = '';
+          
+          if (tipoProfilato === 'Tondo') {
+            descrizione = `Ø ${profilato.diametro}mm`;
+          } 
+          else if (tipoProfilato === 'Quadro') {
+            descrizione = `${profilato.lato}x${profilato.lato}mm`;
+          }
+          else if (tipoProfilato === 'Piatto') {
+            descrizione = `${profilato.base}x${profilato.altezza}mm`;
+          }
+          else if (tipoProfilato === 'Angolare') {
+            descrizione = `${profilato.lato}x${profilato.lato}x${profilato.spessore}mm`;
+          }
+          else if (tipoProfilato === 'Tubolare Tondo') {
+            descrizione = `Ø ${profilato.diametro}x${profilato.spessore}mm`;
+          }
+          else if (tipoProfilato === 'Tubolare Quadro') {
+            descrizione = `${profilato.lato}x${profilato.lato}x${profilato.spessore}mm`;
+          }
+          else if (tipoProfilato === 'Tubolare Rettangolare') {
+            descrizione = `${profilato.base}x${profilato.altezza}x${profilato.spessore}mm`;
+          }
+          else if (tipoProfilato === 'Lamiera') {
+            descrizione = `Spessore ${profilato.spessore}mm`;
+          }
+          
+          const value = `${materiale} - ${tipoProfilato} ${descrizione}`;
+          options.push({
+            value,
+            label: value,
+            tipoProfilato,
+            materiale,
+            dimensioni: profilato,
+            pesoMetro: profilato.peso
+          });
+        }
+      }
+    }
     
-    // Formula: volume (dm³) * densità (kg/dm³)
-    // Volume cilindro: π * r² * h
-    const raggio = diametro / 20; // da mm a dm e diviso 2 per avere il raggio
-    const lunghezzaDm = lunghezza / 10; // da cm a dm
-    const volume = Math.PI * raggio * raggio * lunghezzaDm;
-    const peso = volume * materiale.densita * quantita;
+    return options;
+  };
+
+  // Opzioni per il menu a tendina
+  const materialOptions = generateMaterialOptions();
+
+  // Gestisce il cambio di materiale e calcola automaticamente il peso
+  const handleMaterialChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedValue = e.target.value;
+    if (!selectedValue) return;
     
-    return peso;
+    // Trova l'opzione selezionata
+    const selectedOption = materialOptions.find(opt => opt.value === selectedValue);
+    if (!selectedOption) return;
+    
+    // Imposta il tipo di materiale
+    setNewMateriale(prev => ({
+      ...prev,
+      tipo_materiale: selectedValue
+    }));
+    
+    // Apri il form per completare i dettagli
+    setShowAddForm(true);
+  };
+
+  // Calcola il peso in base al materiale selezionato e alla lunghezza
+  const calcolaPesoAutomatico = (tipoMateriale: string, lunghezza: number, quantita: number) => {
+    if (!tipoMateriale) return 0;
+    
+    const selectedOption = materialOptions.find(opt => opt.value === tipoMateriale);
+    if (!selectedOption) return 0;
+    
+    const { tipoProfilato, materiale, dimensioni } = selectedOption;
+    return calcolaPesoMateriale(materiale, tipoProfilato, dimensioni, lunghezza, quantita);
   };
 
   if (loading) {
@@ -564,13 +1275,6 @@ const MaterialiMetallici: React.FC = () => {
           <p className="mt-2 text-gray-600">Gestisci i costi e i prezzi dei materiali metallici</p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={() => setShowCalculator(!showCalculator)}
-            className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
-          >
-            <Calculator className="h-4 w-4" />
-            Calcolatore
-          </button>
           {prezziMateriali.length > 0 && (
             <button
               onClick={updateAllPrices}
@@ -600,27 +1304,234 @@ const MaterialiMetallici: React.FC = () => {
         </div>
       </div>
 
-      {/* Calcolatore Materiali */}
+      {/* Form Aggiungi Materiale */}
       <AnimatePresence>
-        {showCalculator && (
+        {showAddForm && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
+            className="bg-white rounded-xl shadow-sm overflow-hidden"
           >
-            <MaterialCalculator 
-              materiali={prezziMateriali} 
-              pesoMateriali={pesoMateriali}
-              onAddMaterial={(material) => {
-                setNewMateriale({
-                  ...newMateriale,
-                  tipo_materiale: material.tipo,
-                  kg_totali: material.peso
-                });
-                setShowAddForm(true);
-                toast.success('Materiale calcolato. Completa i dettagli per aggiungerlo.');
-              }}
-            />
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Aggiungi Nuovo Materiale
+              </h3>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tipo Materiale *
+                  </label>
+                  <select
+                    value={newMateriale.tipo_materiale}
+                    onChange={handleMaterialChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Seleziona materiale</option>
+                    {Object.keys(prontuarioMetallico).map(tipoProfilato => (
+                      <optgroup key={tipoProfilato} label={tipoProfilato}>
+                        {Object.keys(prontuarioMetallico[tipoProfilato as keyof typeof prontuarioMetallico]).map(materiale => {
+                          const profilati = prontuarioMetallico[tipoProfilato as keyof typeof prontuarioMetallico][materiale as any];
+                          return profilati.map((profilato: any, index: number) => {
+                            let descrizione = '';
+                            
+                            if (tipoProfilato === 'Tondo') {
+                              descrizione = `Ø ${profilato.diametro}mm`;
+                            } 
+                            else if (tipoProfilato === 'Quadro') {
+                              descrizione = `${profilato.lato}x${profilato.lato}mm`;
+                            }
+                            else if (tipoProfilato === 'Piatto') {
+                              descrizione = `${profilato.base}x${profilato.altezza}mm`;
+                            }
+                            else if (tipoProfilato === 'Angolare') {
+                              descrizione = `${profilato.lato}x${profilato.lato}x${profilato.spessore}mm`;
+                            }
+                            else if (tipoProfilato === 'Tubolare Tondo') {
+                              descrizione = `Ø ${profilato.diametro}x${profilato.spessore}mm`;
+                            }
+                            else if (tipoProfilato === 'Tubolare Quadro') {
+                              descrizione = `${profilato.lato}x${profilato.lato}x${profilato.spessore}mm`;
+                            }
+                            else if (tipoProfilato === 'Tubolare Rettangolare') {
+                              descrizione = `${profilato.base}x${profilato.altezza}x${profilato.spessore}mm`;
+                            }
+                            else if (tipoProfilato === 'Lamiera') {
+                              descrizione = `Spessore ${profilato.spessore}mm`;
+                            }
+                            
+                            const value = `${materiale} - ${tipoProfilato} ${descrizione}`;
+                            
+                            return (
+                              <option key={`${materiale}-${tipoProfilato}-${index}`} value={value}>
+                                {value}
+                              </option>
+                            );
+                          });
+                        })}
+                      </optgroup>
+                    ))}
+                    <option value="custom">Altro materiale (inserisci manualmente)</option>
+                  </select>
+                  {newMateriale.tipo_materiale === 'custom' && (
+                    <input
+                      type="text"
+                      placeholder="Nome del materiale"
+                      className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      onChange={(e) => setNewMateriale(prev => ({ ...prev, tipo_materiale: e.target.value }))}
+                    />
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Lunghezza (cm) *
+                  </label>
+                  <input
+                    type="number"
+                    value={newMateriale.lunghezza || 100}
+                    onChange={(e) => {
+                      const lunghezza = parseFloat(e.target.value) || 100;
+                      const quantita = newMateriale.quantita || 1;
+                      const peso = calcolaPesoAutomatico(newMateriale.tipo_materiale, lunghezza, quantita);
+                      
+                      setNewMateriale(prev => ({ 
+                        ...prev, 
+                        lunghezza,
+                        kg_totali: peso
+                      }));
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="100"
+                    min="1"
+                    step="0.1"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Quantità (pezzi) *
+                  </label>
+                  <input
+                    type="number"
+                    value={newMateriale.quantita || 1}
+                    onChange={(e) => {
+                      const quantita = parseInt(e.target.value) || 1;
+                      const lunghezza = newMateriale.lunghezza || 100;
+                      const peso = calcolaPesoAutomatico(newMateriale.tipo_materiale, lunghezza, quantita);
+                      
+                      setNewMateriale(prev => ({ 
+                        ...prev, 
+                        quantita,
+                        kg_totali: peso
+                      }));
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="1"
+                    min="1"
+                    step="1"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Peso Totale (kg) *
+                  </label>
+                  <input
+                    type="number"
+                    value={newMateriale.kg_totali}
+                    readOnly
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                    placeholder="0.000"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Numero DDT *
+                  </label>
+                  <input
+                    type="text"
+                    value={newMateriale.numero_ddt}
+                    onChange={(e) => setNewMateriale(prev => ({ ...prev, numero_ddt: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Numero documento di trasporto"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Data Trasporto *
+                  </label>
+                  <input
+                    type="date"
+                    value={newMateriale.data_trasporto}
+                    onChange={(e) => setNewMateriale(prev => ({ ...prev, data_trasporto: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Fornitore
+                  </label>
+                  <input
+                    type="text"
+                    value={newMateriale.fornitore}
+                    onChange={(e) => setNewMateriale(prev => ({ ...prev, fornitore: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Nome fornitore"
+                  />
+                </div>
+              </div>
+              
+              {/* Anteprima importo */}
+              {newMateriale.tipo_materiale && newMateriale.kg_totali > 0 && (
+                <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="text-sm font-medium text-blue-800 mb-2">Anteprima Importo</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-blue-600">Prezzo al kg:</p>
+                      <p className="text-sm font-medium">
+                        €{newMateriale.prezzo_kg.toFixed(3)}/kg
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-blue-600">Importo totale:</p>
+                      <p className="text-sm font-medium">
+                        €{(newMateriale.kg_totali * newMateriale.prezzo_kg).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex justify-end mt-4">
+                <button
+                  onClick={() => setShowAddForm(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors mr-2"
+                >
+                  Annulla
+                </button>
+                <button
+                  onClick={handleAddMateriale}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  Aggiungi
+                </button>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -677,163 +1588,6 @@ const MaterialiMetallici: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Form Aggiungi Materiale */}
-      <AnimatePresence>
-        {showAddForm && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="bg-white rounded-xl shadow-sm overflow-hidden"
-          >
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Aggiungi Nuovo Materiale
-              </h3>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                  <label htmlFor="tipo_materiale" className="block text-sm font-medium text-gray-700 mb-1">
-                    Tipo Materiale *
-                  </label>
-                  <select
-                    id="tipo_materiale"
-                    value={newMateriale.tipo_materiale}
-                    onChange={(e) => {
-                      const selectedMaterial = e.target.value;
-                      const prezzoMateriale = prezziMateriali.find(p => p.tipo_materiale === selectedMaterial);
-                      setNewMateriale(prev => ({ 
-                        ...prev, 
-                        tipo_materiale: selectedMaterial,
-                        prezzo_kg: prezzoMateriale?.prezzo_kg || 0
-                      }));
-                    }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  >
-                    <option value="">Seleziona materiale</option>
-                    {Object.keys(profilatiCommerciali).map(tipo => (
-                      <optgroup key={tipo} label={tipo}>
-                        {profilatiCommerciali[tipo as keyof typeof profilatiCommerciali].map(profilato => (
-                          <option key={`${tipo}-${profilato}`} value={`${tipo} - ${profilato}`}>
-                            {tipo} - {profilato}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
-                    <option value="custom">Altro materiale (inserisci manualmente)</option>
-                  </select>
-                  {newMateriale.tipo_materiale === 'custom' && (
-                    <input
-                      type="text"
-                      placeholder="Nome del materiale"
-                      className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      onChange={(e) => setNewMateriale(prev => ({ ...prev, tipo_materiale: e.target.value }))}
-                    />
-                  )}
-                </div>
-                <div>
-                  <label htmlFor="kg_totali" className="block text-sm font-medium text-gray-700 mb-1">
-                    Peso Totale (kg) *
-                  </label>
-                  <input
-                    type="number"
-                    id="kg_totali"
-                    value={newMateriale.kg_totali}
-                    onChange={(e) => setNewMateriale(prev => ({ ...prev, kg_totali: parseFloat(e.target.value) || 0 }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="0.000"
-                    min="0"
-                    step="0.001"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="fornitore" className="block text-sm font-medium text-gray-700 mb-1">
-                    Fornitore
-                  </label>
-                  <input
-                    type="text"
-                    id="fornitore"
-                    value={newMateriale.fornitore}
-                    onChange={(e) => setNewMateriale(prev => ({ ...prev, fornitore: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Nome fornitore"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label htmlFor="numero_ddt" className="block text-sm font-medium text-gray-700 mb-1">
-                    Numero DDT *
-                  </label>
-                  <input
-                    type="text"
-                    id="numero_ddt"
-                    value={newMateriale.numero_ddt}
-                    onChange={(e) => setNewMateriale(prev => ({ ...prev, numero_ddt: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Numero documento di trasporto"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="data_trasporto" className="block text-sm font-medium text-gray-700 mb-1">
-                    Data Trasporto *
-                  </label>
-                  <input
-                    type="date"
-                    id="data_trasporto"
-                    value={newMateriale.data_trasporto}
-                    onChange={(e) => setNewMateriale(prev => ({ ...prev, data_trasporto: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-              </div>
-              
-              {/* Anteprima importo */}
-              {newMateriale.tipo_materiale && newMateriale.kg_totali > 0 && (
-                <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <h4 className="text-sm font-medium text-blue-800 mb-2">Anteprima Importo</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-xs text-blue-600">Prezzo al kg:</p>
-                      <p className="text-sm font-medium">
-                        €{newMateriale.prezzo_kg.toFixed(3)}/kg
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-blue-600">Importo totale:</p>
-                      <p className="text-sm font-medium">
-                        €{(newMateriale.kg_totali * newMateriale.prezzo_kg).toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex justify-end mt-4">
-                <button
-                  onClick={() => setShowAddForm(false)}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors mr-2"
-                >
-                  Annulla
-                </button>
-                <button
-                  onClick={handleAddMateriale}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-                >
-                  Aggiungi
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Sezione Prezzi Materiali */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -1033,75 +1787,6 @@ const MaterialiMetallici: React.FC = () => {
             </table>
           </div>
         )}
-      </div>
-
-      {/* Prontuario Materiali */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Prontuario Materiali Metallici
-            </h3>
-            <HelpTooltip content="Informazioni tecniche e pesi specifici dei materiali metallici" />
-          </div>
-        </div>
-
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="text-md font-semibold text-gray-900 mb-3">Pesi Specifici</h4>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead>
-                    <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Materiale</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Densità (kg/dm³)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {Object.entries(pesoMateriali).map(([materiale, dati]) => (
-                      <tr key={materiale} className="hover:bg-gray-100">
-                        <td className="px-4 py-2 text-sm text-gray-900">{materiale}</td>
-                        <td className="px-4 py-2 text-sm text-gray-900">{dati.densita}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-md font-semibold text-gray-900 mb-3">Informazioni Tecniche</h4>
-              <div className="space-y-4">
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <h5 className="font-medium text-blue-800 mb-2">Ferro e Acciaio</h5>
-                  <ul className="text-sm text-blue-700 space-y-1">
-                    <li><span className="font-medium">S235:</span> Resistenza minima allo snervamento 235 MPa</li>
-                    <li><span className="font-medium">S275:</span> Resistenza minima allo snervamento 275 MPa</li>
-                    <li><span className="font-medium">S355:</span> Resistenza minima allo snervamento 355 MPa</li>
-                    <li><span className="font-medium">Corten:</span> Acciaio resistente alla corrosione atmosferica</li>
-                  </ul>
-                </div>
-
-                <div className="bg-green-50 rounded-lg p-4">
-                  <h5 className="font-medium text-green-800 mb-2">Acciaio Inox</h5>
-                  <ul className="text-sm text-green-700 space-y-1">
-                    <li><span className="font-medium">AISI 304:</span> Inox austenitico 18/8 (Cr-Ni)</li>
-                    <li><span className="font-medium">AISI 316:</span> Inox austenitico 18/8/2 (Cr-Ni-Mo), resistente in ambienti marini</li>
-                  </ul>
-                </div>
-
-                <div className="bg-amber-50 rounded-lg p-4">
-                  <h5 className="font-medium text-amber-800 mb-2">Alluminio</h5>
-                  <ul className="text-sm text-amber-700 space-y-1">
-                    <li><span className="font-medium">6060:</span> Lega Al-Mg-Si, buona resistenza meccanica e ottima estrudibilità</li>
-                    <li><span className="font-medium">Anodizzato:</span> Trattamento superficiale per aumentare resistenza a corrosione</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

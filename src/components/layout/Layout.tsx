@@ -5,7 +5,7 @@ import {
   Menu, X, LogOut, HelpCircle, ChevronDown, Calculator,
   TrendingUp, PieChart, Receipt, Wrench, UserCheck, Building2,
   Package, Truck, UserCog, Droplet, Flame, Target, Music, Volume2,
-  Play, Pause, SkipForward, SkipBack, Disc, Headphones
+  Play, Pause, SkipForward, SkipBack, Disc, Headphones, Heart, Clock, ListMusic, Shuffle, Repeat, Share2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
@@ -442,14 +442,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             
             <button 
               onClick={() => setShowSpotify(!showSpotify)}
-              className={`ml-2 p-2 rounded-full transition-all ${
+              className={`ml-2 p-2 rounded-full transition-all flex items-center gap-1 ${
                 showSpotify 
-                  ? 'bg-green-600 text-white shadow-md' 
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md' 
+                  : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-green-100 hover:to-green-200'
               }`}
               title="Spotify"
             >
-              <Headphones className="h-5 w-5" />
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M4.93 4.93l4.24 4.24"></path>
+                <path d="M14.83 14.83l4.24 4.24"></path>
+                <path d="M14.83 9.17l4.24-4.24"></path>
+                <path d="M9.17 14.83l-4.24 4.24"></path>
+              </svg>
+              <span className="text-xs font-medium">Spotify</span>
             </button>
           </div>
 
