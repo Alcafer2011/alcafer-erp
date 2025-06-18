@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, Package, TrendingUp, RefreshCw, Calculator } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, TrendingUp, RefreshCw, Calculator, Map, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { MaterialeMetallico, PrezzoMateriale } from '../types/database';
@@ -12,10 +12,12 @@ import toast from 'react-hot-toast';
 const MaterialiMetallici: React.FC = () => {
   const [materiali, setMateriali] = useState<MaterialeMetallico[]>([]);
   const [prezziMateriali, setPrezziMateriali] = useState<PrezzoMateriale[]>([]);
+  const [prezziRegionali, setPrezziRegionali] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingPrices, setUpdatingPrices] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState('Lombardia');
   const [newMateriale, setNewMateriale] = useState({
     tipo_materiale: '',
     kg_totali: 0,
@@ -25,43 +27,228 @@ const MaterialiMetallici: React.FC = () => {
     fornitore: ''
   });
   const permissions = usePermissions();
+  const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
 
-  // Prezzi realistici per Lombardia, Piemonte, Emilia Romagna (2024)
-  const prezziRegionali = [
-    { tipo: 'Ferro S235 grezzo', prezzo: 0.95, regione: 'Lombardia' },
-    { tipo: 'Acciaio inox AISI 304', prezzo: 3.20, regione: 'Lombardia' },
-    { tipo: 'Alluminio 6060', prezzo: 2.80, regione: 'Lombardia' },
-    { tipo: 'Acciaio al carbonio', prezzo: 0.85, regione: 'Lombardia' },
-    { tipo: 'Ferro zincato', prezzo: 1.15, regione: 'Lombardia' },
-    { tipo: 'Acciaio corten', prezzo: 1.45, regione: 'Lombardia' },
-    { tipo: 'Alluminio anodizzato', prezzo: 3.50, regione: 'Lombardia' },
-    { tipo: 'Acciaio inox AISI 316', prezzo: 4.20, regione: 'Lombardia' },
-    { tipo: 'Ferro S235 grezzo', prezzo: 0.97, regione: 'Piemonte' },
-    { tipo: 'Acciaio inox AISI 304', prezzo: 3.25, regione: 'Piemonte' },
-    { tipo: 'Alluminio 6060', prezzo: 2.85, regione: 'Piemonte' },
-    { tipo: 'Ferro S235 grezzo', prezzo: 0.93, regione: 'Emilia Romagna' },
-    { tipo: 'Acciaio inox AISI 304', prezzo: 3.18, regione: 'Emilia Romagna' },
-    { tipo: 'Alluminio 6060', prezzo: 2.78, regione: 'Emilia Romagna' }
-  ];
+  // Regioni italiane con prezzi
+  const regioni = ['Lombardia', 'Piemonte', 'Emilia Romagna', 'Veneto', 'Toscana'];
+
+  // Prezzi realistici per regione (2024)
+  const prezziRegioniData = {
+    'Lombardia': [
+      { tipo: 'Ferro S235 grezzo', prezzo: 0.95 },
+      { tipo: 'Ferro S275 grezzo', prezzo: 1.05 },
+      { tipo: 'Ferro S355 grezzo', prezzo: 1.15 },
+      { tipo: 'Acciaio inox AISI 304', prezzo: 3.20 },
+      { tipo: 'Acciaio inox AISI 316', prezzo: 4.20 },
+      { tipo: 'Alluminio 6060', prezzo: 2.80 },
+      { tipo: 'Alluminio anodizzato', prezzo: 3.50 },
+      { tipo: 'Acciaio al carbonio', prezzo: 0.85 },
+      { tipo: 'Ferro zincato', prezzo: 1.15 },
+      { tipo: 'Acciaio corten', prezzo: 1.45 },
+      { tipo: 'Lamiera decapata', prezzo: 1.10 },
+      { tipo: 'Lamiera striata', prezzo: 1.25 },
+      { tipo: 'Lamiera nera', prezzo: 0.90 }
+    ],
+    'Piemonte': [
+      { tipo: 'Ferro S235 grezzo', prezzo: 0.97 },
+      { tipo: 'Ferro S275 grezzo', prezzo: 1.07 },
+      { tipo: 'Ferro S355 grezzo', prezzo: 1.17 },
+      { tipo: 'Acciaio inox AISI 304', prezzo: 3.25 },
+      { tipo: 'Acciaio inox AISI 316', prezzo: 4.25 },
+      { tipo: 'Alluminio 6060', prezzo: 2.85 },
+      { tipo: 'Alluminio anodizzato', prezzo: 3.55 },
+      { tipo: 'Acciaio al carbonio', prezzo: 0.87 },
+      { tipo: 'Ferro zincato', prezzo: 1.17 },
+      { tipo: 'Acciaio corten', prezzo: 1.47 },
+      { tipo: 'Lamiera decapata', prezzo: 1.12 },
+      { tipo: 'Lamiera striata', prezzo: 1.27 },
+      { tipo: 'Lamiera nera', prezzo: 0.92 }
+    ],
+    'Emilia Romagna': [
+      { tipo: 'Ferro S235 grezzo', prezzo: 0.93 },
+      { tipo: 'Ferro S275 grezzo', prezzo: 1.03 },
+      { tipo: 'Ferro S355 grezzo', prezzo: 1.13 },
+      { tipo: 'Acciaio inox AISI 304', prezzo: 3.18 },
+      { tipo: 'Acciaio inox AISI 316', prezzo: 4.18 },
+      { tipo: 'Alluminio 6060', prezzo: 2.78 },
+      { tipo: 'Alluminio anodizzato', prezzo: 3.48 },
+      { tipo: 'Acciaio al carbonio', prezzo: 0.83 },
+      { tipo: 'Ferro zincato', prezzo: 1.13 },
+      { tipo: 'Acciaio corten', prezzo: 1.43 },
+      { tipo: 'Lamiera decapata', prezzo: 1.08 },
+      { tipo: 'Lamiera striata', prezzo: 1.23 },
+      { tipo: 'Lamiera nera', prezzo: 0.88 }
+    ],
+    'Veneto': [
+      { tipo: 'Ferro S235 grezzo', prezzo: 0.94 },
+      { tipo: 'Ferro S275 grezzo', prezzo: 1.04 },
+      { tipo: 'Ferro S355 grezzo', prezzo: 1.14 },
+      { tipo: 'Acciaio inox AISI 304', prezzo: 3.19 },
+      { tipo: 'Acciaio inox AISI 316', prezzo: 4.19 },
+      { tipo: 'Alluminio 6060', prezzo: 2.79 },
+      { tipo: 'Alluminio anodizzato', prezzo: 3.49 },
+      { tipo: 'Acciaio al carbonio', prezzo: 0.84 },
+      { tipo: 'Ferro zincato', prezzo: 1.14 },
+      { tipo: 'Acciaio corten', prezzo: 1.44 },
+      { tipo: 'Lamiera decapata', prezzo: 1.09 },
+      { tipo: 'Lamiera striata', prezzo: 1.24 },
+      { tipo: 'Lamiera nera', prezzo: 0.89 }
+    ],
+    'Toscana': [
+      { tipo: 'Ferro S235 grezzo', prezzo: 0.96 },
+      { tipo: 'Ferro S275 grezzo', prezzo: 1.06 },
+      { tipo: 'Ferro S355 grezzo', prezzo: 1.16 },
+      { tipo: 'Acciaio inox AISI 304', prezzo: 3.22 },
+      { tipo: 'Acciaio inox AISI 316', prezzo: 4.22 },
+      { tipo: 'Alluminio 6060', prezzo: 2.82 },
+      { tipo: 'Alluminio anodizzato', prezzo: 3.52 },
+      { tipo: 'Acciaio al carbonio', prezzo: 0.86 },
+      { tipo: 'Ferro zincato', prezzo: 1.16 },
+      { tipo: 'Acciaio corten', prezzo: 1.46 },
+      { tipo: 'Lamiera decapata', prezzo: 1.11 },
+      { tipo: 'Lamiera striata', prezzo: 1.26 },
+      { tipo: 'Lamiera nera', prezzo: 0.91 }
+    ]
+  };
+
+  // Tipi di profilati commerciali
+  const profilatiCommerciali = {
+    'Ferro S235 grezzo': [
+      'Tondo Ø 8mm', 'Tondo Ø 10mm', 'Tondo Ø 12mm', 'Tondo Ø 14mm', 'Tondo Ø 16mm', 'Tondo Ø 18mm', 'Tondo Ø 20mm',
+      'Quadro 10x10mm', 'Quadro 12x12mm', 'Quadro 14x14mm', 'Quadro 16x16mm', 'Quadro 20x20mm',
+      'Piatto 20x5mm', 'Piatto 25x5mm', 'Piatto 30x5mm', 'Piatto 40x5mm', 'Piatto 50x5mm',
+      'Angolare 30x30x3mm', 'Angolare 40x40x4mm', 'Angolare 50x50x5mm',
+      'Tubolare tondo Ø 21.3x2mm', 'Tubolare tondo Ø 26.9x2mm', 'Tubolare tondo Ø 33.7x2mm',
+      'Tubolare quadro 20x20x2mm', 'Tubolare quadro 30x30x2mm', 'Tubolare quadro 40x40x2mm',
+      'Tubolare rettangolare 30x20x2mm', 'Tubolare rettangolare 40x20x2mm', 'Tubolare rettangolare 50x30x2mm'
+    ],
+    'Ferro S275 grezzo': [
+      'Tondo Ø 10mm', 'Tondo Ø 12mm', 'Tondo Ø 16mm', 'Tondo Ø 20mm', 'Tondo Ø 25mm',
+      'Quadro 12x12mm', 'Quadro 16x16mm', 'Quadro 20x20mm',
+      'Piatto 30x5mm', 'Piatto 40x5mm', 'Piatto 50x5mm',
+      'Angolare 40x40x4mm', 'Angolare 50x50x5mm', 'Angolare 60x60x6mm',
+      'Tubolare tondo Ø 33.7x2.5mm', 'Tubolare tondo Ø 42.4x2.5mm',
+      'Tubolare quadro 30x30x2.5mm', 'Tubolare quadro 40x40x2.5mm',
+      'Tubolare rettangolare 40x20x2.5mm', 'Tubolare rettangolare 50x30x2.5mm'
+    ],
+    'Ferro S355 grezzo': [
+      'Tondo Ø 12mm', 'Tondo Ø 16mm', 'Tondo Ø 20mm', 'Tondo Ø 25mm', 'Tondo Ø 30mm',
+      'Quadro 16x16mm', 'Quadro 20x20mm', 'Quadro 25x25mm',
+      'Piatto 40x8mm', 'Piatto 50x8mm', 'Piatto 60x8mm',
+      'Angolare 50x50x5mm', 'Angolare 60x60x6mm', 'Angolare 70x70x7mm',
+      'Tubolare tondo Ø 42.4x3mm', 'Tubolare tondo Ø 48.3x3mm',
+      'Tubolare quadro 40x40x3mm', 'Tubolare quadro 50x50x3mm',
+      'Tubolare rettangolare 50x30x3mm', 'Tubolare rettangolare 60x40x3mm'
+    ],
+    'Acciaio inox AISI 304': [
+      'Tondo Ø 8mm', 'Tondo Ø 10mm', 'Tondo Ø 12mm', 'Tondo Ø 16mm',
+      'Quadro 10x10mm', 'Quadro 12x12mm', 'Quadro 16x16mm',
+      'Piatto 20x5mm', 'Piatto 30x5mm', 'Piatto 40x5mm',
+      'Angolare 30x30x3mm', 'Angolare 40x40x4mm',
+      'Tubolare tondo Ø 21.3x2mm', 'Tubolare tondo Ø 26.9x2mm',
+      'Tubolare quadro 20x20x2mm', 'Tubolare quadro 30x30x2mm',
+      'Tubolare rettangolare 30x20x2mm', 'Tubolare rettangolare 40x20x2mm'
+    ],
+    'Acciaio inox AISI 316': [
+      'Tondo Ø 8mm', 'Tondo Ø 10mm', 'Tondo Ø 12mm', 'Tondo Ø 16mm',
+      'Quadro 10x10mm', 'Quadro 12x12mm', 'Quadro 16x16mm',
+      'Piatto 20x5mm', 'Piatto 30x5mm', 'Piatto 40x5mm',
+      'Angolare 30x30x3mm', 'Angolare 40x40x4mm',
+      'Tubolare tondo Ø 21.3x2mm', 'Tubolare tondo Ø 26.9x2mm',
+      'Tubolare quadro 20x20x2mm', 'Tubolare quadro 30x30x2mm',
+      'Tubolare rettangolare 30x20x2mm', 'Tubolare rettangolare 40x20x2mm'
+    ],
+    'Alluminio 6060': [
+      'Tondo Ø 10mm', 'Tondo Ø 12mm', 'Tondo Ø 16mm', 'Tondo Ø 20mm',
+      'Quadro 10x10mm', 'Quadro 15x15mm', 'Quadro 20x20mm',
+      'Piatto 20x5mm', 'Piatto 30x5mm', 'Piatto 40x5mm',
+      'Angolare 20x20x2mm', 'Angolare 30x30x3mm',
+      'Tubolare tondo Ø 20x2mm', 'Tubolare tondo Ø 25x2mm',
+      'Tubolare quadro 20x20x2mm', 'Tubolare quadro 30x30x2mm',
+      'Tubolare rettangolare 30x20x2mm', 'Tubolare rettangolare 40x20x2mm'
+    ],
+    'Lamiera decapata': [
+      'Spessore 0.8mm', 'Spessore 1mm', 'Spessore 1.2mm', 'Spessore 1.5mm', 
+      'Spessore 2mm', 'Spessore 2.5mm', 'Spessore 3mm'
+    ],
+    'Lamiera striata': [
+      'Spessore 3/5mm', 'Spessore 4/6mm', 'Spessore 5/7mm'
+    ],
+    'Lamiera nera': [
+      'Spessore 1mm', 'Spessore 1.5mm', 'Spessore 2mm', 
+      'Spessore 2.5mm', 'Spessore 3mm', 'Spessore 4mm'
+    ]
+  };
 
   // Dati per il calcolo del peso
   const pesoMateriali = {
     'Ferro S235 grezzo': { densita: 7.85, lunghezzaBarra: 6 }, // kg/dm³, metri
+    'Ferro S275 grezzo': { densita: 7.85, lunghezzaBarra: 6 },
+    'Ferro S355 grezzo': { densita: 7.85, lunghezzaBarra: 6 },
     'Acciaio inox AISI 304': { densita: 8.0, lunghezzaBarra: 6 },
+    'Acciaio inox AISI 316': { densita: 8.0, lunghezzaBarra: 6 },
     'Alluminio 6060': { densita: 2.7, lunghezzaBarra: 6 },
+    'Alluminio anodizzato': { densita: 2.7, lunghezzaBarra: 6 },
     'Acciaio al carbonio': { densita: 7.85, lunghezzaBarra: 6 },
     'Ferro zincato': { densita: 7.85, lunghezzaBarra: 6 },
     'Acciaio corten': { densita: 7.85, lunghezzaBarra: 6 },
-    'Alluminio anodizzato': { densita: 2.7, lunghezzaBarra: 6 },
-    'Acciaio inox AISI 316': { densita: 8.0, lunghezzaBarra: 6 }
+    'Lamiera decapata': { densita: 7.85, lunghezzaBarra: 6 },
+    'Lamiera striata': { densita: 7.85, lunghezzaBarra: 6 },
+    'Lamiera nera': { densita: 7.85, lunghezzaBarra: 6 }
   };
 
   useEffect(() => {
     fetchData();
+    initAudio();
     
     // Mostra suggerimento per aggiungere alla home screen
     showAddToHomeScreenPrompt();
+
+    // Aggiorna i prezzi regionali in base alla regione selezionata
+    updatePrezziRegionali(selectedRegion);
+
+    return () => {
+      // Cleanup audio
+      if (audioPlayer) {
+        audioPlayer.pause();
+        audioPlayer.src = '';
+      }
+    };
   }, []);
+
+  useEffect(() => {
+    // Aggiorna i prezzi regionali quando cambia la regione selezionata
+    updatePrezziRegionali(selectedRegion);
+  }, [selectedRegion]);
+
+  const initAudio = () => {
+    try {
+      // Crea un elemento audio per la musica rilassante
+      const audio = new Audio('https://soundbible.com/mp3/meadow-wind-and-chimes-nature-sounds-7802.mp3');
+      audio.loop = true;
+      audio.volume = 0.3;
+      setAudioPlayer(audio);
+      
+      // Avvia la riproduzione automatica (potrebbe essere bloccata dal browser)
+      audio.play().catch(err => {
+        console.log('Autoplay prevented by browser, user interaction required');
+      });
+    } catch (error) {
+      console.error('Errore nella riproduzione audio:', error);
+    }
+  };
+
+  const toggleAudio = () => {
+    if (audioPlayer) {
+      if (audioPlayer.paused) {
+        audioPlayer.play();
+        toast.success('Musica rilassante attivata');
+      } else {
+        audioPlayer.pause();
+        toast.success('Musica rilassante disattivata');
+      }
+    }
+  };
 
   const showAddToHomeScreenPrompt = () => {
     // Rileva il sistema operativo
@@ -85,6 +272,12 @@ const MaterialiMetallici: React.FC = () => {
           duration: 6000,
         });
       }
+    }
+  };
+
+  const updatePrezziRegionali = (regione: string) => {
+    if (prezziRegioniData[regione as keyof typeof prezziRegioniData]) {
+      setPrezziRegionali(prezziRegioniData[regione as keyof typeof prezziRegioniData]);
     }
   };
 
@@ -147,26 +340,23 @@ const MaterialiMetallici: React.FC = () => {
         return;
       }
 
-      // Crea un set di tipi di materiale unici
-      const tipiUnici = new Set();
-      const prezziUnici = [];
-
+      // Prepara i dati per l'inserimento
+      const prezziToInsert = [];
+      
+      // Aggiungi tutti i materiali dalla regione selezionata
       for (const prezzo of prezziRegionali) {
-        if (!tipiUnici.has(prezzo.tipo)) {
-          tipiUnici.add(prezzo.tipo);
-          prezziUnici.push({
-            tipo_materiale: prezzo.tipo,
-            prezzo_kg: prezzo.prezzo,
-            data_aggiornamento: new Date().toISOString().split('T')[0],
-            fonte: `Mercato ${prezzo.regione}`
-          });
-        }
+        prezziToInsert.push({
+          tipo_materiale: prezzo.tipo,
+          prezzo_kg: prezzo.prezzo,
+          data_aggiornamento: new Date().toISOString().split('T')[0],
+          fonte: `Mercato ${selectedRegion}`
+        });
       }
 
-      // Inserisci i prezzi unici
+      // Inserisci i prezzi
       const { error } = await supabase
         .from('prezzi_materiali')
-        .insert(prezziUnici);
+        .insert(prezziToInsert);
 
       if (error) {
         console.error('Errore nell\'inserimento prezzi:', error);
@@ -425,6 +615,13 @@ const MaterialiMetallici: React.FC = () => {
         </div>
         <div className="flex gap-2">
           <button
+            onClick={toggleAudio}
+            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+          >
+            <Info className="h-4 w-4" />
+            Musica Relax
+          </button>
+          <button
             onClick={() => setShowCalculator(!showCalculator)}
             className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
           >
@@ -485,6 +682,59 @@ const MaterialiMetallici: React.FC = () => {
         )}
       </AnimatePresence>
 
+      {/* Prezzi Regionali */}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Prezzi Materiali per Regione
+            </h3>
+            <div className="flex items-center gap-2">
+              <Map className="h-5 w-5 text-blue-600" />
+              <select
+                value={selectedRegion}
+                onChange={(e) => setSelectedRegion(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              >
+                {regioni.map(regione => (
+                  <option key={regione} value={regione}>{regione}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {prezziRegionali.map((prezzo, index) => (
+              <motion.div
+                key={`${prezzo.tipo}-${index}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-gray-900 text-sm">{prezzo.tipo}</h4>
+                  <TrendingUp className="h-4 w-4 text-blue-600" />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Prezzo:</span>
+                  <span className="text-sm font-medium text-blue-700">
+                    €{prezzo.prezzo.toFixed(3)}/kg
+                  </span>
+                </div>
+                
+                <div className="mt-2 text-xs text-gray-500">
+                  Regione: {selectedRegion}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Form Aggiungi Materiale */}
       <AnimatePresence>
         {showAddForm && (
@@ -521,10 +771,14 @@ const MaterialiMetallici: React.FC = () => {
                     required
                   >
                     <option value="">Seleziona materiale</option>
-                    {prezziMateriali.map(prezzo => (
-                      <option key={prezzo.id} value={prezzo.tipo_materiale}>
-                        {prezzo.tipo_materiale} - €{prezzo.prezzo_kg.toFixed(3)}/kg
-                      </option>
+                    {Object.keys(profilatiCommerciali).map(tipo => (
+                      <optgroup key={tipo} label={tipo}>
+                        {profilatiCommerciali[tipo as keyof typeof profilatiCommerciali].map(profilato => (
+                          <option key={`${tipo}-${profilato}`} value={`${tipo} - ${profilato}`}>
+                            {tipo} - {profilato}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                     <option value="custom">Altro materiale (inserisci manualmente)</option>
                   </select>
@@ -836,6 +1090,75 @@ const MaterialiMetallici: React.FC = () => {
             </table>
           </div>
         )}
+      </div>
+
+      {/* Prontuario Materiali */}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Prontuario Materiali Metallici
+            </h3>
+            <HelpTooltip content="Informazioni tecniche e pesi specifici dei materiali metallici" />
+          </div>
+        </div>
+
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="text-md font-semibold text-gray-900 mb-3">Pesi Specifici</h4>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead>
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Materiale</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Densità (kg/dm³)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {Object.entries(pesoMateriali).map(([materiale, dati]) => (
+                      <tr key={materiale} className="hover:bg-gray-100">
+                        <td className="px-4 py-2 text-sm text-gray-900">{materiale}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900">{dati.densita}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-md font-semibold text-gray-900 mb-3">Informazioni Tecniche</h4>
+              <div className="space-y-4">
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h5 className="font-medium text-blue-800 mb-2">Ferro e Acciaio</h5>
+                  <ul className="text-sm text-blue-700 space-y-1">
+                    <li><span className="font-medium">S235:</span> Resistenza minima allo snervamento 235 MPa</li>
+                    <li><span className="font-medium">S275:</span> Resistenza minima allo snervamento 275 MPa</li>
+                    <li><span className="font-medium">S355:</span> Resistenza minima allo snervamento 355 MPa</li>
+                    <li><span className="font-medium">Corten:</span> Acciaio resistente alla corrosione atmosferica</li>
+                  </ul>
+                </div>
+
+                <div className="bg-green-50 rounded-lg p-4">
+                  <h5 className="font-medium text-green-800 mb-2">Acciaio Inox</h5>
+                  <ul className="text-sm text-green-700 space-y-1">
+                    <li><span className="font-medium">AISI 304:</span> Inox austenitico 18/8 (Cr-Ni)</li>
+                    <li><span className="font-medium">AISI 316:</span> Inox austenitico 18/8/2 (Cr-Ni-Mo), resistente in ambienti marini</li>
+                  </ul>
+                </div>
+
+                <div className="bg-amber-50 rounded-lg p-4">
+                  <h5 className="font-medium text-amber-800 mb-2">Alluminio</h5>
+                  <ul className="text-sm text-amber-700 space-y-1">
+                    <li><span className="font-medium">6060:</span> Lega Al-Mg-Si, buona resistenza meccanica e ottima estrudibilità</li>
+                    <li><span className="font-medium">Anodizzato:</span> Trattamento superficiale per aumentare resistenza a corrosione</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

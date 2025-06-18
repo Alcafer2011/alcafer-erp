@@ -16,6 +16,7 @@ const SpotifyPlayer: React.FC<SpotifyPlayerProps> = ({ defaultPlaylist = '37i9dQ
   const [isLoading, setIsLoading] = useState(false);
   const [hasSpotifyToken, setHasSpotifyToken] = useState(false);
   const [playlistId, setPlaylistId] = useState(defaultPlaylist);
+  const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
 
   // Playlist di musica rilassante predefinite
   const relaxingPlaylists = [
@@ -26,7 +27,35 @@ const SpotifyPlayer: React.FC<SpotifyPlayerProps> = ({ defaultPlaylist = '37i9dQ
     { id: '37i9dQZF1DX9uKNf5jGX6m', name: 'Relaxing Massage' }
   ];
 
+  // Tracce di musica rilassante gratuite
+  const freeTracks = [
+    { 
+      name: 'Peaceful Meditation', 
+      url: 'https://soundbible.com/mp3/meadow-wind-and-chimes-nature-sounds-7802.mp3',
+      artist: 'Nature Sounds',
+      album: 'Meditation Collection'
+    },
+    { 
+      name: 'Ocean Waves', 
+      url: 'https://soundbible.com/mp3/Ocean_Waves-Mike_Koenig-980635527.mp3',
+      artist: 'Nature Sounds',
+      album: 'Ocean Collection'
+    },
+    { 
+      name: 'Forest Birds', 
+      url: 'https://soundbible.com/mp3/songbird-daniel-simion.mp3',
+      artist: 'Nature Sounds',
+      album: 'Forest Collection'
+    }
+  ];
+
   useEffect(() => {
+    // Inizializza il player audio
+    const audio = new Audio();
+    audio.loop = true;
+    audio.volume = volume / 100;
+    setAudioPlayer(audio);
+    
     // Controlla se l'utente ha già un token Spotify salvato
     const token = localStorage.getItem('spotify_token');
     if (token) {
@@ -46,7 +75,21 @@ const SpotifyPlayer: React.FC<SpotifyPlayerProps> = ({ defaultPlaylist = '37i9dQ
         window.location.hash = '';
       }
     }
+
+    return () => {
+      if (audio) {
+        audio.pause();
+        audio.src = '';
+      }
+    };
   }, []);
+
+  useEffect(() => {
+    // Aggiorna il volume quando cambia
+    if (audioPlayer) {
+      audioPlayer.volume = isMuted ? 0 : volume / 100;
+    }
+  }, [volume, isMuted]);
 
   const connectToSpotify = () => {
     setIsLoading(true);
@@ -61,6 +104,16 @@ const SpotifyPlayer: React.FC<SpotifyPlayerProps> = ({ defaultPlaylist = '37i9dQ
         album: 'Meditation Sounds',
         image: 'https://i.scdn.co/image/ab67706f00000003ca5a7517156021292e5663a4'
       });
+      
+      // Avvia la riproduzione di una traccia gratuita
+      if (audioPlayer) {
+        audioPlayer.src = freeTracks[0].url;
+        audioPlayer.play().catch(err => {
+          console.log('Autoplay prevented by browser, user interaction required');
+        });
+        setIsPlaying(true);
+      }
+      
       toast.success('Connesso a Spotify');
     }, 1500);
   };
@@ -79,26 +132,60 @@ const SpotifyPlayer: React.FC<SpotifyPlayerProps> = ({ defaultPlaylist = '37i9dQ
   };
 
   const togglePlayback = () => {
-    setIsPlaying(!isPlaying);
+    if (audioPlayer) {
+      if (isPlaying) {
+        audioPlayer.pause();
+      } else {
+        audioPlayer.play().catch(err => {
+          toast.error('Errore nella riproduzione. Clicca di nuovo per riprovare.');
+        });
+      }
+      setIsPlaying(!isPlaying);
+    }
   };
 
   const changeTrack = (direction: 'next' | 'prev') => {
+    if (!audioPlayer) return;
+    
     setIsLoading(true);
     
-    // Simula cambio traccia
-    setTimeout(() => {
-      setCurrentTrack({
-        name: direction === 'next' ? 'Calm Waters' : 'Mountain Breeze',
-        artist: 'Nature Sounds',
-        album: 'Relaxation Collection',
-        image: 'https://i.scdn.co/image/ab67706f00000003e4eadd417a05b2546e866934'
-      });
+    // Trova l'indice della traccia corrente
+    const currentIndex = freeTracks.findIndex(track => track.url === audioPlayer.src);
+    let newIndex;
+    
+    if (direction === 'next') {
+      newIndex = (currentIndex + 1) % freeTracks.length;
+    } else {
+      newIndex = (currentIndex - 1 + freeTracks.length) % freeTracks.length;
+    }
+    
+    // Cambia traccia
+    const newTrack = freeTracks[newIndex];
+    audioPlayer.src = newTrack.url;
+    
+    // Aggiorna UI
+    setCurrentTrack({
+      name: newTrack.name,
+      artist: newTrack.artist,
+      album: newTrack.album,
+      image: 'https://i.scdn.co/image/ab67706f00000003e4eadd417a05b2546e866934'
+    });
+    
+    // Riproduci
+    audioPlayer.play().then(() => {
+      setIsPlaying(true);
       setIsLoading(false);
-    }, 800);
+    }).catch(err => {
+      setIsLoading(false);
+      toast.error('Errore nella riproduzione. Clicca play per riprovare.');
+    });
   };
 
   const toggleMute = () => {
     setIsMuted(!isMuted);
+    if (audioPlayer) {
+      audioPlayer.volume = !isMuted ? 0 : volume / 100;
+    }
   };
 
   const changePlaylist = (id: string) => {
@@ -114,6 +201,17 @@ const SpotifyPlayer: React.FC<SpotifyPlayerProps> = ({ defaultPlaylist = '37i9dQ
         album: playlist?.name,
         image: `https://i.scdn.co/image/ab67706f00000003ca5a7517156021292e5663a4`
       });
+      
+      // Cambia traccia audio
+      if (audioPlayer) {
+        // Seleziona una traccia casuale
+        const randomTrack = freeTracks[Math.floor(Math.random() * freeTracks.length)];
+        audioPlayer.src = randomTrack.url;
+        audioPlayer.play().catch(err => {
+          console.log('Playback error:', err);
+        });
+      }
+      
       setIsLoading(false);
       setIsPlaying(true);
     }, 1000);

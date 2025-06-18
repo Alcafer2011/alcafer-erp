@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, RefreshCw, Check } from 'lucide-react';
+import { Calculator, RefreshCw, Check, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -22,6 +22,37 @@ const MaterialCalculator: React.FC<MaterialCalculatorProps> = ({ materiali, peso
     prezzo: number;
     totale: number;
   } | null>(null);
+
+  // Profilati standard
+  const profilatiStandard = {
+    'barra': [
+      { nome: 'Tondo Ø 8mm', diametro: 8 },
+      { nome: 'Tondo Ø 10mm', diametro: 10 },
+      { nome: 'Tondo Ø 12mm', diametro: 12 },
+      { nome: 'Tondo Ø 14mm', diametro: 14 },
+      { nome: 'Tondo Ø 16mm', diametro: 16 },
+      { nome: 'Tondo Ø 18mm', diametro: 18 },
+      { nome: 'Tondo Ø 20mm', diametro: 20 },
+      { nome: 'Tondo Ø 25mm', diametro: 25 },
+      { nome: 'Tondo Ø 30mm', diametro: 30 },
+    ],
+    'tubo': [
+      { nome: 'Tubo Ø 21.3x2mm', diametro: 21.3, spessore: 2 },
+      { nome: 'Tubo Ø 26.9x2mm', diametro: 26.9, spessore: 2 },
+      { nome: 'Tubo Ø 33.7x2mm', diametro: 33.7, spessore: 2 },
+      { nome: 'Tubo Ø 42.4x2mm', diametro: 42.4, spessore: 2 },
+      { nome: 'Tubo Ø 48.3x2mm', diametro: 48.3, spessore: 2 },
+      { nome: 'Tubo Ø 60.3x2mm', diametro: 60.3, spessore: 2 },
+    ],
+    'lamiera': [
+      { nome: 'Lamiera 1mm', spessore: 1 },
+      { nome: 'Lamiera 1.5mm', spessore: 1.5 },
+      { nome: 'Lamiera 2mm', spessore: 2 },
+      { nome: 'Lamiera 3mm', spessore: 3 },
+      { nome: 'Lamiera 4mm', spessore: 4 },
+      { nome: 'Lamiera 5mm', spessore: 5 },
+    ]
+  };
 
   const calcolaPeso = () => {
     if (!tipoMateriale) {
@@ -87,6 +118,33 @@ const MaterialCalculator: React.FC<MaterialCalculatorProps> = ({ materiali, peso
     }
   };
 
+  const handleProfilatoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    if (!value) return;
+    
+    const [tipo, nome] = value.split('|');
+    
+    if (tipo === 'barra') {
+      const profilato = profilatiStandard.barra.find(p => p.nome === nome);
+      if (profilato) {
+        setDiametro(profilato.diametro);
+      }
+    } 
+    else if (tipo === 'tubo') {
+      const profilato = profilatiStandard.tubo.find(p => p.nome === nome);
+      if (profilato) {
+        setDiametro(profilato.diametro);
+        setSpessore(profilato.spessore);
+      }
+    }
+    else if (tipo === 'lamiera') {
+      const profilato = profilatiStandard.lamiera.find(p => p.nome === nome);
+      if (profilato) {
+        setSpessore(profilato.spessore);
+      }
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm p-6 border border-orange-200">
       <div className="flex items-center justify-between mb-4">
@@ -130,6 +188,28 @@ const MaterialCalculator: React.FC<MaterialCalculatorProps> = ({ materiali, peso
               <option value="barra">Barra tonda</option>
               <option value="tubo">Tubo</option>
               <option value="lamiera">Lamiera</option>
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="profilato" className="block text-sm font-medium text-gray-700 mb-1">
+              Profilato Standard
+            </label>
+            <select
+              id="profilato"
+              onChange={handleProfilatoChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            >
+              <option value="">Seleziona o inserisci manualmente</option>
+              {forma === 'barra' && profilatiStandard.barra.map(p => (
+                <option key={p.nome} value={`barra|${p.nome}`}>{p.nome}</option>
+              ))}
+              {forma === 'tubo' && profilatiStandard.tubo.map(p => (
+                <option key={p.nome} value={`tubo|${p.nome}`}>{p.nome}</option>
+              ))}
+              {forma === 'lamiera' && profilatiStandard.lamiera.map(p => (
+                <option key={p.nome} value={`lamiera|${p.nome}`}>{p.nome}</option>
+              ))}
             </select>
           </div>
 
@@ -383,7 +463,7 @@ const MaterialCalculator: React.FC<MaterialCalculatorProps> = ({ materiali, peso
                   <ol className="text-sm text-orange-700 space-y-1 list-decimal list-inside">
                     <li>Seleziona il tipo di materiale</li>
                     <li>Scegli la forma (barra, tubo o lamiera)</li>
-                    <li>Inserisci le dimensioni</li>
+                    <li>Seleziona un profilato standard o inserisci le dimensioni</li>
                     <li>Specifica la quantità</li>
                     <li>Clicca su "Calcola Peso e Prezzo"</li>
                   </ol>
@@ -395,6 +475,15 @@ const MaterialCalculator: React.FC<MaterialCalculatorProps> = ({ materiali, peso
                     <li><span className="font-medium">Barra:</span> π × r² × lunghezza × densità</li>
                     <li><span className="font-medium">Tubo:</span> π × (R² - r²) × lunghezza × densità</li>
                     <li><span className="font-medium">Lamiera:</span> lunghezza × larghezza × spessore × densità</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-white p-4 rounded-lg">
+                  <h5 className="text-sm font-medium text-orange-800 mb-2">Lunghezze Standard</h5>
+                  <ul className="text-sm text-orange-700 space-y-1">
+                    <li><span className="font-medium">Barre:</span> 6 metri</li>
+                    <li><span className="font-medium">Tubi:</span> 6 metri</li>
+                    <li><span className="font-medium">Lamiere:</span> Formati standard 1000x2000mm, 1250x2500mm, 1500x3000mm</li>
                   </ul>
                 </div>
                 
