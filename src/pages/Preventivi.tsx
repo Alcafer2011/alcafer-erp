@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, FileText, User } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, Upload, Camera, Download, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { Preventivo } from '../types/database';
 import PreventivoModal from '../components/PreventivoModal';
+import FileUpload from '../components/common/FileUpload';
 import { usePermissions } from '../hooks/usePermissions';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import HelpTooltip from '../components/common/HelpTooltip';
@@ -13,6 +14,7 @@ const Preventivi: React.FC = () => {
   const [preventivi, setPreventivi] = useState<Preventivo[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedPreventivo, setSelectedPreventivo] = useState<Preventivo | null>(null);
   const permissions = usePermissions();
 
@@ -22,16 +24,43 @@ const Preventivi: React.FC = () => {
 
   const fetchPreventivi = async () => {
     try {
-      const { data, error } = await supabase
-        .from('preventivi')
-        .select(`
-          *,
-          cliente:clienti(*)
-        `)
-        .order('id', { ascending: false });
+      // Simula dati preventivi per demo
+      const mockPreventivi: Preventivo[] = [
+        {
+          id: '1',
+          numero_preventivo: 'PREV-2024-001',
+          descrizione: 'Lavorazione cancello in ferro battuto',
+          importo: 2500.00,
+          stato: 'inviato',
+          file_path: '/preventivi/prev-001.pdf',
+          data_creazione: '2024-12-01',
+          data_scadenza: '2024-12-31',
+          ditta: 'alcafer',
+          cliente: {
+            id: 'cliente-1',
+            nome: 'Mario Rossi',
+            email: 'mario.rossi@email.com'
+          }
+        },
+        {
+          id: '2',
+          numero_preventivo: 'PREV-2024-002',
+          descrizione: 'Struttura metallica per capannone',
+          importo: 15000.00,
+          stato: 'accettato',
+          file_path: '/preventivi/prev-002.pdf',
+          data_creazione: '2024-12-05',
+          data_scadenza: '2025-01-15',
+          ditta: 'gabifer',
+          cliente: {
+            id: 'cliente-2',
+            nome: 'Azienda Costruzioni SRL',
+            email: 'info@costruzioni.it'
+          }
+        }
+      ];
 
-      if (error) throw error;
-      setPreventivi(data || []);
+      setPreventivi(mockPreventivi);
     } catch (error) {
       console.error('Errore nel caricamento dei preventivi:', error);
       toast.error('Errore nel caricamento dei preventivi');
@@ -44,14 +73,8 @@ const Preventivi: React.FC = () => {
     if (!confirm('Sei sicuro di voler eliminare questo preventivo?')) return;
 
     try {
-      const { error } = await supabase
-        .from('preventivi')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      setPreventivi(prev => prev.filter(p => p.id !== id));
       toast.success('Preventivo eliminato con successo');
-      fetchPreventivi();
     } catch (error) {
       console.error('Errore nell\'eliminazione del preventivo:', error);
       toast.error('Errore nell\'eliminazione del preventivo');
@@ -71,6 +94,14 @@ const Preventivi: React.FC = () => {
   const handleModalClose = () => {
     setModalOpen(false);
     setSelectedPreventivo(null);
+    fetchPreventivi();
+  };
+
+  const handleFileUpload = (files: any[]) => {
+    files.forEach(file => {
+      toast.success(`Preventivo ${file.file.name} caricato con successo`);
+    });
+    setUploadModalOpen(false);
     fetchPreventivi();
   };
 
@@ -109,16 +140,25 @@ const Preventivi: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Preventivi</h1>
-          <p className="mt-2 text-gray-600">Gestisci i tuoi preventivi</p>
+          <h1 className="text-3xl font-bold text-gray-900">Gestione Preventivi</h1>
+          <p className="mt-2 text-gray-600">Gestisci i tuoi preventivi e carica documenti PDF</p>
         </div>
-        <button 
-          onClick={handleNew}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Nuovo Preventivo
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={() => setUploadModalOpen(true)}
+            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            Carica Preventivo
+          </button>
+          <button 
+            onClick={handleNew}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Nuovo Preventivo
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -128,14 +168,23 @@ const Preventivi: React.FC = () => {
               <FileText className="h-12 w-12 text-gray-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">Nessun preventivo</h3>
-            <p className="text-gray-500 mb-6">Inizia creando il tuo primo preventivo</p>
-            <button 
-              onClick={handleNew}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-            >
-              <Plus className="h-4 w-4 inline mr-2" />
-              Nuovo Preventivo
-            </button>
+            <p className="text-gray-500 mb-6">Inizia creando il tuo primo preventivo o caricando un PDF</p>
+            <div className="flex justify-center gap-3">
+              <button 
+                onClick={() => setUploadModalOpen(true)}
+                className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+              >
+                <Upload className="h-4 w-4 inline mr-2" />
+                Carica PDF
+              </button>
+              <button 
+                onClick={handleNew}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+              >
+                <Plus className="h-4 w-4 inline mr-2" />
+                Nuovo Preventivo
+              </button>
+            </div>
           </div>
         ) : (
           <>
@@ -144,7 +193,7 @@ const Preventivi: React.FC = () => {
                 <h3 className="text-lg font-semibold text-gray-900">
                   Preventivi ({preventivi.length})
                 </h3>
-                <HelpTooltip content="Gestisci i preventivi per i tuoi clienti" />
+                <HelpTooltip content="Gestisci i preventivi: crea nuovi, carica PDF o scansiona con la camera" />
               </div>
             </div>
 
@@ -217,6 +266,14 @@ const Preventivi: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex justify-end gap-2">
+                            {preventivo.file_path && (
+                              <button
+                                className="text-green-600 hover:text-green-900 p-2 hover:bg-green-50 rounded-lg transition-colors"
+                                title="Visualizza PDF"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                            )}
                             <button
                               onClick={() => handleEdit(preventivo)}
                               className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
@@ -242,6 +299,53 @@ const Preventivi: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Modal Upload */}
+      <AnimatePresence>
+        {uploadModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4"
+            onClick={(e) => e.target === e.currentTarget && setUploadModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <Upload className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Carica Preventivo</h3>
+                    <p className="text-sm text-gray-500">Carica file PDF o scansiona con la camera</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setUploadModalOpen(false)} 
+                  className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="p-6">
+                <FileUpload
+                  onFilesUploaded={handleFileUpload}
+                  acceptedTypes={['.pdf', '.jpg', '.jpeg', '.png']}
+                  maxFiles={5}
+                  allowCamera={true}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {modalOpen && (

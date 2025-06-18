@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, Send, X, Maximize2, Minimize2, Zap, MessageSquare } from 'lucide-react';
+import { Brain, Send, X, Maximize2, Minimize2, Zap, MessageSquare, Lightbulb, Sparkles } from 'lucide-react';
 import { aiService } from '../../services/aiService';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -17,6 +17,7 @@ const AIAssistant: React.FC = () => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [aiModel, setAiModel] = useState<'gemini' | 'ollama' | 'huggingface'>('gemini');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { userProfile } = useAuth();
 
@@ -105,6 +106,19 @@ const AIAssistant: React.FC = () => {
     setIsMinimized(!isMinimized);
   };
 
+  const switchAiModel = (model: 'gemini' | 'ollama' | 'huggingface') => {
+    setAiModel(model);
+    
+    const switchMessage: Message = {
+      id: Date.now().toString(),
+      text: `Modello AI cambiato a ${model === 'gemini' ? 'Google Gemini' : model === 'ollama' ? 'Ollama (locale)' : 'Hugging Face'}`,
+      sender: 'ai',
+      timestamp: new Date()
+    };
+    
+    setMessages(prev => [...prev, switchMessage]);
+  };
+
   if (!isOpen) {
     return (
       <motion.button
@@ -161,6 +175,49 @@ const AIAssistant: React.FC = () => {
             exit={{ height: 0, opacity: 0 }}
             className="flex-1 overflow-hidden flex flex-col"
           >
+            {/* AI Model Selector */}
+            <div className="flex border-b border-gray-200 bg-gray-50 p-2">
+              <button
+                onClick={() => switchAiModel('gemini')}
+                className={`flex-1 text-xs py-1 px-2 rounded-l-md ${
+                  aiModel === 'gemini' 
+                    ? 'bg-purple-600 text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  <span>Gemini</span>
+                </div>
+              </button>
+              <button
+                onClick={() => switchAiModel('ollama')}
+                className={`flex-1 text-xs py-1 px-2 ${
+                  aiModel === 'ollama' 
+                    ? 'bg-purple-600 text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-1">
+                  <Brain className="h-3 w-3" />
+                  <span>Ollama</span>
+                </div>
+              </button>
+              <button
+                onClick={() => switchAiModel('huggingface')}
+                className={`flex-1 text-xs py-1 px-2 rounded-r-md ${
+                  aiModel === 'huggingface' 
+                    ? 'bg-purple-600 text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-1">
+                  <Lightbulb className="h-3 w-3" />
+                  <span>HF</span>
+                </div>
+              </button>
+            </div>
+            
             {/* Messages */}
             <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
               <div className="space-y-4">

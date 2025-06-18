@@ -4,7 +4,7 @@ import {
   Home, Users, FileText, Briefcase, Settings, 
   Menu, X, LogOut, HelpCircle, ChevronDown, Calculator,
   TrendingUp, PieChart, Receipt, Wrench, UserCheck, Building2,
-  Package, Truck, UserCog
+  Package, Truck, UserCog, Droplet, Flame
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
@@ -60,7 +60,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'Materiali Metallici', href: '/materiali-metallici', icon: Package, show: permissions.canModifyCostiMateriali },
         { name: 'Materiali Vari', href: '/materiali-vari', icon: Settings, show: permissions.canModifyCostiMateriali },
         { name: 'Leasing Strumentali', href: '/leasing', icon: Wrench, show: permissions.canModifyLeasing },
-        { name: 'Manovalanza', href: '/manovalanza', icon: UserCheck, show: permissions.canModifyManovalanza },
+        { name: 'Manovalanza', href: '/manovalanza', icon: UserCheck, show: true },
+        { name: 'Costi Utenze', href: '/costi-utenze', icon: Flame, show: permissions.canModifyUtenze },
       ]
     },
     {

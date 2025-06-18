@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Building2, Mail, Phone, MapPin, CreditCard, Star } from 'lucide-react';
+import { X, Building2, Mail, Phone, MapPin, CreditCard, Star, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import HelpTooltip from '../common/HelpTooltip';
+import FornitoreApiModal from './FornitoreApiModal';
 import toast from 'react-hot-toast';
 
 interface Fornitore {
@@ -44,6 +45,7 @@ const FornitoreModal: React.FC<FornitoreModalProps> = ({ fornitore, onClose }) =
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showApiModal, setShowApiModal] = useState(false);
 
   useEffect(() => {
     if (fornitore) {
@@ -157,6 +159,20 @@ const FornitoreModal: React.FC<FornitoreModalProps> = ({ fornitore, onClose }) =
     );
   };
 
+  const handleApiResults = (results: any) => {
+    setFormData(prev => ({
+      ...prev,
+      nome: results.nome || prev.nome,
+      email: results.email || prev.email,
+      telefono: results.telefono || prev.telefono,
+      indirizzo: results.indirizzo || prev.indirizzo,
+      partita_iva: results.partita_iva || prev.partita_iva,
+      codice_fiscale: results.codice_fiscale || prev.codice_fiscale,
+      tipo_fornitore: results.tipo_fornitore || prev.tipo_fornitore,
+      settore_merceologico: results.settore_merceologico || prev.settore_merceologico
+    }));
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -194,6 +210,27 @@ const FornitoreModal: React.FC<FornitoreModalProps> = ({ fornitore, onClose }) =
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Ricerca API */}
+          {!fornitore && (
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium text-blue-800">Ricerca Automatica</h4>
+                <HelpTooltip content="Cerca i dati del fornitore tramite partita IVA" />
+              </div>
+              <p className="text-xs text-blue-700 mb-3">
+                Puoi cercare automaticamente i dati del fornitore inserendo la partita IVA
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowApiModal(true)}
+                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
+              >
+                <Search className="h-4 w-4" />
+                Cerca per Partita IVA
+              </button>
+            </div>
+          )}
+
           {/* Informazioni Base */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -519,6 +556,14 @@ const FornitoreModal: React.FC<FornitoreModalProps> = ({ fornitore, onClose }) =
             </button>
           </div>
         </form>
+
+        {/* Modal Ricerca API */}
+        {showApiModal && (
+          <FornitoreApiModal
+            onClose={() => setShowApiModal(false)}
+            onSelect={handleApiResults}
+          />
+        )}
       </motion.div>
     </motion.div>
   );

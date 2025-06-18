@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Edit, Wrench, Zap, DollarSign, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Edit, Wrench, Zap, DollarSign, ToggleLeft, ToggleRight, Plus, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { LeasingStrumentale } from '../types/database';
@@ -16,7 +16,32 @@ const LeasingStrumentali: React.FC = () => {
     rata_mensile: 0,
     consumo_kw: 0
   });
+  const [newStrumento, setNewStrumento] = useState({
+    nome_strumento: '',
+    rata_mensile: 0,
+    consumo_kw: 0
+  });
+  const [showAddForm, setShowAddForm] = useState(false);
   const permissions = usePermissions();
+
+  // Elenco di strumenti predefiniti
+  const strumentiPredefiniti = [
+    { nome: 'Taglio laser Trumpf', rata: 3500, consumo: 25 },
+    { nome: 'Piegatrice Amada', rata: 1800, consumo: 12 },
+    { nome: 'Saldatrice TIG Miller', rata: 450, consumo: 8 },
+    { nome: 'Saldatrice MIG Fronius', rata: 380, consumo: 7.5 },
+    { nome: 'Trapano a colonna', rata: 120, consumo: 2.2 },
+    { nome: 'Smerigliatrice industriale', rata: 90, consumo: 3.5 },
+    { nome: 'Seghetto a nastro', rata: 150, consumo: 2.8 },
+    { nome: 'Tornio CNC', rata: 1200, consumo: 15 },
+    { nome: 'Fresa CNC', rata: 1500, consumo: 18 },
+    { nome: 'Plasma Hypertherm', rata: 850, consumo: 22 },
+    { nome: 'Compressore Atlas Copco', rata: 320, consumo: 30 },
+    { nome: 'Carroponte 5 ton', rata: 650, consumo: 8 },
+    { nome: 'Muletto Linde', rata: 480, consumo: 0 },
+    { nome: 'Software CAD/CAM', rata: 250, consumo: 0 },
+    { nome: 'Aspiratore fumi', rata: 180, consumo: 5.5 }
+  ];
 
   useEffect(() => {
     fetchLeasingStrumentali();
@@ -30,12 +55,45 @@ const LeasingStrumentali: React.FC = () => {
         .order('nome_strumento');
 
       if (error) throw error;
-      setLeasingStrumentali(data || []);
+      
+      // Se non ci sono dati, inizializza con strumenti predefiniti
+      if (!data || data.length === 0) {
+        await initializeStrumentiPredefiniti();
+        const { data: initialData } = await supabase
+          .from('leasing_strumentali')
+          .select('*')
+          .order('nome_strumento');
+        
+        setLeasingStrumentali(initialData || []);
+      } else {
+        setLeasingStrumentali(data);
+      }
     } catch (error) {
       console.error('Errore nel caricamento del leasing strumentali:', error);
       toast.error('Errore nel caricamento dei dati');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const initializeStrumentiPredefiniti = async () => {
+    try {
+      const strumentiToInsert = strumentiPredefiniti.map(s => ({
+        nome_strumento: s.nome,
+        rata_mensile: s.rata,
+        consumo_kw: s.consumo,
+        attivo: true
+      }));
+      
+      const { error } = await supabase
+        .from('leasing_strumentali')
+        .insert(strumentiToInsert);
+      
+      if (error) throw error;
+      toast.success('Strumenti predefiniti inizializzati');
+    } catch (error) {
+      console.error('Errore nell\'inizializzazione degli strumenti:', error);
+      toast.error('Errore nell\'inizializzazione degli strumenti');
     }
   };
 
@@ -85,6 +143,57 @@ const LeasingStrumentali: React.FC = () => {
     }
   };
 
+  const handleAddStrumento = async () => {
+    if (!newStrumento.nome_strumento) {
+      toast.error('Il nome dello strumento è obbligatorio');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('leasing_strumentali')
+        .insert([{
+          nome_strumento: newStrumento.nome_strumento,
+          rata_mensile: newStrumento.rata_mensile,
+          consumo_kw: newStrumento.consumo_kw || null,
+          attivo: true
+        }]);
+
+      if (error) throw error;
+      
+      toast.success('Strumento aggiunto con successo');
+      setNewStrumento({
+        nome_strumento: '',
+        rata_mensile: 0,
+        consumo_kw: 0
+      });
+      setShowAddForm(false);
+      fetchLeasingStrumentali();
+    } catch (error) {
+      console.error('Errore nell\'aggiunta dello strumento:', error);
+      toast.error('Errore nell\'aggiunta dello strumento');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Sei sicuro di voler eliminare questo strumento?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('leasing_strumentali')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      toast.success('Strumento eliminato con successo');
+      fetchLeasingStrumentali();
+    } catch (error) {
+      console.error('Errore nell\'eliminazione dello strumento:', error);
+      toast.error('Errore nell\'eliminazione');
+    }
+  };
+
   const getTotaleMensile = () => {
     return leasingStrumentali
       .filter(s => s.attivo)
@@ -122,7 +231,95 @@ const LeasingStrumentali: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Leasing Strumentali</h1>
           <p className="mt-2 text-gray-600">Gestisci i costi mensili di attrezzature e servizi</p>
         </div>
+        <button
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Aggiungi Strumento
+        </button>
       </div>
+
+      {/* Form Aggiungi Strumento */}
+      <AnimatePresence>
+        {showAddForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-white rounded-xl shadow-sm overflow-hidden"
+          >
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Aggiungi Nuovo Strumento
+              </h3>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="nome_strumento" className="block text-sm font-medium text-gray-700 mb-1">
+                    Nome Strumento *
+                  </label>
+                  <input
+                    type="text"
+                    id="nome_strumento"
+                    value={newStrumento.nome_strumento}
+                    onChange={(e) => setNewStrumento(prev => ({ ...prev, nome_strumento: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Es. Taglio laser Trumpf"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="rata_mensile" className="block text-sm font-medium text-gray-700 mb-1">
+                    Rata Mensile (€) *
+                  </label>
+                  <input
+                    type="number"
+                    id="rata_mensile"
+                    value={newStrumento.rata_mensile}
+                    onChange={(e) => setNewStrumento(prev => ({ ...prev, rata_mensile: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="consumo_kw" className="block text-sm font-medium text-gray-700 mb-1">
+                    Consumo (kW)
+                  </label>
+                  <input
+                    type="number"
+                    id="consumo_kw"
+                    value={newStrumento.consumo_kw}
+                    onChange={(e) => setNewStrumento(prev => ({ ...prev, consumo_kw: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="0.0"
+                    min="0"
+                    step="0.1"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end mt-4">
+                <button
+                  onClick={() => setShowAddForm(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors mr-2"
+                >
+                  Annulla
+                </button>
+                <button
+                  onClick={handleAddStrumento}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  Aggiungi
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Riepilogo Totali */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -292,13 +489,22 @@ const LeasingStrumentali: React.FC = () => {
                         </button>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => handleEdit(strumento)}
-                        className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Modifica valori"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => handleEdit(strumento)}
+                          className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Modifica valori"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(strumento.id)}
+                          className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Elimina strumento"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     )}
                   </td>
                 </motion.tr>

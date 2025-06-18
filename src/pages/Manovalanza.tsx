@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Edit, UserCheck, DollarSign, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Edit, UserCheck, DollarSign, ToggleLeft, ToggleRight, Plus, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { Manovalanza as ManovalanzaType } from '../types/database';
@@ -13,7 +13,13 @@ const Manovalanza: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<number>(0);
+  const [newDipendente, setNewDipendente] = useState({
+    nome: '',
+    importo_mensile: 0
+  });
+  const [showAddForm, setShowAddForm] = useState(false);
   const permissions = usePermissions();
+  const { userProfile } = usePermissions();
 
   useEffect(() => {
     fetchManovalanza();
@@ -76,6 +82,55 @@ const Manovalanza: React.FC = () => {
     }
   };
 
+  const handleAddDipendente = async () => {
+    if (!newDipendente.nome) {
+      toast.error('Il nome del dipendente è obbligatorio');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('manovalanza')
+        .insert([{
+          nome: newDipendente.nome,
+          importo_mensile: newDipendente.importo_mensile,
+          attivo: true
+        }]);
+
+      if (error) throw error;
+      
+      toast.success('Dipendente aggiunto con successo');
+      setNewDipendente({
+        nome: '',
+        importo_mensile: 0
+      });
+      setShowAddForm(false);
+      fetchManovalanza();
+    } catch (error) {
+      console.error('Errore nell\'aggiunta del dipendente:', error);
+      toast.error('Errore nell\'aggiunta del dipendente');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Sei sicuro di voler eliminare questo dipendente?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('manovalanza')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      toast.success('Dipendente eliminato con successo');
+      fetchManovalanza();
+    } catch (error) {
+      console.error('Errore nell\'eliminazione del dipendente:', error);
+      toast.error('Errore nell\'eliminazione');
+    }
+  };
+
   const getTotaleMensile = () => {
     return manovalanza
       .filter(m => m.attivo)
@@ -90,15 +145,8 @@ const Manovalanza: React.FC = () => {
     );
   }
 
-  if (!permissions.canModifyManovalanza) {
-    return (
-      <div className="text-center py-12">
-        <UserCheck className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Accesso Limitato</h3>
-        <p className="text-gray-500">Non hai i permessi per visualizzare questa sezione.</p>
-      </div>
-    );
-  }
+  // Permetti ad Alessandro di modificare la manovalanza
+  const canModify = userProfile?.ruolo === 'alessandro';
 
   return (
     <div className="space-y-6">
@@ -107,7 +155,82 @@ const Manovalanza: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Gestione Manovalanza</h1>
           <p className="mt-2 text-gray-600">Gestisci i costi mensili del personale</p>
         </div>
+        {canModify && (
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Aggiungi Dipendente
+          </button>
+        )}
       </div>
+
+      {/* Form Aggiungi Dipendente */}
+      <AnimatePresence>
+        {showAddForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-white rounded-xl shadow-sm overflow-hidden"
+          >
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Aggiungi Nuovo Dipendente
+              </h3>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="nome" className="block text-sm font-medium text-gray-700 mb-1">
+                    Nome Dipendente *
+                  </label>
+                  <input
+                    type="text"
+                    id="nome"
+                    value={newDipendente.nome}
+                    onChange={(e) => setNewDipendente(prev => ({ ...prev, nome: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Nome e cognome"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="importo_mensile" className="block text-sm font-medium text-gray-700 mb-1">
+                    Importo Mensile (€) *
+                  </label>
+                  <input
+                    type="number"
+                    id="importo_mensile"
+                    value={newDipendente.importo_mensile}
+                    onChange={(e) => setNewDipendente(prev => ({ ...prev, importo_mensile: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end mt-4">
+                <button
+                  onClick={() => setShowAddForm(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors mr-2"
+                >
+                  Annulla
+                </button>
+                <button
+                  onClick={handleAddDipendente}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  Aggiungi
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Riepilogo Totale */}
       <motion.div
@@ -206,8 +329,8 @@ const Manovalanza: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <button
-                      onClick={() => toggleAttivo(persona.id, persona.attivo)}
-                      className="flex items-center gap-2 text-sm"
+                      onClick={() => canModify && toggleAttivo(persona.id, persona.attivo)}
+                      className={`flex items-center gap-2 text-sm ${canModify ? 'cursor-pointer' : 'cursor-default'}`}
                     >
                       {persona.attivo ? (
                         <>
@@ -223,29 +346,40 @@ const Manovalanza: React.FC = () => {
                     </button>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    {editingId === persona.id ? (
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => handleSave(persona.id)}
-                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                        >
-                          Salva
-                        </button>
-                        <button
-                          onClick={() => setEditingId(null)}
-                          className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                        >
-                          Annulla
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleEdit(persona)}
-                        className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Modifica importo"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
+                    {canModify && (
+                      editingId === persona.id ? (
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleSave(persona.id)}
+                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                          >
+                            Salva
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                          >
+                            Annulla
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleEdit(persona)}
+                            className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Modifica importo"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(persona.id)}
+                            className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Elimina dipendente"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )
                     )}
                   </td>
                 </motion.tr>

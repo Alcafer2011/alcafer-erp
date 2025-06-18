@@ -12,6 +12,7 @@ import MaterialiMetallici from './pages/MaterialiMetallici';
 import MaterialiVari from './pages/MaterialiVari';
 import LeasingStrumentali from './pages/LeasingStrumentali';
 import Manovalanza from './pages/Manovalanza';
+import CostiUtenze from './pages/CostiUtenze';
 import Fornitori from './pages/Fornitori';
 import Utenti from './pages/Utenti';
 import FinanziariInfo from './pages/finanziari/FinanziariInfo';
@@ -106,6 +107,7 @@ function App() {
             <Route path="/materiali-vari" element={<MaterialiVari />} />
             <Route path="/leasing" element={<LeasingStrumentali />} />
             <Route path="/manovalanza" element={<Manovalanza />} />
+            <Route path="/costi-utenze" element={<CostiUtenze />} />
             <Route path="/fornitori" element={<Fornitori />} />
             <Route path="/utenti" element={<Utenti />} />
             <Route path="/finanziari/info" element={<FinanziariInfo />} />

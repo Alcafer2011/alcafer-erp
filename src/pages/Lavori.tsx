@@ -3,6 +3,7 @@ import { Plus, Edit, Trash2, Play, CheckCircle, Clock, AlertTriangle } from 'luc
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { Lavoro } from '../types/database';
+import LavoroModal from '../components/modals/LavoroModal';
 import { usePermissions } from '../hooks/usePermissions';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import HelpTooltip from '../components/common/HelpTooltip';
@@ -11,6 +12,8 @@ import toast from 'react-hot-toast';
 const Lavori: React.FC = () => {
   const [lavori, setLavori] = useState<Lavoro[]>([]);
   const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedLavoro, setSelectedLavoro] = useState<Lavoro | null>(null);
   const permissions = usePermissions();
 
   useEffect(() => {
@@ -32,6 +35,40 @@ const Lavori: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Sei sicuro di voler eliminare questo lavoro?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('lavori')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      toast.success('Lavoro eliminato con successo');
+      fetchLavori();
+    } catch (error) {
+      console.error('Errore nell\'eliminazione del lavoro:', error);
+      toast.error('Errore nell\'eliminazione del lavoro');
+    }
+  };
+
+  const handleEdit = (lavoro: Lavoro) => {
+    setSelectedLavoro(lavoro);
+    setModalOpen(true);
+  };
+
+  const handleNew = () => {
+    setSelectedLavoro(null);
+    setModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setSelectedLavoro(null);
+    fetchLavori();
   };
 
   const getStatoColor = (stato: string) => {
@@ -85,7 +122,10 @@ const Lavori: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Gestione Lavori</h1>
           <p className="mt-2 text-gray-600">Monitora e gestisci tutti i lavori in corso</p>
         </div>
-        <button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2">
+        <button 
+          onClick={handleNew}
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+        >
           <Plus className="h-4 w-4" />
           Nuovo Lavoro
         </button>
@@ -99,7 +139,10 @@ const Lavori: React.FC = () => {
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">Nessun lavoro</h3>
             <p className="text-gray-500 mb-6">Inizia aggiungendo il tuo primo lavoro</p>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+            <button 
+              onClick={handleNew}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+            >
               <Plus className="h-4 w-4 inline mr-2" />
               Aggiungi Lavoro
             </button>
@@ -200,12 +243,14 @@ const Lavori: React.FC = () => {
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div className="flex justify-end gap-2">
                               <button
+                                onClick={() => handleEdit(lavoro)}
                                 className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
                                 title="Modifica lavoro"
                               >
                                 <Edit className="h-4 w-4" />
                               </button>
                               <button
+                                onClick={() => handleDelete(lavoro.id)}
                                 className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
                                 title="Elimina lavoro"
                               >
@@ -223,6 +268,15 @@ const Lavori: React.FC = () => {
           </>
         )}
       </div>
+
+      <AnimatePresence>
+        {modalOpen && (
+          <LavoroModal
+            lavoro={selectedLavoro}
+            onClose={handleModalClose}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
