@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, Volume2, VolumeX, Play, Pause } from 'lucide-react';
+import { Volume2, VolumeX, Play, Pause } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(30);
   const [isMuted, setIsMuted] = useState(false);
@@ -61,28 +58,23 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
+  const handleUserSelect = async (userType: 'alessandro' | 'gabriel' | 'hanna') => {
     try {
-      const result = await login(email, password);
+      const result = await login(userType, '');
       
       if (result.success) {
-        toast.success(`Benvenuto${result.user === 'alessandro' ? ', Alessandro!' : 
-                      result.user === 'gabriel' ? ', Gabriel!' : 
-                      result.user === 'hanna' ? ', Hanna!' : '!'}`);
+        toast.success(`Benvenuto${userType === 'alessandro' ? ', Alessandro!' : 
+                      userType === 'gabriel' ? ', Gabriel!' : 
+                      userType === 'hanna' ? ', Hanna!' : '!'}`);
         
         // Reindirizza alla dashboard dopo il login
         navigate('/');
       } else {
-        toast.error('Errore durante il login. Riprova.');
+        toast.error('Errore durante l\'accesso. Riprova.');
       }
     } catch (error) {
-      console.error('Errore durante il login:', error);
-      toast.error('Errore durante il login. Riprova.');
-    } finally {
-      setLoading(false);
+      console.error('Errore durante l\'accesso:', error);
+      toast.error('Errore durante l\'accesso. Riprova.');
     }
   };
 
@@ -137,96 +129,56 @@ const LoginPage: React.FC = () => {
         className="relative z-10 bg-white/90 backdrop-blur-md p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4"
       >
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <User className="h-10 w-10 text-white" />
-          </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Benvenuto</h2>
-          <p className="text-gray-600">Accedi al sistema ERP Alcafer & Gabifer</p>
+          <p className="text-gray-600">Seleziona il tuo profilo per accedere al sistema ERP Alcafer & Gabifer</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email o Nome Utente
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                id="email"
-                type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Inserisci email o nome utente"
-              />
+        <div className="space-y-4">
+          <button
+            onClick={() => handleUserSelect('alessandro')}
+            className="w-full flex items-center p-4 bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 rounded-xl transition-colors border border-red-200"
+          >
+            <div className="w-12 h-12 bg-gradient-to-r from-red-600 to-red-700 rounded-full flex items-center justify-center mr-4">
+              <span className="text-white text-lg font-bold">A</span>
             </div>
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Inserisci la tua password"
-              />
+            <div className="text-left">
+              <h3 className="font-semibold text-gray-900">Alessandro Calabria</h3>
+              <p className="text-sm text-gray-600">Amministratore</p>
             </div>
-          </div>
+          </button>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                Ricordami
-              </label>
+          <button
+            onClick={() => handleUserSelect('gabriel')}
+            className="w-full flex items-center p-4 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-xl transition-colors border border-blue-200"
+          >
+            <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center mr-4">
+              <span className="text-white text-lg font-bold">G</span>
             </div>
-
-            <div className="text-sm">
-              <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
-                Password dimenticata?
-              </a>
+            <div className="text-left">
+              <h3 className="font-semibold text-gray-900">Gabriel Prunaru</h3>
+              <p className="text-sm text-gray-600">Operatore</p>
             </div>
-          </div>
+          </button>
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-            >
-              {loading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Accesso in corso...
-                </div>
-              ) : (
-                'Accedi'
-              )}
-            </button>
-          </div>
-        </form>
+          <button
+            onClick={() => handleUserSelect('hanna')}
+            className="w-full flex items-center p-4 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-xl transition-colors border border-green-200"
+          >
+            <div className="w-12 h-12 bg-gradient-to-r from-green-600 to-green-700 rounded-full flex items-center justify-center mr-4">
+              <span className="text-white text-lg font-bold">H</span>
+            </div>
+            <div className="text-left">
+              <h3 className="font-semibold text-gray-900">Hanna Mazhar</h3>
+              <p className="text-sm text-gray-600">Contabilità</p>
+            </div>
+          </button>
+        </div>
 
         <div className="mt-8 pt-6 border-t border-gray-200">
           <div className="text-center text-sm text-gray-600">
-            <p>Per accedere, utilizza una delle seguenti opzioni:</p>
-            <div className="mt-2 space-y-1 font-medium">
-              <p>Alessandro (o assistenza.alcafer@gmail.com)</p>
-              <p>Gabriel (o gabifervoghera@gmail.com)</p>
-              <p>Hanna (o nuta1985@icloud.com)</p>
-            </div>
+            <p>Seleziona il tuo profilo per accedere al sistema</p>
             <p className="mt-2 text-xs text-gray-500">
-              La password può essere qualsiasi valore in questa demo
+              Versione 1.0.0 - © 2025 Alcafer & Gabifer
             </p>
           </div>
         </div>

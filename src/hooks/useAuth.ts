@@ -12,14 +12,30 @@ export const useAuth = () => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Controlla se c'è già una sessione attiva
-        const { data: { session } } = await supabase.auth.getSession();
+        // Controlla se c'è già una sessione attiva in localStorage
+        const savedProfile = localStorage.getItem('auth_profile');
         
-        if (session?.user) {
-          // Utente già autenticato
-          setUser(session.user);
-          const profile = await getUserProfile(session.user.id);
+        if (savedProfile) {
+          // Utente già autenticato tramite localStorage
+          const profile = JSON.parse(savedProfile);
           setUserProfile(profile);
+          
+          // Crea un oggetto User minimo per compatibilità
+          const savedUser = localStorage.getItem('auth_user');
+          if (savedUser) {
+            setUser(JSON.parse(savedUser));
+          } else {
+            // Crea un user minimo se non esiste
+            setUser({
+              id: profile.id,
+              email: profile.email,
+              created_at: profile.created_at,
+              app_metadata: {},
+              user_metadata: {},
+              aud: 'authenticated',
+              confirmation_sent_at: new Date().toISOString()
+            });
+          }
         } else {
           // Nessuna sessione attiva, mostra la pagina di login
           setUser(null);
@@ -27,31 +43,17 @@ export const useAuth = () => {
         }
       } catch (error) {
         console.error('❌ Errore inizializzazione auth:', error);
+        // In caso di errore, pulisci lo stato
+        localStorage.removeItem('auth_user');
+        localStorage.removeItem('auth_profile');
+        setUser(null);
+        setUserProfile(null);
       } finally {
         setLoading(false);
       }
     };
 
     initializeAuth();
-    
-    // Ascolta i cambiamenti di autenticazione
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session?.user) {
-          setUser(session.user);
-          const profile = await getUserProfile(session.user.id);
-          setUserProfile(profile);
-        } else {
-          setUser(null);
-          setUserProfile(null);
-        }
-        setLoading(false);
-      }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
   const switchUser = (newUserRole: 'alessandro' | 'gabriel' | 'hanna') => {
