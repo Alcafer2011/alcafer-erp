@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, Package, TrendingUp, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 import { MaterialeMetallico, PrezzoMateriale } from '../types/database';
 import { usePermissions } from '../hooks/usePermissions';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -13,12 +13,13 @@ const MaterialiMetallici: React.FC = () => {
   const [prezziMateriali, setPrezziMateriali] = useState<PrezzoMateriale[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingPrices, setUpdatingPrices] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const permissions = usePermissions();
 
   // Prezzi realistici per Lombardia, Piemonte, Emilia Romagna (2024)
   const prezziRegionali = [
     { tipo: 'Ferro S235 grezzo', prezzo: 0.95, regione: 'Lombardia' },
-    { tipo: 'Acciaio inox AISI 304', prezzo: 3.20, reg: 'Lombardia' },
+    { tipo: 'Acciaio inox AISI 304', prezzo: 3.20, regione: 'Lombardia' },
     { tipo: 'Alluminio 6060', prezzo: 2.80, regione: 'Lombardia' },
     { tipo: 'Acciaio al carbonio', prezzo: 0.85, regione: 'Lombardia' },
     { tipo: 'Ferro zincato', prezzo: 1.15, regione: 'Lombardia' },
@@ -34,8 +35,27 @@ const MaterialiMetallici: React.FC = () => {
   ];
 
   useEffect(() => {
-    fetchData();
+    checkAuthAndFetchData();
   }, []);
+
+  const checkAuthAndFetchData = async () => {
+    try {
+      const user = await getCurrentUser();
+      setIsAuthenticated(!!user);
+      
+      if (!user) {
+        console.warn('Utente non autenticato - alcune funzionalità potrebbero essere limitate');
+        toast.error('Devi essere autenticato per accedere a questa sezione');
+        setLoading(false);
+        return;
+      }
+      
+      await fetchData();
+    } catch (error) {
+      console.error('Errore nel controllo autenticazione:', error);
+      setLoading(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -44,11 +64,26 @@ const MaterialiMetallici: React.FC = () => {
         supabase.from('prezzi_materiali').select('*').order('tipo_materiale')
       ]);
 
-      if (materialiResult.error) throw materialiResult.error;
-      if (prezziResult.error) throw prezziResult.error;
+      if (materialiResult.error) {
+        console.error('Errore nel caricamento materiali:', materialiResult.error);
+        if (materialiResult.error.code === '42501') {
+          toast.error('Non hai i permessi per visualizzare i materiali metallici');
+          return;
+        }
+        throw materialiResult.error;
+      }
 
-      // Se non ci sono prezzi, inizializza con i prezzi regionali
-      if (!prezziResult.data || prezziResult.data.length === 0) {
+      if (prezziResult.error) {
+        console.error('Errore nel caricamento prezzi:', prezziResult.error);
+        if (prezziResult.error.code === '42501') {
+          toast.error('Non hai i permessi per visualizzare i prezzi dei materiali');
+          return;
+        }
+        throw prezziResult.error;
+      }
+
+      // Se non ci sono prezzi e l'utente ha i permessi, prova a inizializzare
+      if ((!prezziResult.data || prezziResult.data.length === 0) && permissions.canModifyCostiMateriali) {
         await initializePrezziRegionali();
         const { data } = await supabase.from('prezzi_materiali').select('*').order('tipo_materiale');
         setPrezziMateriali(data || []);
@@ -67,6 +102,19 @@ const MaterialiMetallici: React.FC = () => {
 
   const initializePrezziRegionali = async () => {
     try {
+      // Verifica che l'utente sia autenticato
+      const user = await getCurrentUser();
+      if (!user) {
+        toast.error('Devi essere autenticato per inizializzare i prezzi');
+        return;
+      }
+
+      // Verifica i permessi
+      if (!permissions.canModifyCostiMateriali) {
+        toast.error('Non hai i permessi per modificare i prezzi dei materiali');
+        return;
+      }
+
       // Crea un set di tipi di materiale unici
       const tipiUnici = new Set();
       const prezziUnici = [];
@@ -88,7 +136,15 @@ const MaterialiMetallici: React.FC = () => {
         .from('prezzi_materiali')
         .insert(prezziUnici);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Errore nell\'inserimento prezzi:', error);
+        if (error.code === '42501') {
+          toast.error('Non hai i permessi per inserire i prezzi dei materiali');
+          return;
+        }
+        throw error;
+      }
+      
       toast.success('Prezzi materiali inizializzati con successo');
     } catch (error) {
       console.error('Errore nell\'inizializzazione dei prezzi:', error);
@@ -98,6 +154,19 @@ const MaterialiMetallici: React.FC = () => {
 
   const updatePrezzo = async (id: string, nuovoPrezzo: number) => {
     try {
+      // Verifica che l'utente sia autenticato
+      const user = await getCurrentUser();
+      if (!user) {
+        toast.error('Devi essere autenticato per aggiornare i prezzi');
+        return;
+      }
+
+      // Verifica i permessi
+      if (!permissions.canModifyCostiMateriali) {
+        toast.error('Non hai i permessi per modificare i prezzi dei materiali');
+        return;
+      }
+
       const { error } = await supabase
         .from('prezzi_materiali')
         .update({ 
@@ -106,7 +175,14 @@ const MaterialiMetallici: React.FC = () => {
         })
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Errore nell\'aggiornamento prezzo:', error);
+        if (error.code === '42501') {
+          toast.error('Non hai i permessi per aggiornare questo prezzo');
+          return;
+        }
+        throw error;
+      }
       
       toast.success('Prezzo aggiornato con successo');
       fetchData();
@@ -117,6 +193,19 @@ const MaterialiMetallici: React.FC = () => {
   };
 
   const updateAllPrices = async () => {
+    // Verifica che l'utente sia autenticato
+    const user = await getCurrentUser();
+    if (!user) {
+      toast.error('Devi essere autenticato per aggiornare i prezzi');
+      return;
+    }
+
+    // Verifica i permessi
+    if (!permissions.canModifyCostiMateriali) {
+      toast.error('Non hai i permessi per modificare i prezzi dei materiali');
+      return;
+    }
+
     setUpdatingPrices(true);
     try {
       // Simula aggiornamento automatico dei prezzi
@@ -138,7 +227,7 @@ const MaterialiMetallici: React.FC = () => {
       
       // Aggiorna tutti i prezzi
       for (const update of updates) {
-        await supabase
+        const { error } = await supabase
           .from('prezzi_materiali')
           .update({
             prezzo_kg: update.prezzo_kg,
@@ -146,6 +235,15 @@ const MaterialiMetallici: React.FC = () => {
             fonte: update.fonte
           })
           .eq('id', update.id);
+
+        if (error) {
+          console.error('Errore nell\'aggiornamento prezzo:', error);
+          if (error.code === '42501') {
+            toast.error('Non hai i permessi per aggiornare i prezzi');
+            return;
+          }
+          throw error;
+        }
       }
       
       toast.success('Tutti i prezzi aggiornati con successo');
@@ -162,6 +260,16 @@ const MaterialiMetallici: React.FC = () => {
     return (
       <div className="flex justify-center items-center h-64">
         <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="text-center py-12">
+        <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Accesso Richiesto</h3>
+        <p className="text-gray-500">Devi essere autenticato per accedere a questa sezione.</p>
       </div>
     );
   }
