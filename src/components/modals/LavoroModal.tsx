@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Briefcase, User, DollarSign, Calendar, Clock } from 'lucide-react';
+import { X, Briefcase, User, DollarSign, Calendar, Clock, CreditCard, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { Lavoro, Cliente, Preventivo } from '../../types/database';
@@ -18,6 +18,12 @@ const LavoroModal: React.FC<LavoroModalProps> = ({ lavoro, onClose }) => {
     importo_totale: '',
     acconto_percentuale: '50',
     acconto_modalita: 'alcafer',
+    acconto_fatturato_da: 'alcafer',
+    acconto_diretto_cliente: false,
+    anticipo_tra_ditte: false,
+    anticipo_importo: '',
+    anticipo_da: 'gabifer',
+    anticipo_a: 'alcafer',
     stato: 'in_attesa',
     data_inizio: '',
     data_fine: '',
@@ -54,6 +60,12 @@ const LavoroModal: React.FC<LavoroModalProps> = ({ lavoro, onClose }) => {
         importo_totale: lavoro.importo_totale?.toString() || '',
         acconto_percentuale: lavoro.acconto_percentuale?.toString() || '50',
         acconto_modalita: lavoro.acconto_modalita || 'alcafer',
+        acconto_fatturato_da: lavoro.acconto_fatturato_da || 'alcafer',
+        acconto_diretto_cliente: lavoro.acconto_diretto_cliente || false,
+        anticipo_tra_ditte: lavoro.anticipo_tra_ditte || false,
+        anticipo_importo: lavoro.anticipo_importo?.toString() || '',
+        anticipo_da: lavoro.anticipo_da || 'gabifer',
+        anticipo_a: lavoro.anticipo_a || 'alcafer',
         stato: lavoro.stato || 'in_attesa',
         data_inizio: lavoro.data_inizio || '',
         data_fine: lavoro.data_fine || '',
@@ -96,6 +108,14 @@ const LavoroModal: React.FC<LavoroModalProps> = ({ lavoro, onClose }) => {
       newErrors.acconto_percentuale = 'La percentuale deve essere tra 0 e 100';
     }
 
+    if (formData.anticipo_tra_ditte && (!formData.anticipo_importo || parseFloat(formData.anticipo_importo) <= 0)) {
+      newErrors.anticipo_importo = 'L\'importo dell\'anticipo deve essere maggiore di 0';
+    }
+
+    if (formData.anticipo_tra_ditte && formData.anticipo_da === formData.anticipo_a) {
+      newErrors.anticipo_da = 'Le ditte devono essere diverse';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -117,6 +137,12 @@ const LavoroModal: React.FC<LavoroModalProps> = ({ lavoro, onClose }) => {
         importo_totale: parseFloat(formData.importo_totale),
         acconto_percentuale: parseFloat(formData.acconto_percentuale),
         acconto_modalita: formData.acconto_modalita,
+        acconto_fatturato_da: formData.acconto_fatturato_da,
+        acconto_diretto_cliente: formData.acconto_diretto_cliente,
+        anticipo_tra_ditte: formData.anticipo_tra_ditte,
+        anticipo_importo: formData.anticipo_importo ? parseFloat(formData.anticipo_importo) : null,
+        anticipo_da: formData.anticipo_da,
+        anticipo_a: formData.anticipo_a,
         stato: formData.stato,
         data_inizio: formData.data_inizio || null,
         data_fine: formData.data_fine || null,
@@ -156,8 +182,14 @@ const LavoroModal: React.FC<LavoroModalProps> = ({ lavoro, onClose }) => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type } = e.target;
+    
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData(prev => ({ ...prev, [name]: checked }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
     
     // Rimuovi l'errore quando l'utente inizia a digitare
     if (errors[name]) {
@@ -172,6 +204,13 @@ const LavoroModal: React.FC<LavoroModalProps> = ({ lavoro, onClose }) => {
         ? prev.macchinari_utilizzati.filter(m => m !== macchinario)
         : [...prev.macchinari_utilizzati, macchinario]
     }));
+  };
+
+  // Calcola l'importo dell'acconto in base alla percentuale
+  const calcolaImportoAcconto = () => {
+    const importoTotale = parseFloat(formData.importo_totale) || 0;
+    const percentuale = parseFloat(formData.acconto_percentuale) || 0;
+    return (importoTotale * percentuale / 100).toFixed(2);
   };
 
   return (
@@ -281,82 +320,242 @@ const LavoroModal: React.FC<LavoroModalProps> = ({ lavoro, onClose }) => {
             )}
           </div>
 
-          {/* Importi */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <label htmlFor="importo_totale" className="block text-sm font-medium text-gray-700">
-                  Importo Totale (€) *
-                </label>
-                <HelpTooltip content="Importo totale del lavoro" />
-              </div>
-              <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="number"
-                  id="importo_totale"
-                  name="importo_totale"
-                  step="0.01"
-                  min="0"
-                  required
-                  value={formData.importo_totale}
-                  onChange={handleChange}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.importo_totale ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  }`}
-                  placeholder="0.00"
-                />
-              </div>
-              {errors.importo_totale && (
-                <p className="mt-1 text-sm text-red-600">{errors.importo_totale}</p>
-              )}
+          {/* Importo */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <label htmlFor="importo_totale" className="block text-sm font-medium text-gray-700">
+                Importo Totale (€) *
+              </label>
+              <HelpTooltip content="Importo totale del lavoro (netto, senza IVA)" />
             </div>
-
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <label htmlFor="acconto_percentuale" className="block text-sm font-medium text-gray-700">
-                  Acconto (%)
-                </label>
-                <HelpTooltip content="Percentuale di acconto richiesta" />
-              </div>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="number"
-                id="acconto_percentuale"
-                name="acconto_percentuale"
+                id="importo_totale"
+                name="importo_totale"
+                step="0.01"
                 min="0"
-                max="100"
-                step="0.1"
-                value={formData.acconto_percentuale}
+                required
+                value={formData.importo_totale}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.acconto_percentuale ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  errors.importo_totale ? 'border-red-300 bg-red-50' : 'border-gray-300'
                 }`}
-                placeholder="50"
+                placeholder="0.00"
               />
-              {errors.acconto_percentuale && (
-                <p className="mt-1 text-sm text-red-600">{errors.acconto_percentuale}</p>
-              )}
+            </div>
+            {errors.importo_totale && (
+              <p className="mt-1 text-sm text-red-600">{errors.importo_totale}</p>
+            )}
+          </div>
+
+          {/* Acconto */}
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <h4 className="text-md font-medium text-blue-800 mb-3">Gestione Acconto</h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <label htmlFor="acconto_percentuale" className="block text-sm font-medium text-gray-700">
+                    Acconto (%)
+                  </label>
+                  <HelpTooltip content="Percentuale di acconto richiesta" />
+                </div>
+                <input
+                  type="number"
+                  id="acconto_percentuale"
+                  name="acconto_percentuale"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={formData.acconto_percentuale}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    errors.acconto_percentuale ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
+                  placeholder="50"
+                  readOnly
+                />
+                {errors.acconto_percentuale && (
+                  <p className="mt-1 text-sm text-red-600">{errors.acconto_percentuale}</p>
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Importo Acconto (€)
+                  </label>
+                  <HelpTooltip content="Importo calcolato automaticamente" />
+                </div>
+                <div className="w-full px-4 py-3 border border-gray-300 bg-gray-50 rounded-lg text-gray-700">
+                  € {calcolaImportoAcconto()}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <label htmlFor="acconto_modalita" className="block text-sm font-medium text-gray-700">
+                    Riceve Acconto
+                  </label>
+                  <HelpTooltip content="Chi riceve l'acconto dal cliente" />
+                </div>
+                <select
+                  id="acconto_modalita"
+                  name="acconto_modalita"
+                  value={formData.acconto_modalita}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="alcafer">Alcafer</option>
+                  <option value="gabifer">Gabifer</option>
+                  <option value="diretto">Diretto Cliente</option>
+                </select>
+              </div>
             </div>
 
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <label htmlFor="acconto_modalita" className="block text-sm font-medium text-gray-700">
-                  Modalità Acconto
-                </label>
-                <HelpTooltip content="Chi riceverà l'acconto" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <label htmlFor="acconto_fatturato_da" className="block text-sm font-medium text-gray-700">
+                    Fatturato Da
+                  </label>
+                  <HelpTooltip content="Chi emette la fattura dell'acconto" />
+                </div>
+                <select
+                  id="acconto_fatturato_da"
+                  name="acconto_fatturato_da"
+                  value={formData.acconto_fatturato_da}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={formData.acconto_modalita === 'diretto'}
+                >
+                  <option value="alcafer">Alcafer</option>
+                  <option value="gabifer">Gabifer</option>
+                </select>
               </div>
-              <select
-                id="acconto_modalita"
-                name="acconto_modalita"
-                value={formData.acconto_modalita}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="alcafer">Alcafer</option>
-                <option value="gabifer">Gabifer</option>
-                <option value="diretto">Diretto Cliente</option>
-              </select>
+
+              <div className="flex items-center">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="acconto_diretto_cliente"
+                    checked={formData.acconto_diretto_cliente}
+                    onChange={handleChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="text-sm text-gray-700">Pagamento diretto dal cliente</span>
+                  <HelpTooltip content="Il cliente paga direttamente senza passare per le ditte" />
+                </label>
+              </div>
             </div>
+          </div>
+
+          {/* Anticipo tra ditte */}
+          <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-md font-medium text-amber-800">Anticipo tra Ditte</h4>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="anticipo_tra_ditte"
+                  checked={formData.anticipo_tra_ditte}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"
+                />
+                <span className="text-sm text-amber-700">Attiva anticipo tra ditte</span>
+              </label>
+            </div>
+
+            {formData.anticipo_tra_ditte && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label htmlFor="anticipo_da" className="block text-sm font-medium text-gray-700">
+                      Da
+                    </label>
+                    <HelpTooltip content="Ditta che anticipa i soldi" />
+                  </div>
+                  <select
+                    id="anticipo_da"
+                    name="anticipo_da"
+                    value={formData.anticipo_da}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
+                      errors.anticipo_da ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="alcafer">Alcafer</option>
+                    <option value="gabifer">Gabifer</option>
+                  </select>
+                  {errors.anticipo_da && (
+                    <p className="mt-1 text-sm text-red-600">{errors.anticipo_da}</p>
+                  )}
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label htmlFor="anticipo_a" className="block text-sm font-medium text-gray-700">
+                      A
+                    </label>
+                    <HelpTooltip content="Ditta che riceve l'anticipo" />
+                  </div>
+                  <select
+                    id="anticipo_a"
+                    name="anticipo_a"
+                    value={formData.anticipo_a}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  >
+                    <option value="alcafer">Alcafer</option>
+                    <option value="gabifer">Gabifer</option>
+                  </select>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label htmlFor="anticipo_importo" className="block text-sm font-medium text-gray-700">
+                      Importo (€)
+                    </label>
+                    <HelpTooltip content="Importo anticipato tra le ditte" />
+                  </div>
+                  <div className="relative">
+                    <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                      type="number"
+                      id="anticipo_importo"
+                      name="anticipo_importo"
+                      step="0.01"
+                      min="0"
+                      value={formData.anticipo_importo}
+                      onChange={handleChange}
+                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
+                        errors.anticipo_importo ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                      }`}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  {errors.anticipo_importo && (
+                    <p className="mt-1 text-sm text-red-600">{errors.anticipo_importo}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {formData.anticipo_tra_ditte && (
+              <div className="mt-3 p-3 bg-amber-100 rounded-lg">
+                <div className="flex items-center gap-2 text-amber-800">
+                  <ArrowRight className="h-4 w-4" />
+                  <p className="text-sm">
+                    <span className="font-medium capitalize">{formData.anticipo_da}</span> anticiperà €{formData.anticipo_importo || '0.00'} a <span className="font-medium capitalize">{formData.anticipo_a}</span>
+                  </p>
+                </div>
+                <p className="text-xs text-amber-700 mt-1">
+                  Nota: Questo anticipo è dovuto a mancanza di liquidità della ditta ricevente
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Date e Ore */}

@@ -43,6 +43,12 @@ export interface Lavoro {
   acconto_percentuale: number;
   acconto_importo: number;
   acconto_modalita: 'alcafer' | 'gabifer' | 'diretto';
+  acconto_fatturato_da?: 'alcafer' | 'gabifer';
+  acconto_diretto_cliente?: boolean;
+  anticipo_tra_ditte?: boolean;
+  anticipo_importo?: number;
+  anticipo_da?: 'alcafer' | 'gabifer';
+  anticipo_a?: 'alcafer' | 'gabifer';
   stato: 'in_attesa' | 'in_produzione' | 'completato';
   data_inizio?: string;
   data_fine?: string;
