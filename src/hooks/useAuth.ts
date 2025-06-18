@@ -118,8 +118,6 @@ export const useAuth = () => {
     
     setUser(simulatedUser);
     setUserProfile(simulatedProfile);
-    
-    toast.success(`Benvenuto, ${simulatedProfile.nome}!`);
   };
 
   const switchUser = (newUserRole: 'alessandro' | 'gabriel' | 'hanna') => {

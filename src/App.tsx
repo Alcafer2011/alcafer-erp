@@ -24,6 +24,7 @@ import TasseGabifer from './pages/finanziari/TasseGabifer';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { supabase, checkSupabaseConnection } from './lib/supabase';
 import toast from 'react-hot-toast';
+import LoginPage from './pages/LoginPage';
 
 function App() {
   const { isAuthenticated, loading, userProfile, user } = useAuth();
@@ -87,51 +88,38 @@ function App() {
     );
   }
 
-  if (!isAuthenticated || !userProfile) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Accesso Richiesto</h2>
-          <p className="text-gray-600 mb-6">
-            Devi essere autenticato per accedere al sistema ERP.
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-          >
-            Ricarica
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
       <Router>
-        <Layout>
+        {!isAuthenticated ? (
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/home-finanziaria" element={<HomeFinanziaria />} />
-            <Route path="/clienti" element={<Clienti />} />
-            <Route path="/preventivi" element={<Preventivi />} />
-            <Route path="/lavori" element={<Lavori />} />
-            <Route path="/posa-in-opera" element={<PosaInOpera />} />
-            <Route path="/materiali-metallici" element={<MaterialiMetallici />} />
-            <Route path="/materiali-vari" element={<MaterialiVari />} />
-            <Route path="/leasing" element={<LeasingStrumentali />} />
-            <Route path="/manovalanza" element={<Manovalanza />} />
-            <Route path="/costi-utenze" element={<CostiUtenze />} />
-            <Route path="/fornitori" element={<Fornitori />} />
-            <Route path="/utenti" element={<Utenti />} />
-            <Route path="/marketing" element={<Marketing />} />
-            <Route path="/finanziari/info" element={<FinanziariInfo />} />
-            <Route path="/finanziari/dividendi" element={<Dividendi />} />
-            <Route path="/finanziari/tasse-alcafer" element={<TasseAlcafer />} />
-            <Route path="/finanziari/tasse-gabifer" element={<TasseGabifer />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<LoginPage />} />
           </Routes>
-        </Layout>
+        ) : (
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/home-finanziaria" element={<HomeFinanziaria />} />
+              <Route path="/clienti" element={<Clienti />} />
+              <Route path="/preventivi" element={<Preventivi />} />
+              <Route path="/lavori" element={<Lavori />} />
+              <Route path="/posa-in-opera" element={<PosaInOpera />} />
+              <Route path="/materiali-metallici" element={<MaterialiMetallici />} />
+              <Route path="/materiali-vari" element={<MaterialiVari />} />
+              <Route path="/leasing" element={<LeasingStrumentali />} />
+              <Route path="/manovalanza" element={<Manovalanza />} />
+              <Route path="/costi-utenze" element={<CostiUtenze />} />
+              <Route path="/fornitori" element={<Fornitori />} />
+              <Route path="/utenti" element={<Utenti />} />
+              <Route path="/marketing" element={<Marketing />} />
+              <Route path="/finanziari/info" element={<FinanziariInfo />} />
+              <Route path="/finanziari/dividendi" element={<Dividendi />} />
+              <Route path="/finanziari/tasse-alcafer" element={<TasseAlcafer />} />
+              <Route path="/finanziari/tasse-gabifer" element={<TasseGabifer />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Layout>
+        )}
       </Router>
       <Toaster 
         position="top-right"
