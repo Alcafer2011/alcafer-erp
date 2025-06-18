@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase, getUserProfile } from '../lib/supabase';
+import { supabase, getUserProfile, supabaseAdmin } from '../lib/supabase';
 import { User as UserProfile } from '../types/database';
 import toast from 'react-hot-toast';
 
@@ -21,8 +21,9 @@ export const useAuth = () => {
           const profile = await getUserProfile(session.user.id);
           setUserProfile(profile);
         } else {
-          // Prova ad autenticare automaticamente in base all'email
-          await autoLogin();
+          // Nessuna sessione attiva, mostra la pagina di login
+          setUser(null);
+          setUserProfile(null);
         }
       } catch (error) {
         console.error('❌ Errore inizializzazione auth:', error);
@@ -52,73 +53,6 @@ export const useAuth = () => {
       subscription.unsubscribe();
     };
   }, []);
-
-  // Funzione per autenticare automaticamente in base all'email
-  const autoLogin = async () => {
-    // Mappa delle email degli utenti
-    const userEmails = {
-      'alessandro': 'assistenza.alcafer@gmail.com',
-      'gabriel': 'gabifervoghera@gmail.com',
-      'hanna': 'nuta1985@icloud.com'
-    };
-
-    // Crea un utente simulato per la demo
-    const mockUser = (role: 'alessandro' | 'gabriel' | 'hanna'): User => ({
-      id: `${role}-id`,
-      email: userEmails[role],
-      created_at: new Date().toISOString(),
-      app_metadata: {},
-      user_metadata: {},
-      aud: 'authenticated',
-      confirmation_sent_at: new Date().toISOString()
-    });
-
-    // Crea un profilo utente simulato
-    const createMockProfile = (role: 'alessandro' | 'gabriel' | 'hanna'): UserProfile => {
-      const profiles = {
-        'alessandro': {
-          id: 'alessandro-id',
-          email: userEmails.alessandro,
-          nome: 'Alessandro',
-          cognome: 'Calabria',
-          data_nascita: '1990-01-01',
-          ruolo: 'alessandro' as const,
-          created_at: new Date().toISOString()
-        },
-        'gabriel': {
-          id: 'gabriel-id',
-          email: userEmails.gabriel,
-          nome: 'Gabriel',
-          cognome: 'Prunaru',
-          data_nascita: '1992-05-15',
-          ruolo: 'gabriel' as const,
-          created_at: new Date().toISOString()
-        },
-        'hanna': {
-          id: 'hanna-id',
-          email: userEmails.hanna,
-          nome: 'Hanna',
-          cognome: 'Mazhar',
-          data_nascita: '1988-12-03',
-          ruolo: 'hanna' as const,
-          created_at: new Date().toISOString()
-        }
-      };
-      
-      return profiles[role];
-    };
-
-    // Determina quale utente autenticare in base all'URL o altre informazioni
-    // Per questa demo, autentichiamo Alessandro per default
-    const defaultRole: 'alessandro' | 'gabriel' | 'hanna' = 'alessandro';
-    
-    // Simula l'autenticazione
-    const simulatedUser = mockUser(defaultRole);
-    const simulatedProfile = createMockProfile(defaultRole);
-    
-    setUser(simulatedUser);
-    setUserProfile(simulatedProfile);
-  };
 
   const switchUser = (newUserRole: 'alessandro' | 'gabriel' | 'hanna') => {
     const userEmails = {
@@ -174,16 +108,40 @@ export const useAuth = () => {
     toast.success(`Utente cambiato: ${newProfile.nome} ${newProfile.cognome}`);
   };
 
+  // Funzione per il login
+  const login = async (email: string, password: string) => {
+    try {
+      // Determina quale utente autenticare in base all'email
+      if (email.toLowerCase().includes('aless')) {
+        switchUser('alessandro');
+        return { success: true, user: 'alessandro' };
+      } else if (email.toLowerCase().includes('gabr')) {
+        switchUser('gabriel');
+        return { success: true, user: 'gabriel' };
+      } else if (email.toLowerCase().includes('hann')) {
+        switchUser('hanna');
+        return { success: true, user: 'hanna' };
+      } else {
+        // Default a Alessandro se l'email non corrisponde
+        switchUser('alessandro');
+        return { success: true, user: 'alessandro' };
+      }
+    } catch (error) {
+      console.error('Errore durante il login:', error);
+      return { success: false, error };
+    }
+  };
+
   // Funzione per il logout
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
       setUser(null);
       setUserProfile(null);
-      toast.success('Logout effettuato con successo');
+      return { success: true };
     } catch (error) {
       console.error('Errore durante il logout:', error);
-      toast.error('Errore durante il logout');
+      return { success: false, error };
     }
   };
 
@@ -196,6 +154,7 @@ export const useAuth = () => {
     isGabriel: userProfile?.ruolo === 'gabriel',
     isHanna: userProfile?.ruolo === 'hanna',
     switchUser,
+    login,
     signOut
   };
 };

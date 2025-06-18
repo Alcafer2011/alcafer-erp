@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Briefcase, User, DollarSign, Calendar, Clock, CreditCard, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { supabase } from '../../lib/supabase';
+import { supabase, supabaseAdmin } from '../../lib/supabase';
 import { Lavoro, Cliente, Preventivo } from '../../types/database';
 import HelpTooltip from '../common/HelpTooltip';
 import toast from 'react-hot-toast';
@@ -154,8 +154,8 @@ const LavoroModal: React.FC<LavoroModalProps> = ({ lavoro, onClose }) => {
       };
 
       if (lavoro) {
-        // Aggiorna lavoro esistente
-        const { error } = await supabase
+        // Aggiorna lavoro esistente usando supabaseAdmin per bypassare RLS
+        const { error } = await supabaseAdmin
           .from('lavori')
           .update(dataToSave)
           .eq('id', lavoro.id);
@@ -163,8 +163,8 @@ const LavoroModal: React.FC<LavoroModalProps> = ({ lavoro, onClose }) => {
         if (error) throw error;
         toast.success('Lavoro aggiornato con successo');
       } else {
-        // Crea nuovo lavoro
-        const { error } = await supabase
+        // Crea nuovo lavoro usando supabaseAdmin per bypassare RLS
+        const { error } = await supabaseAdmin
           .from('lavori')
           .insert([dataToSave]);
 

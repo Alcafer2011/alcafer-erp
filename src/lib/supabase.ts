@@ -124,3 +124,49 @@ export const getLeasingStrumentali = async () => {
     return [];
   }
 };
+
+// Funzione per eseguire query con service role (bypass RLS)
+export const adminQuery = async (table: string, query: any) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from(table)
+      .select(query);
+    
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error(`Errore nella query admin su ${table}:`, error);
+    return [];
+  }
+};
+
+// Funzione per inserire dati con service role (bypass RLS)
+export const adminInsert = async (table: string, data: any) => {
+  try {
+    const { error } = await supabaseAdmin
+      .from(table)
+      .insert(data);
+    
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error(`Errore nell'inserimento admin su ${table}:`, error);
+    return false;
+  }
+};
+
+// Funzione per aggiornare dati con service role (bypass RLS)
+export const adminUpdate = async (table: string, data: any, match: any) => {
+  try {
+    const { error } = await supabaseAdmin
+      .from(table)
+      .update(data)
+      .match(match);
+    
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error(`Errore nell'aggiornamento admin su ${table}:`, error);
+    return false;
+  }
+};

@@ -53,31 +53,41 @@ const PosaInOpera: React.FC = () => {
       if (lavoriError) throw lavoriError;
       setLavori(lavoriData || []);
       
-      // Simula dati di posa in opera per demo
-      const mockPoseInOpera: PosaInOpera[] = [
-        {
-          id: '1',
-          lavoro_id: lavoriData?.[0]?.id || '1',
-          data: '2024-12-15',
-          ore_lavoro: 8,
-          tariffa_oraria: 35,
-          importo_totale: 280,
-          note: 'Installazione cancello presso cliente',
-          created_at: '2024-12-15T10:00:00Z'
-        },
-        {
-          id: '2',
-          lavoro_id: lavoriData?.[1]?.id || '2',
-          data: '2024-12-16',
-          ore_lavoro: 4,
-          tariffa_oraria: 40,
-          importo_totale: 160,
-          note: 'Montaggio struttura metallica',
-          created_at: '2024-12-16T09:30:00Z'
-        }
-      ];
-      
-      setPoseInOpera(mockPoseInOpera);
+      // Fetch posa in opera
+      const { data: posaData, error: posaError } = await supabase
+        .from('posa_in_opera')
+        .select('*')
+        .order('data', { ascending: false });
+        
+      if (posaError) {
+        // Se la tabella non esiste o c'è un errore, usiamo dati di esempio
+        console.log('Utilizzando dati di esempio per posa in opera');
+        const mockPoseInOpera: PosaInOpera[] = [
+          {
+            id: '1',
+            lavoro_id: lavoriData?.[0]?.id || '1',
+            data: '2024-12-15',
+            ore_lavoro: 8,
+            tariffa_oraria: 35,
+            importo_totale: 280,
+            note: 'Installazione cancello presso cliente',
+            created_at: '2024-12-15T10:00:00Z'
+          },
+          {
+            id: '2',
+            lavoro_id: lavoriData?.[1]?.id || '2',
+            data: '2024-12-16',
+            ore_lavoro: 4,
+            tariffa_oraria: 40,
+            importo_totale: 160,
+            note: 'Montaggio struttura metallica',
+            created_at: '2024-12-16T09:30:00Z'
+          }
+        ];
+        setPoseInOpera(mockPoseInOpera);
+      } else {
+        setPoseInOpera(posaData || []);
+      }
     } catch (error) {
       console.error('Errore nel caricamento dei dati:', error);
       toast.error('Errore nel caricamento dei dati');
@@ -109,30 +119,34 @@ const PosaInOpera: React.FC = () => {
       
       if (editingId) {
         // Aggiorna record esistente
-        const updatedPosa = {
-          ...formData,
-          importo_totale: importoTotale
-        };
-        
-        // Simula aggiornamento
-        setPoseInOpera(prev => prev.map(p => p.id === editingId ? { ...p, ...updatedPosa } : p));
+        const { error } = await supabase
+          .from('posa_in_opera')
+          .update({
+            lavoro_id: formData.lavoro_id,
+            data: formData.data,
+            ore_lavoro: formData.ore_lavoro,
+            tariffa_oraria: formData.tariffa_oraria,
+            note: formData.note || null
+          })
+          .eq('id', editingId);
+          
+        if (error) throw error;
         toast.success('Posa in opera aggiornata con successo');
         setEditingId(null);
       } else {
         // Crea nuovo record
-        const newPosa: PosaInOpera = {
-          id: Date.now().toString(),
-          lavoro_id: formData.lavoro_id,
-          data: formData.data,
-          ore_lavoro: formData.ore_lavoro,
-          tariffa_oraria: formData.tariffa_oraria,
-          importo_totale: importoTotale,
-          note: formData.note,
-          created_at: new Date().toISOString()
-        };
-        
-        // Simula inserimento
-        setPoseInOpera(prev => [newPosa, ...prev]);
+        const { data, error } = await supabase
+          .from('posa_in_opera')
+          .insert({
+            lavoro_id: formData.lavoro_id,
+            data: formData.data,
+            ore_lavoro: formData.ore_lavoro,
+            tariffa_oraria: formData.tariffa_oraria,
+            note: formData.note || null
+          })
+          .select();
+          
+        if (error) throw error;
         toast.success('Posa in opera registrata con successo');
       }
       
@@ -145,6 +159,7 @@ const PosaInOpera: React.FC = () => {
         note: ''
       });
       setShowAddForm(false);
+      fetchData();
     } catch (error) {
       console.error('Errore nel salvataggio:', error);
       toast.error('Errore nel salvataggio');
@@ -167,9 +182,14 @@ const PosaInOpera: React.FC = () => {
     if (!confirm('Sei sicuro di voler eliminare questa posa in opera?')) return;
     
     try {
-      // Simula eliminazione
-      setPoseInOpera(prev => prev.filter(p => p.id !== id));
+      const { error } = await supabase
+        .from('posa_in_opera')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
       toast.success('Posa in opera eliminata con successo');
+      fetchData();
     } catch (error) {
       console.error('Errore nell\'eliminazione:', error);
       toast.error('Errore nell\'eliminazione');

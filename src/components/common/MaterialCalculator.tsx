@@ -71,7 +71,7 @@ const MaterialCalculator: React.FC<MaterialCalculatorProps> = ({ materiali, peso
       return;
     }
 
-    const materialInfo = pesoMateriali[tipoMateriale];
+    const materialInfo = pesoMateriali[tipoMateriale.split(' - ')[0]];
     if (!materialInfo) {
       toast.error('Informazioni sul materiale non disponibili');
       return;

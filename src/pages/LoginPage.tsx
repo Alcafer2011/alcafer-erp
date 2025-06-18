@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, Info } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -10,27 +10,21 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
-  const { switchUser } = useAuth();
+  const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Determine which user to log in based on email
-      if (email.toLowerCase().includes('aless')) {
-        switchUser('alessandro');
-        toast.success('Benvenuto, Alessandro!');
-      } else if (email.toLowerCase().includes('gabr')) {
-        switchUser('gabriel');
-        toast.success('Benvenuto, Gabriel!');
-      } else if (email.toLowerCase().includes('hann')) {
-        switchUser('hanna');
-        toast.success('Benvenuto, Hanna!');
+      const result = await login(email, password);
+      
+      if (result.success) {
+        toast.success(`Benvenuto${result.user === 'alessandro' ? ', Alessandro!' : 
+                      result.user === 'gabriel' ? ', Gabriel!' : 
+                      result.user === 'hanna' ? ', Hanna!' : '!'}`);
       } else {
-        // Default to Alessandro if email doesn't match
-        switchUser('alessandro');
-        toast.success('Benvenuto!');
+        toast.error('Errore durante il login. Riprova.');
       }
     } catch (error) {
       console.error('Errore durante il login:', error);
