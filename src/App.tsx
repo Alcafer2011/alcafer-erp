@@ -8,6 +8,7 @@ import HomeFinanziaria from './pages/HomeFinanziaria';
 import Clienti from './pages/Clienti';
 import Preventivi from './pages/Preventivi';
 import Lavori from './pages/Lavori';
+import PosaInOpera from './pages/PosaInOpera';
 import MaterialiMetallici from './pages/MaterialiMetallici';
 import MaterialiVari from './pages/MaterialiVari';
 import LeasingStrumentali from './pages/LeasingStrumentali';
@@ -115,6 +116,7 @@ function App() {
             <Route path="/clienti" element={<Clienti />} />
             <Route path="/preventivi" element={<Preventivi />} />
             <Route path="/lavori" element={<Lavori />} />
+            <Route path="/posa-in-opera" element={<PosaInOpera />} />
             <Route path="/materiali-metallici" element={<MaterialiMetallici />} />
             <Route path="/materiali-vari" element={<MaterialiVari />} />
             <Route path="/leasing" element={<LeasingStrumentali />} />
