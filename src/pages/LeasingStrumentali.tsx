@@ -84,18 +84,7 @@ const LeasingStrumentali: React.FC = () => {
 
       if (error) throw error;
       
-      // Se non ci sono dati, inizializza automaticamente
-      if (!data || data.length === 0) {
-        await initializeStrumentiPredefiniti();
-        const { data: initialData } = await supabase
-          .from('leasing_strumentali')
-          .select('*')
-          .order('nome_strumento');
-        
-        setLeasingStrumentali(initialData || []);
-      } else {
-        setLeasingStrumentali(data);
-      }
+      setLeasingStrumentali(data || []);
     } catch (error) {
       console.error('Errore nel caricamento del leasing strumentali:', error);
       toast.error('Errore nel caricamento dei dati');
@@ -113,19 +102,30 @@ const LeasingStrumentali: React.FC = () => {
         attivo: true
       }));
       
-      // Inserisci gli strumenti uno alla volta per gestire meglio gli errori
+      // Insert each instrument individually to handle RLS policy violations gracefully
+      let successCount = 0;
       for (const strumento of strumentiToInsert) {
-        const { error } = await supabase
-          .from('leasing_strumentali')
-          .insert([strumento]);
-        
-        if (error) {
-          console.error(`Errore nell'inserimento di ${strumento.nome_strumento}:`, error);
-          // Continua con gli altri strumenti anche se uno fallisce
+        try {
+          const { error } = await supabase
+            .from('leasing_strumentali')
+            .insert([strumento]);
+          
+          if (error) {
+            console.warn(`Impossibile inserire ${strumento.nome_strumento}:`, error.message);
+          } else {
+            successCount++;
+          }
+        } catch (error) {
+          console.warn(`Errore nell'inserimento di ${strumento.nome_strumento}:`, error);
         }
       }
       
-      toast.success('Strumenti predefiniti inizializzati');
+      if (successCount > 0) {
+        toast.success(`${successCount} strumenti inizializzati`);
+        fetchLeasingStrumentali();
+      } else {
+        toast.error('Impossibile inizializzare gli strumenti. Verifica i permessi.');
+      }
     } catch (error) {
       console.error('Errore nell\'inizializzazione degli strumenti:', error);
       toast.error('Errore nell\'inizializzazione degli strumenti');

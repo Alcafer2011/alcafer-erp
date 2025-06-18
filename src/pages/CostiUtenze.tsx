@@ -96,18 +96,7 @@ const CostiUtenze: React.FC = () => {
 
       if (error) throw error;
       
-      // Se non ci sono dati, inizializza con valori predefiniti
-      if (!data || data.length === 0) {
-        await initializeCostiUtenze();
-        const { data: initialData } = await supabase
-          .from('costi_utenze')
-          .select('*')
-          .order('tipo');
-        
-        setCostiUtenze(initialData || []);
-      } else {
-        setCostiUtenze(data);
-      }
+      setCostiUtenze(data || []);
     } catch (error) {
       console.error('Errore nel caricamento dei costi utenze:', error);
       toast.error('Errore nel caricamento dei dati');
@@ -211,12 +200,30 @@ const CostiUtenze: React.FC = () => {
         data_aggiornamento: new Date().toISOString().split('T')[0]
       });
       
-      const { error } = await supabase
-        .from('costi_utenze')
-        .insert(costiToInsert);
+      // Insert each cost individually to handle RLS policy violations gracefully
+      let successCount = 0;
+      for (const costo of costiToInsert) {
+        try {
+          const { error } = await supabase
+            .from('costi_utenze')
+            .insert([costo]);
+          
+          if (error) {
+            console.warn(`Impossibile inserire ${costo.tipo}:`, error.message);
+          } else {
+            successCount++;
+          }
+        } catch (error) {
+          console.warn(`Errore nell'inserimento di ${costo.tipo}:`, error);
+        }
+      }
       
-      if (error) throw error;
-      toast.success('Costi utenze inizializzati');
+      if (successCount > 0) {
+        toast.success(`${successCount} costi utenze inizializzati`);
+        fetchCostiUtenze();
+      } else {
+        toast.error('Impossibile inizializzare i costi. Verifica i permessi.');
+      }
     } catch (error) {
       console.error('Errore nell\'inizializzazione dei costi:', error);
       toast.error('Errore nell\'inizializzazione dei costi');
@@ -398,13 +405,24 @@ const CostiUtenze: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Costi Utenze e Capannone</h1>
           <p className="mt-2 text-gray-600">Gestisci i costi fissi e variabili di utenze e immobili</p>
         </div>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Aggiungi Utenza
-        </button>
+        <div className="flex gap-2">
+          {costiUtenze.length === 0 && (
+            <button
+              onClick={initializeCostiUtenze}
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+            >
+              <Home className="h-4 w-4" />
+              Inizializza Costi
+            </button>
+          )}
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Aggiungi Utenza
+          </button>
+        </div>
       </div>
 
       {/* Form Aggiungi Utenza */}
@@ -548,161 +566,176 @@ const CostiUtenze: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Riepilogo Totale */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200"
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-blue-600">Costo Totale Mensile</p>
-            <p className="text-3xl font-bold text-blue-900">
-              €{getTotaleMensile().toLocaleString('it-IT', { minimumFractionDigits: 2 })}
-            </p>
-            <p className="text-sm text-blue-600 mt-1">
-              {costiUtenze.length} utenze/costi fissi
-            </p>
-          </div>
-          <div className="p-4 bg-blue-600 rounded-full">
-            <Home className="h-8 w-8 text-white" />
-          </div>
+      {/* Messaggio quando non ci sono utenze */}
+      {costiUtenze.length === 0 && (
+        <div className="text-center py-12 bg-white rounded-xl shadow-sm">
+          <Home className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Nessuna utenza configurata</h3>
+          <p className="text-gray-500 mb-4">
+            Inizia aggiungendo le tue utenze e costi fissi, oppure usa il pulsante "Inizializza Costi" per caricare una lista predefinita.
+          </p>
         </div>
-      </motion.div>
+      )}
+
+      {/* Riepilogo Totale */}
+      {costiUtenze.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-blue-600">Costo Totale Mensile</p>
+              <p className="text-3xl font-bold text-blue-900">
+                €{getTotaleMensile().toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+              </p>
+              <p className="text-sm text-blue-600 mt-1">
+                {costiUtenze.length} utenze/costi fissi
+              </p>
+            </div>
+            <div className="p-4 bg-blue-600 rounded-full">
+              <Home className="h-8 w-8 text-white" />
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Lista Utenze */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Utenze e Costi Fissi
-            </h3>
-            <HelpTooltip content="Gestisci i costi fissi e variabili di utenze, capannone e altri servizi" />
+      {costiUtenze.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Utenze e Costi Fissi
+              </h3>
+              <HelpTooltip content="Gestisci i costi fissi e variabili di utenze, capannone e altri servizi" />
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tipo
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Fornitore
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Costo Fisso
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Costo Variabile
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Azioni
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {costiUtenze.map((utenza, index) => (
+                  <motion.tr
+                    key={utenza.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        {getTipoIcon(utenza.tipo)}
+                        <div className="ml-3 text-sm font-medium text-gray-900">
+                          {getTipoLabel(utenza.tipo)}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {utenza.fornitore}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {editingId === utenza.id ? (
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editValues.costo_fisso}
+                          onChange={(e) => setEditValues(prev => ({ ...prev, costo_fisso: parseFloat(e.target.value) || 0 }))}
+                          className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      ) : (
+                        <div className="text-sm text-gray-900">
+                          €{utenza.costo_fisso.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                          <span className="text-xs text-gray-500 ml-1">
+                            /{utenza.unita_misura === 'anno' ? 'anno' : 'mese'}
+                          </span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {editingId === utenza.id ? (
+                        <input
+                          type="number"
+                          step="0.0001"
+                          value={editValues.costo_variabile}
+                          onChange={(e) => setEditValues(prev => ({ ...prev, costo_variabile: parseFloat(e.target.value) || 0 }))}
+                          className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      ) : (
+                        <div className="text-sm text-gray-900">
+                          {utenza.costo_variabile > 0 ? (
+                            <>
+                              €{utenza.costo_variabile.toLocaleString('it-IT', { minimumFractionDigits: utenza.costo_variabile < 1 ? 4 : 2 })}
+                              <span className="text-xs text-gray-500 ml-1">/{utenza.unita_misura}</span>
+                            </>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      {editingId === utenza.id ? (
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleSave(utenza.id)}
+                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                          >
+                            Salva
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                          >
+                            Annulla
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleEdit(utenza)}
+                            className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Modifica costi"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(utenza.id)}
+                            className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Elimina utenza"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tipo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fornitore
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Costo Fisso
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Costo Variabile
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Azioni
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {costiUtenze.map((utenza, index) => (
-                <motion.tr
-                  key={utenza.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      {getTipoIcon(utenza.tipo)}
-                      <div className="ml-3 text-sm font-medium text-gray-900">
-                        {getTipoLabel(utenza.tipo)}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {utenza.fornitore}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {editingId === utenza.id ? (
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={editValues.costo_fisso}
-                        onChange={(e) => setEditValues(prev => ({ ...prev, costo_fisso: parseFloat(e.target.value) || 0 }))}
-                        className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    ) : (
-                      <div className="text-sm text-gray-900">
-                        €{utenza.costo_fisso.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
-                        <span className="text-xs text-gray-500 ml-1">
-                          /{utenza.unita_misura === 'anno' ? 'anno' : 'mese'}
-                        </span>
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {editingId === utenza.id ? (
-                      <input
-                        type="number"
-                        step="0.0001"
-                        value={editValues.costo_variabile}
-                        onChange={(e) => setEditValues(prev => ({ ...prev, costo_variabile: parseFloat(e.target.value) || 0 }))}
-                        className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    ) : (
-                      <div className="text-sm text-gray-900">
-                        {utenza.costo_variabile > 0 ? (
-                          <>
-                            €{utenza.costo_variabile.toLocaleString('it-IT', { minimumFractionDigits: utenza.costo_variabile < 1 ? 4 : 2 })}
-                            <span className="text-xs text-gray-500 ml-1">/{utenza.unita_misura}</span>
-                          </>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    {editingId === utenza.id ? (
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => handleSave(utenza.id)}
-                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                        >
-                          Salva
-                        </button>
-                        <button
-                          onClick={() => setEditingId(null)}
-                          className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                        >
-                          Annulla
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(utenza)}
-                          className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Modifica costi"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(utenza.id)}
-                          className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Elimina utenza"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      )}
 
       {/* Informazioni aggiuntive */}
       <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg">
