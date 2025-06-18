@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Search, Building2, AlertTriangle } from 'lucide-react';
+import { X, Search, Building2, AlertTriangle, CheckCircle, Loader } from 'lucide-react';
 import { motion } from 'framer-motion';
 import LoadingSpinner from '../common/LoadingSpinner';
 import toast from 'react-hot-toast';
@@ -14,6 +14,11 @@ const FornitoreApiModal: React.FC<FornitoreApiModalProps> = ({ onClose, onSelect
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [affidabilita, setAffidabilita] = useState<{
+    score: number;
+    stato: 'ottimo' | 'buono' | 'medio' | 'scarso';
+    dettagli: string[];
+  } | null>(null);
 
   const handleSearch = async () => {
     if (!partitaIva || partitaIva.length !== 11) {
@@ -40,6 +45,17 @@ const FornitoreApiModal: React.FC<FornitoreApiModalProps> = ({ onClose, onSelect
           tipo_fornitore: 'materiali',
           settore_merceologico: 'Acciai e leghe metalliche'
         });
+        
+        setAffidabilita({
+          score: 85,
+          stato: 'ottimo',
+          dettagli: [
+            'Nessun protesto o pregiudizievole rilevato',
+            'Pagamenti puntuali negli ultimi 24 mesi',
+            'Solidità patrimoniale elevata',
+            'Bilanci in attivo negli ultimi 3 anni'
+          ]
+        });
       } else if (partitaIva === '98765432109') {
         setResults({
           partita_iva: '98765432109',
@@ -50,6 +66,61 @@ const FornitoreApiModal: React.FC<FornitoreApiModalProps> = ({ onClose, onSelect
           codice_fiscale: '98765432109',
           tipo_fornitore: 'materiali',
           settore_merceologico: 'Gas industriali'
+        });
+        
+        setAffidabilita({
+          score: 72,
+          stato: 'buono',
+          dettagli: [
+            'Nessun protesto rilevato',
+            'Ritardi occasionali nei pagamenti',
+            'Buona solidità patrimoniale',
+            'Bilanci in attivo negli ultimi 2 anni'
+          ]
+        });
+      } else if (partitaIva === '11223344556') {
+        setResults({
+          partita_iva: '11223344556',
+          nome: 'Metalli Pregiati S.r.l.',
+          indirizzo: 'Via dei Metalli 42, 20019 Settimo Milanese (MI)',
+          email: 'info@metallipregiati.it',
+          telefono: '+39 02 5544332',
+          codice_fiscale: '11223344556',
+          tipo_fornitore: 'materiali',
+          settore_merceologico: 'Metalli preziosi e leghe speciali'
+        });
+        
+        setAffidabilita({
+          score: 45,
+          stato: 'medio',
+          dettagli: [
+            'Nessun protesto recente',
+            'Ritardi frequenti nei pagamenti',
+            'Solidità patrimoniale nella media',
+            'Bilancio in perdita nell\'ultimo anno'
+          ]
+        });
+      } else if (partitaIva === '55667788990') {
+        setResults({
+          partita_iva: '55667788990',
+          nome: 'Ferro Battuto Artigianale S.r.l.',
+          indirizzo: 'Via Artigiani 15, 20077 Melegnano (MI)',
+          email: 'info@ferrobattutoart.it',
+          telefono: '+39 02 8877665',
+          codice_fiscale: '55667788990',
+          tipo_fornitore: 'materiali',
+          settore_merceologico: 'Ferro battuto e lavorazioni artistiche'
+        });
+        
+        setAffidabilita({
+          score: 25,
+          stato: 'scarso',
+          dettagli: [
+            'Protesti o pregiudizievoli rilevati',
+            'Gravi ritardi nei pagamenti',
+            'Scarsa solidità patrimoniale',
+            'Bilanci in perdita negli ultimi 3 anni'
+          ]
         });
       } else {
         setError('Nessun risultato trovato per questa partita IVA');
@@ -72,6 +143,26 @@ const FornitoreApiModal: React.FC<FornitoreApiModalProps> = ({ onClose, onSelect
       onSelect(results);
       toast.success('Dati fornitore importati con successo');
       onClose();
+    }
+  };
+  
+  const getAffidabilitaColor = (stato: string) => {
+    switch (stato) {
+      case 'ottimo': return 'bg-green-50 border-green-200 text-green-800';
+      case 'buono': return 'bg-blue-50 border-blue-200 text-blue-800';
+      case 'medio': return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+      case 'scarso': return 'bg-red-50 border-red-200 text-red-800';
+      default: return 'bg-gray-50 border-gray-200 text-gray-800';
+    }
+  };
+  
+  const getAffidabilitaIcon = (stato: string) => {
+    switch (stato) {
+      case 'ottimo': return <CheckCircle className="h-5 w-5 text-green-600" />;
+      case 'buono': return <CheckCircle className="h-5 w-5 text-blue-600" />;
+      case 'medio': return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
+      case 'scarso': return <AlertTriangle className="h-5 w-5 text-red-600" />;
+      default: return <Loader className="h-5 w-5 text-gray-600" />;
     }
   };
 
@@ -136,7 +227,7 @@ const FornitoreApiModal: React.FC<FornitoreApiModalProps> = ({ onClose, onSelect
               </button>
             </div>
             <p className="mt-1 text-xs text-gray-500">
-              Prova con 12345678901 o 98765432109 per vedere risultati di esempio
+              Prova con 12345678901, 98765432109, 11223344556 o 55667788990 per vedere risultati di esempio
             </p>
           </div>
 
@@ -164,6 +255,30 @@ const FornitoreApiModal: React.FC<FornitoreApiModalProps> = ({ onClose, onSelect
                   <p><span className="font-medium">Telefono:</span> {results.telefono}</p>
                   <p><span className="font-medium">Settore:</span> {results.settore_merceologico}</p>
                 </div>
+                
+                {affidabilita && (
+                  <div className={`mt-4 p-3 rounded-lg border ${getAffidabilitaColor(affidabilita.stato)}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        {getAffidabilitaIcon(affidabilita.stato)}
+                        <h5 className="text-sm font-medium capitalize">{affidabilita.stato}</h5>
+                      </div>
+                      <div className="text-sm font-bold">
+                        Score: {affidabilita.score}/100
+                      </div>
+                    </div>
+                    
+                    <ul className="text-xs space-y-1 mt-2">
+                      {affidabilita.dettagli.map((dettaglio, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <span>•</span>
+                          <span>{dettaglio}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
                 <button
                   onClick={handleSelect}
                   className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors"

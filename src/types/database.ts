@@ -14,6 +14,8 @@ export interface Cliente {
   email: string;
   telefono?: string;
   indirizzo?: string;
+  codice_fiscale?: string;
+  partita_iva?: string;
   created_at?: string;
 }
 
@@ -128,4 +130,23 @@ export interface TasseIva {
   tasse_da_versare: number;
   data_scadenza: string;
   pagato: boolean;
+}
+
+export interface Fornitore {
+  id: string;
+  nome: string;
+  email?: string;
+  telefono?: string;
+  indirizzo?: string;
+  partita_iva?: string;
+  codice_fiscale?: string;
+  tipo_fornitore: string;
+  settore_merceologico?: string;
+  condizioni_pagamento?: string;
+  sconto_standard?: number;
+  valutazione?: number;
+  note?: string;
+  attivo: boolean;
+  created_at?: string;
+  updated_at?: string;
 }

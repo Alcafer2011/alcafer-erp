@@ -366,7 +366,7 @@ const FornitoreModal: React.FC<FornitoreModalProps> = ({ fornitore, onClose }) =
                 </label>
                 <HelpTooltip content="Partita IVA del fornitore (11 cifre)" />
               </div>
-              <div className="relative">
+              <div className="relative flex">
                 <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="text"
@@ -374,12 +374,20 @@ const FornitoreModal: React.FC<FornitoreModalProps> = ({ fornitore, onClose }) =
                   name="partita_iva"
                   value={formData.partita_iva}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  className={`w-full pl-10 pr-4 py-3 border rounded-l-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                     errors.partita_iva ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
                   placeholder="12345678901"
                   maxLength={11}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowApiModal(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-3 rounded-r-lg transition-colors"
+                  title="Cerca online"
+                >
+                  <Search className="h-5 w-5" />
+                </button>
               </div>
               {errors.partita_iva && (
                 <p className="mt-1 text-sm text-red-600">{errors.partita_iva}</p>

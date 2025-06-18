@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, Mail, Phone, MapPin } from 'lucide-react';
+import { X, User, Mail, Phone, MapPin, CreditCard, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { Cliente } from '../../types/database';
@@ -17,9 +17,18 @@ const ClienteModal: React.FC<ClienteModalProps> = ({ cliente, onClose }) => {
     email: '',
     telefono: '',
     indirizzo: '',
+    codice_fiscale: '',
+    partita_iva: '',
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [affidabilita, setAffidabilita] = useState<{
+    score: number;
+    stato: 'ottimo' | 'buono' | 'medio' | 'scarso';
+    dettagli: string[];
+    ultimoAggiornamento: string;
+  } | null>(null);
+  const [checkingAffidabilita, setCheckingAffidabilita] = useState(false);
 
   useEffect(() => {
     if (cliente) {
@@ -28,7 +37,14 @@ const ClienteModal: React.FC<ClienteModalProps> = ({ cliente, onClose }) => {
         email: cliente.email || '',
         telefono: cliente.telefono || '',
         indirizzo: cliente.indirizzo || '',
+        codice_fiscale: cliente.codice_fiscale || '',
+        partita_iva: cliente.partita_iva || '',
       });
+      
+      // Se il cliente ha un codice fiscale o partita IVA, verifica l'affidabilità
+      if (cliente.codice_fiscale || cliente.partita_iva) {
+        verificaAffidabilita(cliente.codice_fiscale || cliente.partita_iva);
+      }
     }
   }, [cliente]);
 
@@ -47,6 +63,14 @@ const ClienteModal: React.FC<ClienteModalProps> = ({ cliente, onClose }) => {
 
     if (formData.telefono && !/^[\d\s\+\-\(\)]+$/.test(formData.telefono)) {
       newErrors.telefono = 'Inserisci un numero di telefono valido';
+    }
+    
+    if (formData.codice_fiscale && formData.codice_fiscale.length !== 16) {
+      newErrors.codice_fiscale = 'Il codice fiscale deve essere di 16 caratteri';
+    }
+    
+    if (formData.partita_iva && formData.partita_iva.length !== 11) {
+      newErrors.partita_iva = 'La partita IVA deve essere di 11 cifre';
     }
 
     setErrors(newErrors);
@@ -69,6 +93,8 @@ const ClienteModal: React.FC<ClienteModalProps> = ({ cliente, onClose }) => {
         email: formData.email.trim().toLowerCase(),
         telefono: formData.telefono.trim() || null,
         indirizzo: formData.indirizzo.trim() || null,
+        codice_fiscale: formData.codice_fiscale.trim() || null,
+        partita_iva: formData.partita_iva.trim() || null,
       };
 
       if (cliente) {
@@ -110,6 +136,88 @@ const ClienteModal: React.FC<ClienteModalProps> = ({ cliente, onClose }) => {
     // Rimuovi l'errore quando l'utente inizia a digitare
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+  
+  const verificaAffidabilita = async (identificativo: string) => {
+    setCheckingAffidabilita(true);
+    setAffidabilita(null);
+    
+    try {
+      // Simula una chiamata API a un servizio di verifica affidabilità
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Genera un punteggio casuale per la demo
+      const score = Math.floor(Math.random() * 100);
+      let stato: 'ottimo' | 'buono' | 'medio' | 'scarso';
+      let dettagli: string[] = [];
+      
+      if (score >= 80) {
+        stato = 'ottimo';
+        dettagli = [
+          'Nessun protesto o pregiudizievole rilevato',
+          'Pagamenti puntuali negli ultimi 24 mesi',
+          'Solidità patrimoniale elevata',
+          'Bilanci in attivo negli ultimi 3 anni'
+        ];
+      } else if (score >= 60) {
+        stato = 'buono';
+        dettagli = [
+          'Nessun protesto rilevato',
+          'Ritardi occasionali nei pagamenti',
+          'Buona solidità patrimoniale',
+          'Bilanci in attivo negli ultimi 2 anni'
+        ];
+      } else if (score >= 40) {
+        stato = 'medio';
+        dettagli = [
+          'Nessun protesto recente',
+          'Ritardi frequenti nei pagamenti',
+          'Solidità patrimoniale nella media',
+          'Bilancio in perdita nell\'ultimo anno'
+        ];
+      } else {
+        stato = 'scarso';
+        dettagli = [
+          'Protesti o pregiudizievoli rilevati',
+          'Gravi ritardi nei pagamenti',
+          'Scarsa solidità patrimoniale',
+          'Bilanci in perdita negli ultimi 3 anni'
+        ];
+      }
+      
+      setAffidabilita({
+        score,
+        stato,
+        dettagli,
+        ultimoAggiornamento: new Date().toLocaleDateString('it-IT')
+      });
+      
+    } catch (error) {
+      console.error('Errore nella verifica dell\'affidabilità:', error);
+      toast.error('Errore nella verifica dell\'affidabilità');
+    } finally {
+      setCheckingAffidabilita(false);
+    }
+  };
+  
+  const getAffidabilitaColor = (stato: string) => {
+    switch (stato) {
+      case 'ottimo': return 'bg-green-100 border-green-500 text-green-800';
+      case 'buono': return 'bg-blue-100 border-blue-500 text-blue-800';
+      case 'medio': return 'bg-yellow-100 border-yellow-500 text-yellow-800';
+      case 'scarso': return 'bg-red-100 border-red-500 text-red-800';
+      default: return 'bg-gray-100 border-gray-500 text-gray-800';
+    }
+  };
+  
+  const getAffidabilitaIcon = (stato: string) => {
+    switch (stato) {
+      case 'ottimo': return <CheckCircle className="h-5 w-5 text-green-600" />;
+      case 'buono': return <CheckCircle className="h-5 w-5 text-blue-600" />;
+      case 'medio': return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
+      case 'scarso': return <AlertTriangle className="h-5 w-5 text-red-600" />;
+      default: return <Info className="h-5 w-5 text-gray-600" />;
     }
   };
 
@@ -230,6 +338,72 @@ const ClienteModal: React.FC<ClienteModalProps> = ({ cliente, onClose }) => {
             )}
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <label htmlFor="codice_fiscale" className="block text-sm font-medium text-gray-700">
+                  Codice Fiscale
+                </label>
+                <HelpTooltip content="Codice fiscale del cliente" />
+              </div>
+              <div className="relative">
+                <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  id="codice_fiscale"
+                  name="codice_fiscale"
+                  value={formData.codice_fiscale}
+                  onChange={handleChange}
+                  onBlur={(e) => {
+                    if (e.target.value && !formData.partita_iva) {
+                      verificaAffidabilita(e.target.value);
+                    }
+                  }}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                    errors.codice_fiscale ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
+                  placeholder="RSSMRA80A01H501U"
+                  maxLength={16}
+                />
+              </div>
+              {errors.codice_fiscale && (
+                <p className="mt-1 text-sm text-red-600">{errors.codice_fiscale}</p>
+              )}
+            </div>
+            
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <label htmlFor="partita_iva" className="block text-sm font-medium text-gray-700">
+                  Partita IVA
+                </label>
+                <HelpTooltip content="Partita IVA del cliente" />
+              </div>
+              <div className="relative">
+                <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  id="partita_iva"
+                  name="partita_iva"
+                  value={formData.partita_iva}
+                  onChange={handleChange}
+                  onBlur={(e) => {
+                    if (e.target.value) {
+                      verificaAffidabilita(e.target.value);
+                    }
+                  }}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                    errors.partita_iva ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
+                  placeholder="12345678901"
+                  maxLength={11}
+                />
+              </div>
+              {errors.partita_iva && (
+                <p className="mt-1 text-sm text-red-600">{errors.partita_iva}</p>
+              )}
+            </div>
+          </div>
+
           <div>
             <div className="flex items-center gap-2 mb-2">
               <label htmlFor="indirizzo" className="block text-sm font-medium text-gray-700">
@@ -250,6 +424,63 @@ const ClienteModal: React.FC<ClienteModalProps> = ({ cliente, onClose }) => {
               />
             </div>
           </div>
+          
+          {/* Report Affidabilità */}
+          {(formData.codice_fiscale || formData.partita_iva) && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-blue-600" />
+                  Report Affidabilità
+                </h4>
+                <button
+                  type="button"
+                  onClick={() => verificaAffidabilita(formData.partita_iva || formData.codice_fiscale)}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Aggiorna
+                </button>
+              </div>
+              
+              {checkingAffidabilita ? (
+                <div className="p-4 bg-gray-50 rounded-lg flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                  <span className="ml-2 text-sm text-gray-600">Verifica in corso...</span>
+                </div>
+              ) : affidabilita ? (
+                <div className={`p-4 rounded-lg border-l-4 ${getAffidabilitaColor(affidabilita.stato)}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      {getAffidabilitaIcon(affidabilita.stato)}
+                      <h5 className="font-medium capitalize">{affidabilita.stato}</h5>
+                    </div>
+                    <div className="text-sm font-bold">
+                      Score: {affidabilita.score}/100
+                    </div>
+                  </div>
+                  
+                  <ul className="text-sm space-y-1 mt-2">
+                    {affidabilita.dettagli.map((dettaglio, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <span>•</span>
+                        <span>{dettaglio}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <div className="text-xs mt-3">
+                    Ultimo aggiornamento: {affidabilita.ultimoAggiornamento}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 bg-gray-50 rounded-lg text-center">
+                  <p className="text-sm text-gray-500">
+                    Inserisci un codice fiscale o una partita IVA validi per verificare l'affidabilità
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
             <button
