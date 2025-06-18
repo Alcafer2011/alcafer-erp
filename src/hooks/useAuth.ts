@@ -120,70 +120,27 @@ export const useAuth = () => {
       // Determina quale utente autenticare in base all'email o nome
       const emailLower = email.toLowerCase();
       
-      if (emailLower.includes('aless') || emailLower === 'assistenza.alcafer@gmail.com' || emailLower === 'alessandro') {
+      if (emailLower === 'alessandro') {
         switchUser('alessandro');
-        
-        // Salva lo stato di autenticazione in localStorage
-        const userProfile = {
-          id: 'alessandro-id',
-          email: 'assistenza.alcafer@gmail.com',
-          nome: 'Alessandro',
-          cognome: 'Calabria',
-          data_nascita: '1990-01-01',
-          ruolo: 'alessandro' as const,
-          created_at: new Date().toISOString()
-        };
-        localStorage.setItem('auth_profile', JSON.stringify(userProfile));
-        
         return { success: true, user: 'alessandro' };
-      } else if (emailLower.includes('gabr') || emailLower.includes('gabi') || emailLower === 'gabifervoghera@gmail.com' || emailLower === 'gabriel') {
+      } else if (emailLower === 'gabriel') {
         switchUser('gabriel');
-        
-        // Salva lo stato di autenticazione in localStorage
-        const userProfile = {
-          id: 'gabriel-id',
-          email: 'gabifervoghera@gmail.com',
-          nome: 'Gabriel',
-          cognome: 'Prunaru',
-          data_nascita: '1992-05-15',
-          ruolo: 'gabriel' as const,
-          created_at: new Date().toISOString()
-        };
-        localStorage.setItem('auth_profile', JSON.stringify(userProfile));
-        
         return { success: true, user: 'gabriel' };
-      } else if (emailLower.includes('hann') || emailLower.includes('nuta') || emailLower === 'nuta1985@icloud.com' || emailLower === 'hanna') {
+      } else if (emailLower === 'hanna') {
         switchUser('hanna');
-        
-        // Salva lo stato di autenticazione in localStorage
-        const userProfile = {
-          id: 'hanna-id',
-          email: 'nuta1985@icloud.com',
-          nome: 'Hanna',
-          cognome: 'Mazhar',
-          data_nascita: '1988-12-03',
-          ruolo: 'hanna' as const,
-          created_at: new Date().toISOString()
-        };
-        localStorage.setItem('auth_profile', JSON.stringify(userProfile));
-        
+        return { success: true, user: 'hanna' };
+      } else if (emailLower.includes('aless') || emailLower === 'assistenza.alcafer@gmail.com') {
+        switchUser('alessandro');
+        return { success: true, user: 'alessandro' };
+      } else if (emailLower.includes('gabr') || emailLower.includes('gabi') || emailLower === 'gabifervoghera@gmail.com') {
+        switchUser('gabriel');
+        return { success: true, user: 'gabriel' };
+      } else if (emailLower.includes('hann') || emailLower.includes('nuta') || emailLower === 'nuta1985@icloud.com') {
+        switchUser('hanna');
         return { success: true, user: 'hanna' };
       } else {
         // Default a Alessandro se l'email non corrisponde
         switchUser('alessandro');
-        
-        // Salva lo stato di autenticazione in localStorage
-        const userProfile = {
-          id: 'alessandro-id',
-          email: 'assistenza.alcafer@gmail.com',
-          nome: 'Alessandro',
-          cognome: 'Calabria',
-          data_nascita: '1990-01-01',
-          ruolo: 'alessandro' as const,
-          created_at: new Date().toISOString()
-        };
-        localStorage.setItem('auth_profile', JSON.stringify(userProfile));
-        
         return { success: true, user: 'alessandro' };
       }
     } catch (error) {

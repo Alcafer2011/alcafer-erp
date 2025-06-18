@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Volume2, VolumeX, Play, Pause } from 'lucide-react';
+import { Volume2, VolumeX, Play, Pause, Lock } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -9,9 +9,19 @@ const LoginPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(30);
   const [isMuted, setIsMuted] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<'alessandro' | 'gabriel' | 'hanna' | null>(null);
+  const [pin, setPin] = useState('');
+  const [showPinInput, setShowPinInput] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // PIN personali (in un'app reale sarebbero criptati e memorizzati in modo sicuro)
+  const userPins = {
+    alessandro: '1234',
+    gabriel: '5678',
+    hanna: '9012'
+  };
 
   useEffect(() => {
     // Initialize audio
@@ -58,23 +68,63 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  const handleUserSelect = async (userType: 'alessandro' | 'gabriel' | 'hanna') => {
-    try {
-      const result = await login(userType, '');
-      
-      if (result.success) {
-        toast.success(`Benvenuto${userType === 'alessandro' ? ', Alessandro!' : 
-                      userType === 'gabriel' ? ', Gabriel!' : 
-                      userType === 'hanna' ? ', Hanna!' : '!'}`);
+  const handleUserSelect = (userType: 'alessandro' | 'gabriel' | 'hanna') => {
+    setSelectedUser(userType);
+    setShowPinInput(true);
+    setPin('');
+  };
+
+  const handlePinSubmit = async () => {
+    if (!selectedUser) return;
+    
+    // Verifica il PIN
+    if (pin === userPins[selectedUser]) {
+      try {
+        const result = await login(selectedUser, '');
         
-        // Reindirizza alla dashboard dopo il login
-        navigate('/');
-      } else {
+        if (result.success) {
+          toast.success(`Benvenuto${selectedUser === 'alessandro' ? ', Alessandro!' : 
+                        selectedUser === 'gabriel' ? ', Gabriel!' : 
+                        selectedUser === 'hanna' ? ', Hanna!' : '!'}`);
+          
+          // Reindirizza alla dashboard dopo il login
+          navigate('/');
+        } else {
+          toast.error('Errore durante l\'accesso. Riprova.');
+        }
+      } catch (error) {
+        console.error('Errore durante l\'accesso:', error);
         toast.error('Errore durante l\'accesso. Riprova.');
       }
-    } catch (error) {
-      console.error('Errore durante l\'accesso:', error);
-      toast.error('Errore durante l\'accesso. Riprova.');
+    } else {
+      toast.error('PIN non valido. Riprova.');
+      setPin('');
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handlePinSubmit();
+    }
+  };
+
+  const getUserColor = (userType: 'alessandro' | 'gabriel' | 'hanna') => {
+    switch (userType) {
+      case 'alessandro': return {
+        bg: 'from-red-50 to-red-100 hover:from-red-100 hover:to-red-200',
+        border: 'border-red-200',
+        gradient: 'from-red-600 to-red-700'
+      };
+      case 'gabriel': return {
+        bg: 'from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200',
+        border: 'border-blue-200',
+        gradient: 'from-blue-600 to-blue-700'
+      };
+      case 'hanna': return {
+        bg: 'from-green-50 to-green-100 hover:from-green-100 hover:to-green-200',
+        border: 'border-green-200',
+        gradient: 'from-green-600 to-green-700'
+      };
     }
   };
 
@@ -130,53 +180,119 @@ const LoginPage: React.FC = () => {
       >
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Benvenuto</h2>
-          <p className="text-gray-600">Seleziona il tuo profilo per accedere al sistema ERP Alcafer & Gabifer</p>
+          <p className="text-gray-600">
+            {showPinInput && selectedUser 
+              ? `Inserisci il tuo PIN personale, ${selectedUser === 'alessandro' ? 'Alessandro' : selectedUser === 'gabriel' ? 'Gabriel' : 'Hanna'}`
+              : 'Seleziona il tuo profilo per accedere al sistema ERP Alcafer & Gabifer'}
+          </p>
         </div>
 
-        <div className="space-y-4">
-          <button
-            onClick={() => handleUserSelect('alessandro')}
-            className="w-full flex items-center p-4 bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 rounded-xl transition-colors border border-red-200"
-          >
-            <div className="w-12 h-12 bg-gradient-to-r from-red-600 to-red-700 rounded-full flex items-center justify-center mr-4">
-              <span className="text-white text-lg font-bold">A</span>
-            </div>
-            <div className="text-left">
-              <h3 className="font-semibold text-gray-900">Alessandro Calabria</h3>
-              <p className="text-sm text-gray-600">Amministratore</p>
-            </div>
-          </button>
+        {!showPinInput ? (
+          <div className="space-y-4">
+            <button
+              onClick={() => handleUserSelect('alessandro')}
+              className={`w-full flex items-center p-4 bg-gradient-to-r ${getUserColor('alessandro').bg} rounded-xl transition-colors border ${getUserColor('alessandro').border}`}
+            >
+              <div className={`w-12 h-12 bg-gradient-to-r ${getUserColor('alessandro').gradient} rounded-full flex items-center justify-center mr-4`}>
+                <span className="text-white text-lg font-bold">A</span>
+              </div>
+              <div className="text-left">
+                <h3 className="font-semibold text-gray-900">Alessandro Calabria</h3>
+                <p className="text-sm text-gray-600">Amministratore</p>
+              </div>
+            </button>
 
-          <button
-            onClick={() => handleUserSelect('gabriel')}
-            className="w-full flex items-center p-4 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-xl transition-colors border border-blue-200"
-          >
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center mr-4">
-              <span className="text-white text-lg font-bold">G</span>
-            </div>
-            <div className="text-left">
-              <h3 className="font-semibold text-gray-900">Gabriel Prunaru</h3>
-              <p className="text-sm text-gray-600">Operatore</p>
-            </div>
-          </button>
+            <button
+              onClick={() => handleUserSelect('gabriel')}
+              className={`w-full flex items-center p-4 bg-gradient-to-r ${getUserColor('gabriel').bg} rounded-xl transition-colors border ${getUserColor('gabriel').border}`}
+            >
+              <div className={`w-12 h-12 bg-gradient-to-r ${getUserColor('gabriel').gradient} rounded-full flex items-center justify-center mr-4`}>
+                <span className="text-white text-lg font-bold">G</span>
+              </div>
+              <div className="text-left">
+                <h3 className="font-semibold text-gray-900">Gabriel Prunaru</h3>
+                <p className="text-sm text-gray-600">Operatore</p>
+              </div>
+            </button>
 
-          <button
-            onClick={() => handleUserSelect('hanna')}
-            className="w-full flex items-center p-4 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-xl transition-colors border border-green-200"
-          >
-            <div className="w-12 h-12 bg-gradient-to-r from-green-600 to-green-700 rounded-full flex items-center justify-center mr-4">
-              <span className="text-white text-lg font-bold">H</span>
+            <button
+              onClick={() => handleUserSelect('hanna')}
+              className={`w-full flex items-center p-4 bg-gradient-to-r ${getUserColor('hanna').bg} rounded-xl transition-colors border ${getUserColor('hanna').border}`}
+            >
+              <div className={`w-12 h-12 bg-gradient-to-r ${getUserColor('hanna').gradient} rounded-full flex items-center justify-center mr-4`}>
+                <span className="text-white text-lg font-bold">H</span>
+              </div>
+              <div className="text-left">
+                <h3 className="font-semibold text-gray-900">Hanna Mazhar</h3>
+                <p className="text-sm text-gray-600">Contabilità</p>
+              </div>
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {selectedUser && (
+              <div className={`flex items-center p-4 bg-gradient-to-r ${getUserColor(selectedUser).bg} rounded-xl border ${getUserColor(selectedUser).border}`}>
+                <div className={`w-12 h-12 bg-gradient-to-r ${getUserColor(selectedUser).gradient} rounded-full flex items-center justify-center mr-4`}>
+                  <span className="text-white text-lg font-bold">
+                    {selectedUser === 'alessandro' ? 'A' : selectedUser === 'gabriel' ? 'G' : 'H'}
+                  </span>
+                </div>
+                <div className="text-left">
+                  <h3 className="font-semibold text-gray-900">
+                    {selectedUser === 'alessandro' ? 'Alessandro Calabria' : 
+                     selectedUser === 'gabriel' ? 'Gabriel Prunaru' : 'Hanna Mazhar'}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {selectedUser === 'alessandro' ? 'Amministratore' : 
+                     selectedUser === 'gabriel' ? 'Operatore' : 'Contabilità'}
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            <div>
+              <label htmlFor="pin" className="block text-sm font-medium text-gray-700 mb-2">
+                Inserisci il tuo PIN personale
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  id="pin"
+                  type="password"
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Inserisci il tuo PIN"
+                  maxLength={4}
+                  autoFocus
+                />
+              </div>
+              <p className="mt-2 text-xs text-gray-500">
+                Per questa demo, il PIN di Alessandro è 1234, Gabriel è 5678, Hanna è 9012
+              </p>
             </div>
-            <div className="text-left">
-              <h3 className="font-semibold text-gray-900">Hanna Mazhar</h3>
-              <p className="text-sm text-gray-600">Contabilità</p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowPinInput(false)}
+                className="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+              >
+                Indietro
+              </button>
+              <button
+                onClick={handlePinSubmit}
+                className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Accedi
+              </button>
             </div>
-          </button>
-        </div>
+          </div>
+        )}
 
         <div className="mt-8 pt-6 border-t border-gray-200">
           <div className="text-center text-sm text-gray-600">
-            <p>Seleziona il tuo profilo per accedere al sistema</p>
+            <p>Ogni utente ha un PIN personale per garantire la sicurezza</p>
             <p className="mt-2 text-xs text-gray-500">
               Versione 1.0.0 - © 2025 Alcafer & Gabifer
             </p>
