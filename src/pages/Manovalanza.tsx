@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Edit, UserCheck, DollarSign, ToggleLeft, ToggleRight, Plus, Trash2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { Manovalanza as ManovalanzaType } from '../types/database';
 import { usePermissions } from '../hooks/usePermissions';
