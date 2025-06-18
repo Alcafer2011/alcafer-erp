@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, Package, TrendingUp, RefreshCw } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, TrendingUp, RefreshCw, Music } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase, getCurrentUser } from '../lib/supabase';
 import { MaterialeMetallico, PrezzoMateriale } from '../types/database';
@@ -13,7 +13,8 @@ const MaterialiMetallici: React.FC = () => {
   const [prezziMateriali, setPrezziMateriali] = useState<PrezzoMateriale[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingPrices, setUpdatingPrices] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const permissions = usePermissions();
 
   // Prezzi realistici per Lombardia, Piemonte, Emilia Romagna (2024)
@@ -35,25 +36,33 @@ const MaterialiMetallici: React.FC = () => {
   ];
 
   useEffect(() => {
-    checkAuthAndFetchData();
+    fetchData();
+    
+    // Inizializza l'elemento audio
+    const audio = new Audio('https://soundcloud.com/relaxdaily/relaxing-music-calm-studying?utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing');
+    audio.loop = true;
+    setAudioElement(audio);
+    
+    return () => {
+      // Pulisci l'audio quando il componente viene smontato
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.currentTime = 0;
+      }
+    };
   }, []);
 
-  const checkAuthAndFetchData = async () => {
-    try {
-      const user = await getCurrentUser();
-      setIsAuthenticated(!!user);
-      
-      if (!user) {
-        console.warn('Utente non autenticato - alcune funzionalità potrebbero essere limitate');
-        toast.error('Devi essere autenticato per accedere a questa sezione');
-        setLoading(false);
-        return;
+  const toggleMusic = () => {
+    if (audioElement) {
+      if (isPlaying) {
+        audioElement.pause();
+      } else {
+        audioElement.play().catch(e => {
+          console.error('Errore nella riproduzione audio:', e);
+          toast.error('Impossibile riprodurre la musica. Prova a interagire prima con la pagina.');
+        });
       }
-      
-      await fetchData();
-    } catch (error) {
-      console.error('Errore nel controllo autenticazione:', error);
-      setLoading(false);
+      setIsPlaying(!isPlaying);
     }
   };
 
@@ -102,19 +111,6 @@ const MaterialiMetallici: React.FC = () => {
 
   const initializePrezziRegionali = async () => {
     try {
-      // Verifica che l'utente sia autenticato
-      const user = await getCurrentUser();
-      if (!user) {
-        toast.error('Devi essere autenticato per inizializzare i prezzi');
-        return;
-      }
-
-      // Verifica i permessi
-      if (!permissions.canModifyCostiMateriali) {
-        toast.error('Non hai i permessi per modificare i prezzi dei materiali');
-        return;
-      }
-
       // Crea un set di tipi di materiale unici
       const tipiUnici = new Set();
       const prezziUnici = [];
@@ -154,19 +150,6 @@ const MaterialiMetallici: React.FC = () => {
 
   const updatePrezzo = async (id: string, nuovoPrezzo: number) => {
     try {
-      // Verifica che l'utente sia autenticato
-      const user = await getCurrentUser();
-      if (!user) {
-        toast.error('Devi essere autenticato per aggiornare i prezzi');
-        return;
-      }
-
-      // Verifica i permessi
-      if (!permissions.canModifyCostiMateriali) {
-        toast.error('Non hai i permessi per modificare i prezzi dei materiali');
-        return;
-      }
-
       const { error } = await supabase
         .from('prezzi_materiali')
         .update({ 
@@ -193,19 +176,6 @@ const MaterialiMetallici: React.FC = () => {
   };
 
   const updateAllPrices = async () => {
-    // Verifica che l'utente sia autenticato
-    const user = await getCurrentUser();
-    if (!user) {
-      toast.error('Devi essere autenticato per aggiornare i prezzi');
-      return;
-    }
-
-    // Verifica i permessi
-    if (!permissions.canModifyCostiMateriali) {
-      toast.error('Non hai i permessi per modificare i prezzi dei materiali');
-      return;
-    }
-
     setUpdatingPrices(true);
     try {
       // Simula aggiornamento automatico dei prezzi
@@ -264,26 +234,6 @@ const MaterialiMetallici: React.FC = () => {
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="text-center py-12">
-        <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Accesso Richiesto</h3>
-        <p className="text-gray-500">Devi essere autenticato per accedere a questa sezione.</p>
-      </div>
-    );
-  }
-
-  if (!permissions.canModifyCostiMateriali) {
-    return (
-      <div className="text-center py-12">
-        <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Accesso Limitato</h3>
-        <p className="text-gray-500">Non hai i permessi per visualizzare questa sezione.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -291,23 +241,32 @@ const MaterialiMetallici: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Materiali Metallici</h1>
           <p className="mt-2 text-gray-600">Gestisci i costi e i prezzi dei materiali metallici</p>
         </div>
-        <button
-          onClick={updateAllPrices}
-          disabled={updatingPrices}
-          className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 disabled:opacity-50"
-        >
-          {updatingPrices ? (
-            <>
-              <LoadingSpinner size="sm" color="text-white" />
-              Aggiornamento...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="h-4 w-4" />
-              Aggiorna Prezzi
-            </>
-          )}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={toggleMusic}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+          >
+            <Music className="h-4 w-4" />
+            {isPlaying ? 'Ferma Musica' : 'Musica Rilassante'}
+          </button>
+          <button
+            onClick={updateAllPrices}
+            disabled={updatingPrices}
+            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 disabled:opacity-50"
+          >
+            {updatingPrices ? (
+              <>
+                <LoadingSpinner size="sm" color="text-white" />
+                Aggiornamento...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4" />
+                Aggiorna Prezzi
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Sezione Prezzi Materiali */}

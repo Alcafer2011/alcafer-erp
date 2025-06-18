@@ -19,7 +19,7 @@ const Manovalanza: React.FC = () => {
   });
   const [showAddForm, setShowAddForm] = useState(false);
   const permissions = usePermissions();
-  const { userProfile } = usePermissions();
+  const { userProfile } = useAuth();
 
   useEffect(() => {
     fetchManovalanza();
@@ -261,7 +261,7 @@ const Manovalanza: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900">
               Dipendenti
             </h3>
-            <HelpTooltip content="Gestisci i costi fissi mensili per ogni dipendente. Solo Alessandro può modificare questi valori." />
+            <HelpTooltip content="Gestisci i costi fissi mensili per ogni dipendente. Solo gli utenti con permessi amministratore possono modificare questi valori." />
           </div>
         </div>
 
@@ -311,16 +311,13 @@ const Manovalanza: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {editingId === persona.id ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600">€</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={editValue}
-                          onChange={(e) => setEditValue(parseFloat(e.target.value) || 0)}
-                          className="w-32 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editValue}
+                        onChange={(e) => setEditValue(parseFloat(e.target.value) || 0)}
+                        className="w-32 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
                     ) : (
                       <div className="text-sm font-medium text-gray-900">
                         €{persona.importo_mensile.toLocaleString('it-IT', { minimumFractionDigits: 2 })}

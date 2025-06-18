@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Edit, Wrench, Zap, DollarSign, ToggleLeft, ToggleRight, Plus, Trash2 } from 'lucide-react';
+import { Edit, Wrench, Zap, DollarSign, ToggleLeft, ToggleRight, Plus, Trash2, Music } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { LeasingStrumentale } from '../types/database';
@@ -22,6 +22,8 @@ const LeasingStrumentali: React.FC = () => {
     consumo_kw: 0
   });
   const [showAddForm, setShowAddForm] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const permissions = usePermissions();
 
   // Elenco di strumenti predefiniti
@@ -45,7 +47,34 @@ const LeasingStrumentali: React.FC = () => {
 
   useEffect(() => {
     fetchLeasingStrumentali();
+    
+    // Inizializza l'elemento audio
+    const audio = new Audio('https://soundcloud.com/relaxdaily/relaxing-music-calm-studying?utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing');
+    audio.loop = true;
+    setAudioElement(audio);
+    
+    return () => {
+      // Pulisci l'audio quando il componente viene smontato
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.currentTime = 0;
+      }
+    };
   }, []);
+
+  const toggleMusic = () => {
+    if (audioElement) {
+      if (isPlaying) {
+        audioElement.pause();
+      } else {
+        audioElement.play().catch(e => {
+          console.error('Errore nella riproduzione audio:', e);
+          toast.error('Impossibile riprodurre la musica. Prova a interagire prima con la pagina.');
+        });
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
 
   const fetchLeasingStrumentali = async () => {
     try {
@@ -217,16 +246,6 @@ const LeasingStrumentali: React.FC = () => {
     );
   }
 
-  if (!permissions.canModifyLeasing) {
-    return (
-      <div className="text-center py-12">
-        <Wrench className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Accesso Limitato</h3>
-        <p className="text-gray-500">Non hai i permessi per visualizzare questa sezione.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -235,6 +254,13 @@ const LeasingStrumentali: React.FC = () => {
           <p className="mt-2 text-gray-600">Gestisci i costi mensili di attrezzature e servizi</p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={toggleMusic}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+          >
+            <Music className="h-4 w-4" />
+            {isPlaying ? 'Ferma Musica' : 'Musica Rilassante'}
+          </button>
           {leasingStrumentali.length === 0 && (
             <button
               onClick={initializeStrumentiPredefiniti}
