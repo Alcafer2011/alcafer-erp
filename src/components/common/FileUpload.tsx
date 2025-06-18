@@ -71,7 +71,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       navigator.mediaDevices.getUserMedia({ video: true })
         .then(stream => {
           // Implementa cattura da camera
-          toast.info('Funzionalità camera in sviluppo');
+          toast.success('Funzionalità camera in sviluppo');
         })
         .catch(err => {
           toast.error('Impossibile accedere alla camera');

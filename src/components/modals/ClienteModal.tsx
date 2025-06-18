@@ -43,7 +43,7 @@ const ClienteModal: React.FC<ClienteModalProps> = ({ cliente, onClose }) => {
       
       // Se il cliente ha un codice fiscale o partita IVA, verifica l'affidabilità
       if (cliente.codice_fiscale || cliente.partita_iva) {
-        verificaAffidabilita(cliente.codice_fiscale || cliente.partita_iva);
+        verificaAffidabilita(cliente.codice_fiscale || cliente.partita_iva || '');
       }
     }
   }, [cliente]);
@@ -435,7 +435,7 @@ const ClienteModal: React.FC<ClienteModalProps> = ({ cliente, onClose }) => {
                 </h4>
                 <button
                   type="button"
-                  onClick={() => verificaAffidabilita(formData.partita_iva || formData.codice_fiscale)}
+                  onClick={() => verificaAffidabilita(formData.partita_iva || formData.codice_fiscale || '')}
                   className="text-xs text-blue-600 hover:text-blue-800 font-medium"
                 >
                   Aggiorna
