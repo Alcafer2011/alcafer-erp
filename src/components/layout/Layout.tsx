@@ -4,7 +4,8 @@ import {
   Home, Users, FileText, Briefcase, Settings, 
   Menu, X, LogOut, HelpCircle, ChevronDown, Calculator,
   TrendingUp, PieChart, Receipt, Wrench, UserCheck, Building2,
-  Package, Truck, UserCog, Droplet, Flame, Target, Music, Volume2
+  Package, Truck, UserCog, Droplet, Flame, Target, Music, Volume2,
+  Play, Pause, SkipForward, SkipBack, Disc, Headphones
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
@@ -28,6 +29,27 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [showSpotify, setShowSpotify] = useState(false);
   const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTrack, setCurrentTrack] = useState(0);
+  const [volume, setVolume] = useState(30);
+
+  // Relaxing music tracks
+  const relaxingTracks = [
+    { 
+      name: 'Peaceful Meditation', 
+      url: 'https://soundbible.com/mp3/meadow-wind-and-chimes-nature-sounds-7802.mp3',
+      artist: 'Nature Sounds'
+    },
+    { 
+      name: 'Ocean Waves', 
+      url: 'https://soundbible.com/mp3/Ocean_Waves-Mike_Koenig-980635527.mp3',
+      artist: 'Ocean Sounds'
+    },
+    { 
+      name: 'Forest Birds', 
+      url: 'https://soundbible.com/mp3/songbird-daniel-simion.mp3',
+      artist: 'Forest Sounds'
+    }
+  ];
 
   useEffect(() => {
     // Simula altri utenti attivi
@@ -44,9 +66,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }, 30000); // Cambia ogni 30 secondi
     
     // Inizializza il player audio per la musica rilassante
-    const audio = new Audio('https://soundbible.com/mp3/meadow-wind-and-chimes-nature-sounds-7802.mp3');
-    audio.loop = true;
-    audio.volume = 0.3;
+    const audio = new Audio(relaxingTracks[currentTrack].url);
+    audio.loop = false;
+    audio.volume = volume / 100;
+    audio.addEventListener('ended', () => nextTrack());
     setAudioPlayer(audio);
     
     return () => {
@@ -58,6 +81,25 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     };
   }, []);
 
+  useEffect(() => {
+    // Update audio source when track changes
+    if (audioPlayer) {
+      audioPlayer.src = relaxingTracks[currentTrack].url;
+      if (isPlaying) {
+        audioPlayer.play().catch(err => {
+          console.log('Playback error:', err);
+        });
+      }
+    }
+  }, [currentTrack]);
+
+  useEffect(() => {
+    // Update volume when it changes
+    if (audioPlayer) {
+      audioPlayer.volume = volume / 100;
+    }
+  }, [volume]);
+
   const toggleAudio = () => {
     if (audioPlayer) {
       if (audioPlayer.paused) {
@@ -66,13 +108,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           toast.error('Errore nella riproduzione. Clicca di nuovo per riprovare.');
         });
         setIsPlaying(true);
-        toast.success('Musica rilassante attivata');
+        toast.success(`In riproduzione: ${relaxingTracks[currentTrack].name}`);
       } else {
         audioPlayer.pause();
         setIsPlaying(false);
-        toast.success('Musica rilassante disattivata');
+        toast.success('Musica in pausa');
       }
     }
+  };
+
+  const nextTrack = () => {
+    setCurrentTrack((prev) => (prev + 1) % relaxingTracks.length);
+  };
+
+  const prevTrack = () => {
+    setCurrentTrack((prev) => (prev - 1 + relaxingTracks.length) % relaxingTracks.length);
   };
 
   const handleLogout = async () => {
@@ -337,21 +387,69 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="flex-1" />
 
           {/* Music Controls */}
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={toggleAudio}
-              className={`text-gray-600 hover:text-gray-900 p-2 hover:bg-gray-100 rounded-lg transition-colors ${isPlaying ? 'text-green-600' : ''}`}
-              title="Musica Rilassante"
+          <div className="flex items-center">
+            <motion.div 
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full p-1 shadow-lg flex items-center"
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
             >
-              <Volume2 className="h-5 w-5" />
-            </button>
+              <button 
+                onClick={prevTrack}
+                className="text-white p-1 hover:bg-white/10 rounded-full transition-colors"
+                title="Traccia precedente"
+              >
+                <SkipBack className="h-4 w-4" />
+              </button>
+              
+              <button 
+                onClick={toggleAudio}
+                className="text-white p-2 mx-1 hover:bg-white/10 rounded-full transition-colors flex items-center justify-center"
+                title={isPlaying ? "Pausa" : "Riproduci"}
+              >
+                {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+              </button>
+              
+              <button 
+                onClick={nextTrack}
+                className="text-white p-1 hover:bg-white/10 rounded-full transition-colors"
+                title="Traccia successiva"
+              >
+                <SkipForward className="h-4 w-4" />
+              </button>
+              
+              <div className="hidden md:flex items-center ml-2 mr-3">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={volume}
+                  onChange={(e) => setVolume(parseInt(e.target.value))}
+                  className="w-16 h-1 bg-white/30 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+              
+              <div className="hidden md:block text-white text-xs font-medium px-2 py-1 bg-white/10 rounded-full ml-1 mr-2">
+                {isPlaying ? (
+                  <div className="flex items-center gap-1">
+                    <Disc className="h-3 w-3 animate-spin" />
+                    <span className="truncate max-w-[80px]">{relaxingTracks[currentTrack].name}</span>
+                  </div>
+                ) : (
+                  <span>Musica</span>
+                )}
+              </div>
+            </motion.div>
             
             <button 
               onClick={() => setShowSpotify(!showSpotify)}
-              className={`text-gray-600 hover:text-gray-900 p-2 hover:bg-gray-100 rounded-lg transition-colors ${showSpotify ? 'text-green-600' : ''}`}
+              className={`ml-2 p-2 rounded-full transition-all ${
+                showSpotify 
+                  ? 'bg-green-600 text-white shadow-md' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
               title="Spotify"
             >
-              <Music className="h-5 w-5" />
+              <Headphones className="h-5 w-5" />
             </button>
           </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Music, ExternalLink, RefreshCw, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX } from 'lucide-react';
+import { Music, ExternalLink, RefreshCw, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Disc, Headphones } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -20,11 +20,11 @@ const SpotifyPlayer: React.FC<SpotifyPlayerProps> = ({ defaultPlaylist = '37i9dQ
 
   // Playlist di musica rilassante predefinite
   const relaxingPlaylists = [
-    { id: '37i9dQZF1DX8Uebhn9wzrS', name: 'Peaceful Piano' },
-    { id: '37i9dQZF1DWZqd5JICZI0u', name: 'Peaceful Meditation' },
-    { id: '37i9dQZF1DX3Ogo9pFvBkY', name: 'Ambient Chill' },
-    { id: '37i9dQZF1DX1s9knjP51Oa', name: 'Calm Before the Storm' },
-    { id: '37i9dQZF1DX9uKNf5jGX6m', name: 'Relaxing Massage' }
+    { id: '37i9dQZF1DX8Uebhn9wzrS', name: 'Peaceful Piano', image: 'https://i.scdn.co/image/ab67706f00000003ca5a7517156021292e5663a4' },
+    { id: '37i9dQZF1DWZqd5JICZI0u', name: 'Peaceful Meditation', image: 'https://i.scdn.co/image/ab67706f00000003e4eadd417a05b2546e866934' },
+    { id: '37i9dQZF1DX3Ogo9pFvBkY', name: 'Ambient Chill', image: 'https://i.scdn.co/image/ab67706f000000034d26d431869cabfc53c67d8e' },
+    { id: '37i9dQZF1DX1s9knjP51Oa', name: 'Calm Before the Storm', image: 'https://i.scdn.co/image/ab67706f000000035f55eb92a797dfd5ab3fb9b8' },
+    { id: '37i9dQZF1DX9uKNf5jGX6m', name: 'Relaxing Massage', image: 'https://i.scdn.co/image/ab67706f00000003b70e0223f544b1faa2e95ed9' }
   ];
 
   // Tracce di musica rilassante gratuite
@@ -33,19 +33,22 @@ const SpotifyPlayer: React.FC<SpotifyPlayerProps> = ({ defaultPlaylist = '37i9dQ
       name: 'Peaceful Meditation', 
       url: 'https://soundbible.com/mp3/meadow-wind-and-chimes-nature-sounds-7802.mp3',
       artist: 'Nature Sounds',
-      album: 'Meditation Collection'
+      album: 'Meditation Collection',
+      image: 'https://i.scdn.co/image/ab67706f00000003ca5a7517156021292e5663a4'
     },
     { 
       name: 'Ocean Waves', 
       url: 'https://soundbible.com/mp3/Ocean_Waves-Mike_Koenig-980635527.mp3',
       artist: 'Nature Sounds',
-      album: 'Ocean Collection'
+      album: 'Ocean Collection',
+      image: 'https://i.scdn.co/image/ab67706f00000003e4eadd417a05b2546e866934'
     },
     { 
       name: 'Forest Birds', 
       url: 'https://soundbible.com/mp3/songbird-daniel-simion.mp3',
       artist: 'Nature Sounds',
-      album: 'Forest Collection'
+      album: 'Forest Collection',
+      image: 'https://i.scdn.co/image/ab67706f000000034d26d431869cabfc53c67d8e'
     }
   ];
 
@@ -168,7 +171,7 @@ const SpotifyPlayer: React.FC<SpotifyPlayerProps> = ({ defaultPlaylist = '37i9dQ
       name: newTrack.name,
       artist: newTrack.artist,
       album: newTrack.album,
-      image: 'https://i.scdn.co/image/ab67706f00000003e4eadd417a05b2546e866934'
+      image: newTrack.image
     });
     
     // Riproduci
@@ -199,7 +202,7 @@ const SpotifyPlayer: React.FC<SpotifyPlayerProps> = ({ defaultPlaylist = '37i9dQ
         name: `${playlist?.name} Track 1`,
         artist: 'Various Artists',
         album: playlist?.name,
-        image: `https://i.scdn.co/image/ab67706f00000003ca5a7517156021292e5663a4`
+        image: playlist?.image || 'https://i.scdn.co/image/ab67706f00000003ca5a7517156021292e5663a4'
       });
       
       // Cambia traccia audio
@@ -218,17 +221,21 @@ const SpotifyPlayer: React.FC<SpotifyPlayerProps> = ({ defaultPlaylist = '37i9dQ
   };
 
   return (
-    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
+    <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-6 border border-purple-700 shadow-lg">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Music className="h-5 w-5 text-green-600" />
-          <h3 className="text-lg font-semibold text-green-900">Spotify Connect</h3>
+          <div className="p-2 bg-white/20 rounded-full">
+            <Headphones className="h-6 w-6 text-white" />
+          </div>
+          <h3 className="text-lg font-semibold text-white">
+            Spotify Connect
+          </h3>
         </div>
         <a 
           href="https://open.spotify.com" 
           target="_blank" 
           rel="noopener noreferrer"
-          className="text-xs text-green-600 hover:text-green-800 flex items-center gap-1"
+          className="text-xs text-white/80 hover:text-white flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full transition-colors"
         >
           <ExternalLink className="h-3 w-3" />
           Apri Spotify
@@ -237,15 +244,17 @@ const SpotifyPlayer: React.FC<SpotifyPlayerProps> = ({ defaultPlaylist = '37i9dQ
 
       {!isConnected ? (
         <div className="text-center py-8">
-          <Music className="h-16 w-16 text-green-400 mx-auto mb-4" />
-          <h4 className="text-lg font-medium text-green-800 mb-2">Connetti il tuo account Spotify</h4>
-          <p className="text-sm text-green-600 mb-4">
+          <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Music className="h-10 w-10 text-white" />
+          </div>
+          <h4 className="text-lg font-medium text-white mb-2">Connetti il tuo account Spotify</h4>
+          <p className="text-sm text-white/80 mb-4">
             Ascolta la tua musica preferita mentre lavori
           </p>
           <button
             onClick={authorizeSpotify}
             disabled={isLoading}
-            className="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded-full font-medium transition-colors flex items-center gap-2 mx-auto"
+            className="bg-green-500 hover:bg-green-600 text-white py-2 px-6 rounded-full font-medium transition-colors flex items-center gap-2 mx-auto"
           >
             {isLoading ? (
               <>
@@ -264,7 +273,7 @@ const SpotifyPlayer: React.FC<SpotifyPlayerProps> = ({ defaultPlaylist = '37i9dQ
         <div>
           {/* Player UI */}
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 rounded-md overflow-hidden flex-shrink-0">
+            <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 shadow-lg">
               <img 
                 src={currentTrack?.image || 'https://i.scdn.co/image/ab67706f00000003ca5a7517156021292e5663a4'} 
                 alt="Album cover" 
@@ -272,61 +281,70 @@ const SpotifyPlayer: React.FC<SpotifyPlayerProps> = ({ defaultPlaylist = '37i9dQ
               />
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="font-medium text-green-900 truncate">{currentTrack?.name || 'Nessuna traccia'}</h4>
-              <p className="text-sm text-green-600 truncate">{currentTrack?.artist || 'Artista sconosciuto'}</p>
-              <p className="text-xs text-green-500 truncate">{currentTrack?.album || 'Album sconosciuto'}</p>
+              <h4 className="font-medium text-white truncate">{currentTrack?.name || 'Nessuna traccia'}</h4>
+              <p className="text-sm text-white/80 truncate">{currentTrack?.artist || 'Artista sconosciuto'}</p>
+              <p className="text-xs text-white/60 truncate">{currentTrack?.album || 'Album sconosciuto'}</p>
+              
+              {isPlaying && (
+                <div className="flex items-center gap-1 mt-1">
+                  <Disc className="h-3 w-3 text-white/60 animate-spin" />
+                  <span className="text-xs text-white/60">In riproduzione</span>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Controlli */}
-          <div className="flex items-center justify-between mb-4">
-            <button 
-              onClick={() => changeTrack('prev')}
-              className="p-2 text-green-600 hover:text-green-800 hover:bg-green-100 rounded-full transition-colors"
-            >
-              <SkipBack className="h-5 w-5" />
-            </button>
-            
-            <button 
-              onClick={togglePlayback}
-              className="p-3 bg-green-600 hover:bg-green-700 text-white rounded-full transition-colors"
-            >
-              {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
-            </button>
-            
-            <button 
-              onClick={() => changeTrack('next')}
-              className="p-2 text-green-600 hover:text-green-800 hover:bg-green-100 rounded-full transition-colors"
-            >
-              <SkipForward className="h-5 w-5" />
-            </button>
-          </div>
+          <div className="bg-white/10 p-4 rounded-lg mb-4">
+            <div className="flex items-center justify-between mb-4">
+              <button 
+                onClick={() => changeTrack('prev')}
+                className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+              >
+                <SkipBack className="h-5 w-5" />
+              </button>
+              
+              <button 
+                onClick={togglePlayback}
+                className="p-4 bg-white text-indigo-600 hover:bg-white/90 rounded-full transition-colors shadow-lg"
+              >
+                {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+              </button>
+              
+              <button 
+                onClick={() => changeTrack('next')}
+                className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+              >
+                <SkipForward className="h-5 w-5" />
+              </button>
+            </div>
 
-          {/* Volume */}
-          <div className="flex items-center gap-2 mb-6">
-            <button 
-              onClick={toggleMute}
-              className="text-green-600 hover:text-green-800"
-            >
-              {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-            </button>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={isMuted ? 0 : volume}
-              onChange={(e) => {
-                setVolume(parseInt(e.target.value));
-                if (isMuted) setIsMuted(false);
-              }}
-              className="w-full h-2 bg-green-200 rounded-lg appearance-none cursor-pointer accent-green-600"
-            />
-            <span className="text-xs text-green-600 w-8 text-right">{isMuted ? 0 : volume}%</span>
+            {/* Volume */}
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={toggleMute}
+                className="text-white/80 hover:text-white"
+              >
+                {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              </button>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={isMuted ? 0 : volume}
+                onChange={(e) => {
+                  setVolume(parseInt(e.target.value));
+                  if (isMuted) setIsMuted(false);
+                }}
+                className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
+              />
+              <span className="text-xs text-white/80 w-8 text-right">{isMuted ? 0 : volume}%</span>
+            </div>
           </div>
 
           {/* Playlist */}
           <div>
-            <h5 className="text-sm font-medium text-green-800 mb-2">Playlist Rilassanti</h5>
+            <h5 className="text-sm font-medium text-white/90 mb-2">Playlist Rilassanti</h5>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
               {relaxingPlaylists.map(playlist => (
                 <button
@@ -334,8 +352,8 @@ const SpotifyPlayer: React.FC<SpotifyPlayerProps> = ({ defaultPlaylist = '37i9dQ
                   onClick={() => changePlaylist(playlist.id)}
                   className={`text-left p-2 rounded-lg text-sm transition-colors ${
                     playlistId === playlist.id 
-                      ? 'bg-green-200 text-green-800' 
-                      : 'bg-white hover:bg-green-100 text-green-700'
+                      ? 'bg-white/20 text-white' 
+                      : 'bg-white/10 hover:bg-white/15 text-white/80'
                   }`}
                 >
                   {playlist.name}
