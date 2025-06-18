@@ -24,23 +24,19 @@ const LeasingStrumentali: React.FC = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const permissions = usePermissions();
 
-  // Elenco di strumenti predefiniti
+  // Elenco di strumenti predefiniti richiesti
   const strumentiPredefiniti = [
-    { nome: 'Taglio laser Trumpf', rata: 3500, consumo: 25 },
-    { nome: 'Piegatrice Amada', rata: 1800, consumo: 12 },
-    { nome: 'Saldatrice TIG Miller', rata: 450, consumo: 8 },
-    { nome: 'Saldatrice MIG Fronius', rata: 380, consumo: 7.5 },
-    { nome: 'Trapano a colonna', rata: 120, consumo: 2.2 },
-    { nome: 'Smerigliatrice industriale', rata: 90, consumo: 3.5 },
-    { nome: 'Seghetto a nastro', rata: 150, consumo: 2.8 },
-    { nome: 'Tornio CNC', rata: 1200, consumo: 15 },
-    { nome: 'Fresa CNC', rata: 1500, consumo: 18 },
-    { nome: 'Plasma Hypertherm', rata: 850, consumo: 22 },
-    { nome: 'Compressore Atlas Copco', rata: 320, consumo: 30 },
-    { nome: 'Carroponte 5 ton', rata: 650, consumo: 8 },
-    { nome: 'Muletto Linde', rata: 480, consumo: 0 },
-    { nome: 'Software CAD/CAM', rata: 250, consumo: 0 },
-    { nome: 'Aspiratore fumi', rata: 180, consumo: 5.5 }
+    { nome: 'Taglio laser', rata: 3500, consumo: 25 },
+    { nome: 'Fresa controllo Numerico', rata: 2800, consumo: 20 },
+    { nome: 'Saldatrice Fronius TPS400 i Gabriele', rata: 450, consumo: 8.5 },
+    { nome: 'Saldatrice Fronius TPS400 i Simone', rata: 450, consumo: 8.5 },
+    { nome: 'Saldatrice Tig Fronius iwave DC 230i', rata: 380, consumo: 7.2 },
+    { nome: 'Muletto', rata: 480, consumo: 0 },
+    { nome: 'Sega a nastro', rata: 150, consumo: 2.8 },
+    { nome: 'Compressore', rata: 320, consumo: 30 },
+    { nome: 'Cisterna', rata: 100, consumo: 0 },
+    { nome: 'Aspiratore fumi saldatura', rata: 180, consumo: 5.5 },
+    { nome: 'CAD CAM Esprit', rata: 250, consumo: 0 }
   ];
 
   useEffect(() => {
@@ -95,28 +91,26 @@ const LeasingStrumentali: React.FC = () => {
 
   const initializeStrumentiPredefiniti = async () => {
     try {
-      const strumentiToInsert = strumentiPredefiniti.map(s => ({
-        nome_strumento: s.nome,
-        rata_mensile: s.rata,
-        consumo_kw: s.consumo,
-        attivo: true
-      }));
-      
       // Insert each instrument individually to handle RLS policy violations gracefully
       let successCount = 0;
-      for (const strumento of strumentiToInsert) {
+      for (const strumento of strumentiPredefiniti) {
         try {
           const { error } = await supabase
             .from('leasing_strumentali')
-            .insert([strumento]);
+            .insert([{
+              nome_strumento: strumento.nome,
+              rata_mensile: strumento.rata,
+              consumo_kw: strumento.consumo,
+              attivo: true
+            }]);
           
           if (error) {
-            console.warn(`Impossibile inserire ${strumento.nome_strumento}:`, error.message);
+            console.warn(`Impossibile inserire ${strumento.nome}:`, error.message);
           } else {
             successCount++;
           }
         } catch (error) {
-          console.warn(`Errore nell'inserimento di ${strumento.nome_strumento}:`, error);
+          console.warn(`Errore nell'inserimento di ${strumento.nome}:`, error);
         }
       }
       
@@ -302,7 +296,7 @@ const LeasingStrumentali: React.FC = () => {
                     value={newStrumento.nome_strumento}
                     onChange={(e) => setNewStrumento(prev => ({ ...prev, nome_strumento: e.target.value }))}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Es. Taglio laser Trumpf"
+                    placeholder="Es. Taglio laser"
                     required
                   />
                 </div>
@@ -363,7 +357,7 @@ const LeasingStrumentali: React.FC = () => {
           <Wrench className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">Nessuno strumento configurato</h3>
           <p className="text-gray-500 mb-4">
-            Inizia aggiungendo i tuoi strumenti e servizi in leasing, oppure usa il pulsante "Inizializza Strumenti" per caricare una lista predefinita.
+            Inizia aggiungendo i tuoi strumenti e servizi in leasing, oppure usa il pulsante "Inizializza Strumenti" per caricare la lista predefinita.
           </p>
         </div>
       )}
