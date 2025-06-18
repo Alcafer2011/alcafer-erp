@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, Info } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import MeditationPlayer from '../components/common/MeditationPlayer';
 
@@ -11,6 +12,7 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,6 +25,9 @@ const LoginPage: React.FC = () => {
         toast.success(`Benvenuto${result.user === 'alessandro' ? ', Alessandro!' : 
                       result.user === 'gabriel' ? ', Gabriel!' : 
                       result.user === 'hanna' ? ', Hanna!' : '!'}`);
+        
+        // Reindirizza alla dashboard dopo il login
+        navigate('/');
       } else {
         toast.error('Errore durante il login. Riprova.');
       }

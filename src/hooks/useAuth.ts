@@ -115,10 +115,10 @@ export const useAuth = () => {
       if (email.toLowerCase().includes('aless')) {
         switchUser('alessandro');
         return { success: true, user: 'alessandro' };
-      } else if (email.toLowerCase().includes('gabr')) {
+      } else if (email.toLowerCase().includes('gabr') || email.toLowerCase().includes('gabi')) {
         switchUser('gabriel');
         return { success: true, user: 'gabriel' };
-      } else if (email.toLowerCase().includes('hann')) {
+      } else if (email.toLowerCase().includes('hann') || email.toLowerCase().includes('nuta')) {
         switchUser('hanna');
         return { success: true, user: 'hanna' };
       } else {
