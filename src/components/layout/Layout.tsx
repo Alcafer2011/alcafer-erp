@@ -4,12 +4,13 @@ import {
   Home, Users, FileText, Briefcase, Settings, 
   Menu, X, LogOut, HelpCircle, ChevronDown, Calculator,
   TrendingUp, PieChart, Receipt, Wrench, UserCheck, Building2,
-  Package, Truck, UserCog, Droplet, Flame, Target
+  Package, Truck, UserCog, Droplet, Flame, Target, Music, Volume2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { usePermissions } from '../../hooks/usePermissions';
 import AddToHomeScreen from '../common/AddToHomeScreen';
+import SpotifyPlayer from '../common/SpotifyPlayer';
 import toast from 'react-hot-toast';
 
 interface LayoutProps {
@@ -24,6 +25,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const permissions = usePermissions();
   const [activeUsers, setActiveUsers] = useState<string[]>(['alessandro']);
   const [showAddToHome, setShowAddToHome] = useState(true);
+  const [showSpotify, setShowSpotify] = useState(false);
+  const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     // Simula altri utenti attivi
@@ -39,8 +43,37 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       });
     }, 30000); // Cambia ogni 30 secondi
     
-    return () => clearInterval(interval);
+    // Inizializza il player audio per la musica rilassante
+    const audio = new Audio('https://soundbible.com/mp3/meadow-wind-and-chimes-nature-sounds-7802.mp3');
+    audio.loop = true;
+    audio.volume = 0.3;
+    setAudioPlayer(audio);
+    
+    return () => {
+      clearInterval(interval);
+      if (audioPlayer) {
+        audioPlayer.pause();
+        audioPlayer.src = '';
+      }
+    };
   }, []);
+
+  const toggleAudio = () => {
+    if (audioPlayer) {
+      if (audioPlayer.paused) {
+        audioPlayer.play().catch(err => {
+          console.log('Autoplay prevented by browser, user interaction required');
+          toast.error('Errore nella riproduzione. Clicca di nuovo per riprovare.');
+        });
+        setIsPlaying(true);
+        toast.success('Musica rilassante attivata');
+      } else {
+        audioPlayer.pause();
+        setIsPlaying(false);
+        toast.success('Musica rilassante disattivata');
+      }
+    }
+  };
 
   const handleLogout = async () => {
     toast.success('Logout effettuato con successo');
@@ -303,10 +336,43 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           <div className="flex-1" />
 
+          {/* Music Controls */}
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={toggleAudio}
+              className={`text-gray-600 hover:text-gray-900 p-2 hover:bg-gray-100 rounded-lg transition-colors ${isPlaying ? 'text-green-600' : ''}`}
+              title="Musica Rilassante"
+            >
+              <Volume2 className="h-5 w-5" />
+            </button>
+            
+            <button 
+              onClick={() => setShowSpotify(!showSpotify)}
+              className={`text-gray-600 hover:text-gray-900 p-2 hover:bg-gray-100 rounded-lg transition-colors ${showSpotify ? 'text-green-600' : ''}`}
+              title="Spotify"
+            >
+              <Music className="h-5 w-5" />
+            </button>
+          </div>
+
           <button className="text-gray-400 hover:text-gray-600 transition-colors">
             <HelpCircle className="h-5 w-5" />
           </button>
         </div>
+
+        {/* Spotify Player */}
+        <AnimatePresence>
+          {showSpotify && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-2"
+            >
+              <SpotifyPlayer />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <main className="py-6">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

@@ -16,7 +16,6 @@ interface CostoUtenza {
   unita_misura: string;
   data_aggiornamento: string;
   potenza_installata?: number;
-  note?: string;
 }
 
 const CostiUtenze: React.FC = () => {
@@ -26,11 +25,9 @@ const CostiUtenze: React.FC = () => {
   const [editValues, setEditValues] = useState<{
     costo_fisso: number;
     costo_variabile: number;
-    note?: string;
   }>({
     costo_fisso: 0,
-    costo_variabile: 0,
-    note: ''
+    costo_variabile: 0
   });
   const [newUtenza, setNewUtenza] = useState<{
     tipo: 'elettricita' | 'acqua' | 'gas' | 'tari' | 'imu' | 'pulizia' | 'assicurazione' | 'mutuo' | 'imprevisti';
@@ -38,14 +35,12 @@ const CostiUtenze: React.FC = () => {
     costo_fisso: number;
     costo_variabile: number;
     unita_misura: string;
-    note?: string;
   }>({
     tipo: 'elettricita',
     fornitore: '',
     costo_fisso: 0,
     costo_variabile: 0,
-    unita_misura: 'kWh',
-    note: ''
+    unita_misura: 'kWh'
   });
   const [showAddForm, setShowAddForm] = useState(false);
   const permissions = usePermissions();
@@ -133,8 +128,7 @@ const CostiUtenze: React.FC = () => {
         costo_variabile: 0.28,
         unita_misura: 'kWh',
         data_aggiornamento: new Date().toISOString().split('T')[0],
-        potenza_installata: 100,
-        note: 'Contratto business 3F+N'
+        potenza_installata: 100
       });
       
       // Gas
@@ -144,8 +138,7 @@ const CostiUtenze: React.FC = () => {
         costo_fisso: 12.30,
         costo_variabile: 0.95,
         unita_misura: 'Smc',
-        data_aggiornamento: new Date().toISOString().split('T')[0],
-        note: 'Riscaldamento capannone'
+        data_aggiornamento: new Date().toISOString().split('T')[0]
       });
       
       // Acqua
@@ -165,8 +158,7 @@ const CostiUtenze: React.FC = () => {
         costo_fisso: 450,
         costo_variabile: 0,
         unita_misura: 'anno',
-        data_aggiornamento: new Date().toISOString().split('T')[0],
-        note: 'Tassa rifiuti annuale'
+        data_aggiornamento: new Date().toISOString().split('T')[0]
       });
       
       // IMU
@@ -176,8 +168,7 @@ const CostiUtenze: React.FC = () => {
         costo_fisso: 1200,
         costo_variabile: 0,
         unita_misura: 'anno',
-        data_aggiornamento: new Date().toISOString().split('T')[0],
-        note: 'Imposta municipale unica'
+        data_aggiornamento: new Date().toISOString().split('T')[0]
       });
       
       // Mutuo
@@ -187,8 +178,7 @@ const CostiUtenze: React.FC = () => {
         costo_fisso: 1850,
         costo_variabile: 0,
         unita_misura: 'mese',
-        data_aggiornamento: new Date().toISOString().split('T')[0],
-        note: 'Mutuo capannone 20 anni'
+        data_aggiornamento: new Date().toISOString().split('T')[0]
       });
       
       // Pulizia
@@ -198,8 +188,7 @@ const CostiUtenze: React.FC = () => {
         costo_fisso: 350,
         costo_variabile: 0,
         unita_misura: 'mese',
-        data_aggiornamento: new Date().toISOString().split('T')[0],
-        note: 'Pulizia settimanale'
+        data_aggiornamento: new Date().toISOString().split('T')[0]
       });
       
       // Assicurazione
@@ -209,8 +198,7 @@ const CostiUtenze: React.FC = () => {
         costo_fisso: 180,
         costo_variabile: 0,
         unita_misura: 'mese',
-        data_aggiornamento: new Date().toISOString().split('T')[0],
-        note: 'RC + incendio + furto'
+        data_aggiornamento: new Date().toISOString().split('T')[0]
       });
       
       // Imprevisti
@@ -220,8 +208,7 @@ const CostiUtenze: React.FC = () => {
         costo_fisso: 500,
         costo_variabile: 0,
         unita_misura: 'mese',
-        data_aggiornamento: new Date().toISOString().split('T')[0],
-        note: 'Accantonamento mensile'
+        data_aggiornamento: new Date().toISOString().split('T')[0]
       });
       
       const { error } = await supabase
@@ -240,8 +227,7 @@ const CostiUtenze: React.FC = () => {
     setEditingId(utenza.id);
     setEditValues({
       costo_fisso: utenza.costo_fisso,
-      costo_variabile: utenza.costo_variabile,
-      note: utenza.note
+      costo_variabile: utenza.costo_variabile
     });
   };
 
@@ -252,8 +238,7 @@ const CostiUtenze: React.FC = () => {
         .update({
           costo_fisso: editValues.costo_fisso,
           costo_variabile: editValues.costo_variabile,
-          data_aggiornamento: new Date().toISOString().split('T')[0],
-          note: editValues.note
+          data_aggiornamento: new Date().toISOString().split('T')[0]
         })
         .eq('id', id);
 
@@ -283,8 +268,7 @@ const CostiUtenze: React.FC = () => {
           costo_fisso: newUtenza.costo_fisso,
           costo_variabile: newUtenza.costo_variabile,
           unita_misura: newUtenza.unita_misura,
-          data_aggiornamento: new Date().toISOString().split('T')[0],
-          note: newUtenza.note
+          data_aggiornamento: new Date().toISOString().split('T')[0]
         }]);
 
       if (error) throw error;
@@ -295,8 +279,7 @@ const CostiUtenze: React.FC = () => {
         fornitore: '',
         costo_fisso: 0,
         costo_variabile: 0,
-        unita_misura: 'kWh',
-        note: ''
+        unita_misura: 'kWh'
       });
       setShowAddForm(false);
       fetchCostiUtenze();
@@ -544,19 +527,6 @@ const CostiUtenze: React.FC = () => {
                     required
                   />
                 </div>
-                <div>
-                  <label htmlFor="note" className="block text-sm font-medium text-gray-700 mb-1">
-                    Note
-                  </label>
-                  <input
-                    type="text"
-                    id="note"
-                    value={newUtenza.note}
-                    onChange={(e) => setNewUtenza(prev => ({ ...prev, note: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Note aggiuntive"
-                  />
-                </div>
               </div>
               
               <div className="flex justify-end mt-4">
@@ -627,9 +597,6 @@ const CostiUtenze: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Costo Variabile
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Note
-                </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Azioni
                 </th>
@@ -692,20 +659,6 @@ const CostiUtenze: React.FC = () => {
                         ) : (
                           <span className="text-gray-400">-</span>
                         )}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {editingId === utenza.id ? (
-                      <input
-                        type="text"
-                        value={editValues.note || ''}
-                        onChange={(e) => setEditValues(prev => ({ ...prev, note: e.target.value }))}
-                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    ) : (
-                      <div className="text-sm text-gray-500">
-                        {utenza.note || '-'}
                       </div>
                     )}
                   </td>

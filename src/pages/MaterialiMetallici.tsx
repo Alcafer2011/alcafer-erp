@@ -6,7 +6,6 @@ import { MaterialeMetallico, PrezzoMateriale } from '../types/database';
 import { usePermissions } from '../hooks/usePermissions';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import HelpTooltip from '../components/common/HelpTooltip';
-import MaterialCalculator from '../components/common/MaterialCalculator';
 import toast from 'react-hot-toast';
 
 const MaterialiMetallici: React.FC = () => {
@@ -15,7 +14,6 @@ const MaterialiMetallici: React.FC = () => {
   const [prezziRegionali, setPrezziRegionali] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingPrices, setUpdatingPrices] = useState(false);
-  const [showCalculator, setShowCalculator] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState('Lombardia');
   const [newMateriale, setNewMateriale] = useState({
@@ -24,10 +22,12 @@ const MaterialiMetallici: React.FC = () => {
     prezzo_kg: 0,
     numero_ddt: '',
     data_trasporto: new Date().toISOString().split('T')[0],
-    fornitore: ''
+    fornitore: '',
+    profilato: '',
+    lunghezza: 600, // 6 metri standard
+    quantita: 1
   });
   const permissions = usePermissions();
-  const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
 
   // Regioni italiane con prezzi
   const regioni = ['Lombardia', 'Piemonte', 'Emilia Romagna', 'Veneto', 'Toscana'];
@@ -114,69 +114,183 @@ const MaterialiMetallici: React.FC = () => {
   // Tipi di profilati commerciali
   const profilatiCommerciali = {
     'Ferro S235 grezzo': [
-      'Tondo Ø 8mm', 'Tondo Ø 10mm', 'Tondo Ø 12mm', 'Tondo Ø 14mm', 'Tondo Ø 16mm', 'Tondo Ø 18mm', 'Tondo Ø 20mm',
-      'Quadro 10x10mm', 'Quadro 12x12mm', 'Quadro 14x14mm', 'Quadro 16x16mm', 'Quadro 20x20mm',
-      'Piatto 20x5mm', 'Piatto 25x5mm', 'Piatto 30x5mm', 'Piatto 40x5mm', 'Piatto 50x5mm',
-      'Angolare 30x30x3mm', 'Angolare 40x40x4mm', 'Angolare 50x50x5mm',
-      'Tubolare tondo Ø 21.3x2mm', 'Tubolare tondo Ø 26.9x2mm', 'Tubolare tondo Ø 33.7x2mm',
-      'Tubolare quadro 20x20x2mm', 'Tubolare quadro 30x30x2mm', 'Tubolare quadro 40x40x2mm',
-      'Tubolare rettangolare 30x20x2mm', 'Tubolare rettangolare 40x20x2mm', 'Tubolare rettangolare 50x30x2mm'
+      { nome: 'Tondo Ø 8mm', peso: 0.395, tipo: 'barra' },
+      { nome: 'Tondo Ø 10mm', peso: 0.617, tipo: 'barra' },
+      { nome: 'Tondo Ø 12mm', peso: 0.888, tipo: 'barra' },
+      { nome: 'Tondo Ø 14mm', peso: 1.21, tipo: 'barra' },
+      { nome: 'Tondo Ø 16mm', peso: 1.58, tipo: 'barra' },
+      { nome: 'Tondo Ø 18mm', peso: 2.00, tipo: 'barra' },
+      { nome: 'Tondo Ø 20mm', peso: 2.47, tipo: 'barra' },
+      { nome: 'Tondo Ø 25mm', peso: 3.85, tipo: 'barra' },
+      { nome: 'Tondo Ø 30mm', peso: 5.55, tipo: 'barra' },
+      { nome: 'Quadro 10x10mm', peso: 0.785, tipo: 'barra' },
+      { nome: 'Quadro 12x12mm', peso: 1.13, tipo: 'barra' },
+      { nome: 'Quadro 14x14mm', peso: 1.54, tipo: 'barra' },
+      { nome: 'Quadro 16x16mm', peso: 2.01, tipo: 'barra' },
+      { nome: 'Quadro 20x20mm', peso: 3.14, tipo: 'barra' },
+      { nome: 'Piatto 20x5mm', peso: 0.785, tipo: 'barra' },
+      { nome: 'Piatto 25x5mm', peso: 0.981, tipo: 'barra' },
+      { nome: 'Piatto 30x5mm', peso: 1.18, tipo: 'barra' },
+      { nome: 'Piatto 40x5mm', peso: 1.57, tipo: 'barra' },
+      { nome: 'Piatto 50x5mm', peso: 1.96, tipo: 'barra' },
+      { nome: 'Angolare 30x30x3mm', peso: 1.36, tipo: 'barra' },
+      { nome: 'Angolare 40x40x4mm', peso: 2.42, tipo: 'barra' },
+      { nome: 'Angolare 50x50x5mm', peso: 3.77, tipo: 'barra' },
+      { nome: 'Tubolare tondo Ø 21.3x2mm', peso: 0.95, tipo: 'tubo' },
+      { nome: 'Tubolare tondo Ø 26.9x2mm', peso: 1.23, tipo: 'tubo' },
+      { nome: 'Tubolare tondo Ø 33.7x2mm', peso: 1.56, tipo: 'tubo' },
+      { nome: 'Tubolare quadro 20x20x2mm', peso: 1.11, tipo: 'tubo' },
+      { nome: 'Tubolare quadro 30x30x2mm', peso: 1.74, tipo: 'tubo' },
+      { nome: 'Tubolare quadro 40x40x2mm', peso: 2.36, tipo: 'tubo' },
+      { nome: 'Tubolare rettangolare 30x20x2mm', peso: 1.43, tipo: 'tubo' },
+      { nome: 'Tubolare rettangolare 40x20x2mm', peso: 1.74, tipo: 'tubo' },
+      { nome: 'Tubolare rettangolare 50x30x2mm', peso: 2.36, tipo: 'tubo' }
     ],
     'Ferro S275 grezzo': [
-      'Tondo Ø 10mm', 'Tondo Ø 12mm', 'Tondo Ø 16mm', 'Tondo Ø 20mm', 'Tondo Ø 25mm',
-      'Quadro 12x12mm', 'Quadro 16x16mm', 'Quadro 20x20mm',
-      'Piatto 30x5mm', 'Piatto 40x5mm', 'Piatto 50x5mm',
-      'Angolare 40x40x4mm', 'Angolare 50x50x5mm', 'Angolare 60x60x6mm',
-      'Tubolare tondo Ø 33.7x2.5mm', 'Tubolare tondo Ø 42.4x2.5mm',
-      'Tubolare quadro 30x30x2.5mm', 'Tubolare quadro 40x40x2.5mm',
-      'Tubolare rettangolare 40x20x2.5mm', 'Tubolare rettangolare 50x30x2.5mm'
+      { nome: 'Tondo Ø 10mm', peso: 0.617, tipo: 'barra' },
+      { nome: 'Tondo Ø 12mm', peso: 0.888, tipo: 'barra' },
+      { nome: 'Tondo Ø 16mm', peso: 1.58, tipo: 'barra' },
+      { nome: 'Tondo Ø 20mm', peso: 2.47, tipo: 'barra' },
+      { nome: 'Tondo Ø 25mm', peso: 3.85, tipo: 'barra' },
+      { nome: 'Quadro 12x12mm', peso: 1.13, tipo: 'barra' },
+      { nome: 'Quadro 16x16mm', peso: 2.01, tipo: 'barra' },
+      { nome: 'Quadro 20x20mm', peso: 3.14, tipo: 'barra' },
+      { nome: 'Piatto 30x5mm', peso: 1.18, tipo: 'barra' },
+      { nome: 'Piatto 40x5mm', peso: 1.57, tipo: 'barra' },
+      { nome: 'Piatto 50x5mm', peso: 1.96, tipo: 'barra' },
+      { nome: 'Angolare 40x40x4mm', peso: 2.42, tipo: 'barra' },
+      { nome: 'Angolare 50x50x5mm', peso: 3.77, tipo: 'barra' },
+      { nome: 'Angolare 60x60x6mm', peso: 5.42, tipo: 'barra' },
+      { nome: 'Tubolare tondo Ø 33.7x2.5mm', peso: 1.94, tipo: 'tubo' },
+      { nome: 'Tubolare tondo Ø 42.4x2.5mm', peso: 2.47, tipo: 'tubo' },
+      { nome: 'Tubolare quadro 30x30x2.5mm', peso: 2.15, tipo: 'tubo' },
+      { nome: 'Tubolare quadro 40x40x2.5mm', peso: 2.93, tipo: 'tubo' },
+      { nome: 'Tubolare rettangolare 40x20x2.5mm', peso: 2.15, tipo: 'tubo' },
+      { nome: 'Tubolare rettangolare 50x30x2.5mm', peso: 2.93, tipo: 'tubo' }
     ],
     'Ferro S355 grezzo': [
-      'Tondo Ø 12mm', 'Tondo Ø 16mm', 'Tondo Ø 20mm', 'Tondo Ø 25mm', 'Tondo Ø 30mm',
-      'Quadro 16x16mm', 'Quadro 20x20mm', 'Quadro 25x25mm',
-      'Piatto 40x8mm', 'Piatto 50x8mm', 'Piatto 60x8mm',
-      'Angolare 50x50x5mm', 'Angolare 60x60x6mm', 'Angolare 70x70x7mm',
-      'Tubolare tondo Ø 42.4x3mm', 'Tubolare tondo Ø 48.3x3mm',
-      'Tubolare quadro 40x40x3mm', 'Tubolare quadro 50x50x3mm',
-      'Tubolare rettangolare 50x30x3mm', 'Tubolare rettangolare 60x40x3mm'
+      { nome: 'Tondo Ø 12mm', peso: 0.888, tipo: 'barra' },
+      { nome: 'Tondo Ø 16mm', peso: 1.58, tipo: 'barra' },
+      { nome: 'Tondo Ø 20mm', peso: 2.47, tipo: 'barra' },
+      { nome: 'Tondo Ø 25mm', peso: 3.85, tipo: 'barra' },
+      { nome: 'Tondo Ø 30mm', peso: 5.55, tipo: 'barra' },
+      { nome: 'Quadro 16x16mm', peso: 2.01, tipo: 'barra' },
+      { nome: 'Quadro 20x20mm', peso: 3.14, tipo: 'barra' },
+      { nome: 'Quadro 25x25mm', peso: 4.91, tipo: 'barra' },
+      { nome: 'Piatto 40x8mm', peso: 2.51, tipo: 'barra' },
+      { nome: 'Piatto 50x8mm', peso: 3.14, tipo: 'barra' },
+      { nome: 'Piatto 60x8mm', peso: 3.77, tipo: 'barra' },
+      { nome: 'Angolare 50x50x5mm', peso: 3.77, tipo: 'barra' },
+      { nome: 'Angolare 60x60x6mm', peso: 5.42, tipo: 'barra' },
+      { nome: 'Angolare 70x70x7mm', peso: 7.38, tipo: 'barra' },
+      { nome: 'Tubolare tondo Ø 42.4x3mm', peso: 2.95, tipo: 'tubo' },
+      { nome: 'Tubolare tondo Ø 48.3x3mm', peso: 3.38, tipo: 'tubo' },
+      { nome: 'Tubolare quadro 40x40x3mm', peso: 3.47, tipo: 'tubo' },
+      { nome: 'Tubolare quadro 50x50x3mm', peso: 4.42, tipo: 'tubo' },
+      { nome: 'Tubolare rettangolare 50x30x3mm', peso: 3.47, tipo: 'tubo' },
+      { nome: 'Tubolare rettangolare 60x40x3mm', peso: 4.42, tipo: 'tubo' }
     ],
     'Acciaio inox AISI 304': [
-      'Tondo Ø 8mm', 'Tondo Ø 10mm', 'Tondo Ø 12mm', 'Tondo Ø 16mm',
-      'Quadro 10x10mm', 'Quadro 12x12mm', 'Quadro 16x16mm',
-      'Piatto 20x5mm', 'Piatto 30x5mm', 'Piatto 40x5mm',
-      'Angolare 30x30x3mm', 'Angolare 40x40x4mm',
-      'Tubolare tondo Ø 21.3x2mm', 'Tubolare tondo Ø 26.9x2mm',
-      'Tubolare quadro 20x20x2mm', 'Tubolare quadro 30x30x2mm',
-      'Tubolare rettangolare 30x20x2mm', 'Tubolare rettangolare 40x20x2mm'
+      { nome: 'Tondo Ø 8mm', peso: 0.402, tipo: 'barra' },
+      { nome: 'Tondo Ø 10mm', peso: 0.628, tipo: 'barra' },
+      { nome: 'Tondo Ø 12mm', peso: 0.904, tipo: 'barra' },
+      { nome: 'Tondo Ø 16mm', peso: 1.61, tipo: 'barra' },
+      { nome: 'Quadro 10x10mm', peso: 0.800, tipo: 'barra' },
+      { nome: 'Quadro 12x12mm', peso: 1.15, tipo: 'barra' },
+      { nome: 'Quadro 16x16mm', peso: 2.05, tipo: 'barra' },
+      { nome: 'Piatto 20x5mm', peso: 0.800, tipo: 'barra' },
+      { nome: 'Piatto 30x5mm', peso: 1.20, tipo: 'barra' },
+      { nome: 'Piatto 40x5mm', peso: 1.60, tipo: 'barra' },
+      { nome: 'Angolare 30x30x3mm', peso: 1.38, tipo: 'barra' },
+      { nome: 'Angolare 40x40x4mm', peso: 2.46, tipo: 'barra' },
+      { nome: 'Tubolare tondo Ø 21.3x2mm', peso: 0.97, tipo: 'tubo' },
+      { nome: 'Tubolare tondo Ø 26.9x2mm', peso: 1.25, tipo: 'tubo' },
+      { nome: 'Tubolare quadro 20x20x2mm', peso: 1.13, tipo: 'tubo' },
+      { nome: 'Tubolare quadro 30x30x2mm', peso: 1.77, tipo: 'tubo' },
+      { nome: 'Tubolare rettangolare 30x20x2mm', peso: 1.45, tipo: 'tubo' },
+      { nome: 'Tubolare rettangolare 40x20x2mm', peso: 1.77, tipo: 'tubo' }
     ],
     'Acciaio inox AISI 316': [
-      'Tondo Ø 8mm', 'Tondo Ø 10mm', 'Tondo Ø 12mm', 'Tondo Ø 16mm',
-      'Quadro 10x10mm', 'Quadro 12x12mm', 'Quadro 16x16mm',
-      'Piatto 20x5mm', 'Piatto 30x5mm', 'Piatto 40x5mm',
-      'Angolare 30x30x3mm', 'Angolare 40x40x4mm',
-      'Tubolare tondo Ø 21.3x2mm', 'Tubolare tondo Ø 26.9x2mm',
-      'Tubolare quadro 20x20x2mm', 'Tubolare quadro 30x30x2mm',
-      'Tubolare rettangolare 30x20x2mm', 'Tubolare rettangolare 40x20x2mm'
+      { nome: 'Tondo Ø 8mm', peso: 0.402, tipo: 'barra' },
+      { nome: 'Tondo Ø 10mm', peso: 0.628, tipo: 'barra' },
+      { nome: 'Tondo Ø 12mm', peso: 0.904, tipo: 'barra' },
+      { nome: 'Tondo Ø 16mm', peso: 1.61, tipo: 'barra' },
+      { nome: 'Quadro 10x10mm', peso: 0.800, tipo: 'barra' },
+      { nome: 'Quadro 12x12mm', peso: 1.15, tipo: 'barra' },
+      { nome: 'Quadro 16x16mm', peso: 2.05, tipo: 'barra' },
+      { nome: 'Piatto 20x5mm', peso: 0.800, tipo: 'barra' },
+      { nome: 'Piatto 30x5mm', peso: 1.20, tipo: 'barra' },
+      { nome: 'Piatto 40x5mm', peso: 1.60, tipo: 'barra' },
+      { nome: 'Angolare 30x30x3mm', peso: 1.38, tipo: 'barra' },
+      { nome: 'Angolare 40x40x4mm', peso: 2.46, tipo: 'barra' },
+      { nome: 'Tubolare tondo Ø 21.3x2mm', peso: 0.97, tipo: 'tubo' },
+      { nome: 'Tubolare tondo Ø 26.9x2mm', peso: 1.25, tipo: 'tubo' },
+      { nome: 'Tubolare quadro 20x20x2mm', peso: 1.13, tipo: 'tubo' },
+      { nome: 'Tubolare quadro 30x30x2mm', peso: 1.77, tipo: 'tubo' },
+      { nome: 'Tubolare rettangolare 30x20x2mm', peso: 1.45, tipo: 'tubo' },
+      { nome: 'Tubolare rettangolare 40x20x2mm', peso: 1.77, tipo: 'tubo' }
     ],
     'Alluminio 6060': [
-      'Tondo Ø 10mm', 'Tondo Ø 12mm', 'Tondo Ø 16mm', 'Tondo Ø 20mm',
-      'Quadro 10x10mm', 'Quadro 15x15mm', 'Quadro 20x20mm',
-      'Piatto 20x5mm', 'Piatto 30x5mm', 'Piatto 40x5mm',
-      'Angolare 20x20x2mm', 'Angolare 30x30x3mm',
-      'Tubolare tondo Ø 20x2mm', 'Tubolare tondo Ø 25x2mm',
-      'Tubolare quadro 20x20x2mm', 'Tubolare quadro 30x30x2mm',
-      'Tubolare rettangolare 30x20x2mm', 'Tubolare rettangolare 40x20x2mm'
+      { nome: 'Tondo Ø 10mm', peso: 0.209, tipo: 'barra' },
+      { nome: 'Tondo Ø 12mm', peso: 0.301, tipo: 'barra' },
+      { nome: 'Tondo Ø 16mm', peso: 0.535, tipo: 'barra' },
+      { nome: 'Tondo Ø 20mm', peso: 0.835, tipo: 'barra' },
+      { nome: 'Quadro 10x10mm', peso: 0.267, tipo: 'barra' },
+      { nome: 'Quadro 15x15mm', peso: 0.601, tipo: 'barra' },
+      { nome: 'Quadro 20x20mm', peso: 1.07, tipo: 'barra' },
+      { nome: 'Piatto 20x5mm', peso: 0.267, tipo: 'barra' },
+      { nome: 'Piatto 30x5mm', peso: 0.401, tipo: 'barra' },
+      { nome: 'Piatto 40x5mm', peso: 0.534, tipo: 'barra' },
+      { nome: 'Angolare 20x20x2mm', peso: 0.214, tipo: 'barra' },
+      { nome: 'Angolare 30x30x3mm', peso: 0.481, tipo: 'barra' },
+      { nome: 'Tubolare tondo Ø 20x2mm', peso: 0.321, tipo: 'tubo' },
+      { nome: 'Tubolare tondo Ø 25x2mm', peso: 0.408, tipo: 'tubo' },
+      { nome: 'Tubolare quadro 20x20x2mm', peso: 0.381, tipo: 'tubo' },
+      { nome: 'Tubolare quadro 30x30x2mm', peso: 0.595, tipo: 'tubo' },
+      { nome: 'Tubolare rettangolare 30x20x2mm', peso: 0.488, tipo: 'tubo' },
+      { nome: 'Tubolare rettangolare 40x20x2mm', peso: 0.595, tipo: 'tubo' }
     ],
     'Lamiera decapata': [
-      'Spessore 0.8mm', 'Spessore 1mm', 'Spessore 1.2mm', 'Spessore 1.5mm', 
-      'Spessore 2mm', 'Spessore 2.5mm', 'Spessore 3mm'
+      { nome: 'Spessore 0.8mm', peso: 6.28, tipo: 'lamiera', dimensioni: '1000x2000mm' },
+      { nome: 'Spessore 1mm', peso: 7.85, tipo: 'lamiera', dimensioni: '1000x2000mm' },
+      { nome: 'Spessore 1.2mm', peso: 9.42, tipo: 'lamiera', dimensioni: '1000x2000mm' },
+      { nome: 'Spessore 1.5mm', peso: 11.78, tipo: 'lamiera', dimensioni: '1000x2000mm' },
+      { nome: 'Spessore 2mm', peso: 15.7, tipo: 'lamiera', dimensioni: '1000x2000mm' },
+      { nome: 'Spessore 2.5mm', peso: 19.63, tipo: 'lamiera', dimensioni: '1000x2000mm' },
+      { nome: 'Spessore 3mm', peso: 23.55, tipo: 'lamiera', dimensioni: '1000x2000mm' }
     ],
     'Lamiera striata': [
-      'Spessore 3/5mm', 'Spessore 4/6mm', 'Spessore 5/7mm'
+      { nome: 'Spessore 3/5mm', peso: 31.4, tipo: 'lamiera', dimensioni: '1000x2000mm' },
+      { nome: 'Spessore 4/6mm', peso: 39.25, tipo: 'lamiera', dimensioni: '1000x2000mm' },
+      { nome: 'Spessore 5/7mm', peso: 47.1, tipo: 'lamiera', dimensioni: '1000x2000mm' }
     ],
     'Lamiera nera': [
-      'Spessore 1mm', 'Spessore 1.5mm', 'Spessore 2mm', 
-      'Spessore 2.5mm', 'Spessore 3mm', 'Spessore 4mm'
+      { nome: 'Spessore 1mm', peso: 7.85, tipo: 'lamiera', dimensioni: '1000x2000mm' },
+      { nome: 'Spessore 1.5mm', peso: 11.78, tipo: 'lamiera', dimensioni: '1000x2000mm' },
+      { nome: 'Spessore 2mm', peso: 15.7, tipo: 'lamiera', dimensioni: '1000x2000mm' },
+      { nome: 'Spessore 2.5mm', peso: 19.63, tipo: 'lamiera', dimensioni: '1000x2000mm' },
+      { nome: 'Spessore 3mm', peso: 23.55, tipo: 'lamiera', dimensioni: '1000x2000mm' },
+      { nome: 'Spessore 4mm', peso: 31.4, tipo: 'lamiera', dimensioni: '1000x2000mm' }
+    ],
+    'Acciaio corten': [
+      { nome: 'Tondo Ø 12mm', peso: 0.888, tipo: 'barra' },
+      { nome: 'Tondo Ø 16mm', peso: 1.58, tipo: 'barra' },
+      { nome: 'Tondo Ø 20mm', peso: 2.47, tipo: 'barra' },
+      { nome: 'Piatto 40x5mm', peso: 1.57, tipo: 'barra' },
+      { nome: 'Piatto 50x5mm', peso: 1.96, tipo: 'barra' },
+      { nome: 'Lamiera 1mm', peso: 7.85, tipo: 'lamiera', dimensioni: '1000x2000mm' },
+      { nome: 'Lamiera 2mm', peso: 15.7, tipo: 'lamiera', dimensioni: '1000x2000mm' },
+      { nome: 'Lamiera 3mm', peso: 23.55, tipo: 'lamiera', dimensioni: '1000x2000mm' }
+    ],
+    'Ferro zincato': [
+      { nome: 'Tondo Ø 10mm', peso: 0.617, tipo: 'barra' },
+      { nome: 'Tondo Ø 12mm', peso: 0.888, tipo: 'barra' },
+      { nome: 'Tubolare tondo Ø 21.3x2mm', peso: 0.95, tipo: 'tubo' },
+      { nome: 'Tubolare tondo Ø 26.9x2mm', peso: 1.23, tipo: 'tubo' },
+      { nome: 'Tubolare quadro 20x20x2mm', peso: 1.11, tipo: 'tubo' },
+      { nome: 'Tubolare quadro 30x30x2mm', peso: 1.74, tipo: 'tubo' },
+      { nome: 'Lamiera 1mm', peso: 7.85, tipo: 'lamiera', dimensioni: '1000x2000mm' },
+      { nome: 'Lamiera 2mm', peso: 15.7, tipo: 'lamiera', dimensioni: '1000x2000mm' }
     ]
   };
 
@@ -199,81 +313,15 @@ const MaterialiMetallici: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-    initAudio();
     
-    // Mostra suggerimento per aggiungere alla home screen
-    showAddToHomeScreenPrompt();
-
     // Aggiorna i prezzi regionali in base alla regione selezionata
     updatePrezziRegionali(selectedRegion);
-
-    return () => {
-      // Cleanup audio
-      if (audioPlayer) {
-        audioPlayer.pause();
-        audioPlayer.src = '';
-      }
-    };
   }, []);
 
   useEffect(() => {
     // Aggiorna i prezzi regionali quando cambia la regione selezionata
     updatePrezziRegionali(selectedRegion);
   }, [selectedRegion]);
-
-  const initAudio = () => {
-    try {
-      // Crea un elemento audio per la musica rilassante
-      const audio = new Audio('https://soundbible.com/mp3/meadow-wind-and-chimes-nature-sounds-7802.mp3');
-      audio.loop = true;
-      audio.volume = 0.3;
-      setAudioPlayer(audio);
-      
-      // Avvia la riproduzione automatica (potrebbe essere bloccata dal browser)
-      audio.play().catch(err => {
-        console.log('Autoplay prevented by browser, user interaction required');
-      });
-    } catch (error) {
-      console.error('Errore nella riproduzione audio:', error);
-    }
-  };
-
-  const toggleAudio = () => {
-    if (audioPlayer) {
-      if (audioPlayer.paused) {
-        audioPlayer.play();
-        toast.success('Musica rilassante attivata');
-      } else {
-        audioPlayer.pause();
-        toast.success('Musica rilassante disattivata');
-      }
-    }
-  };
-
-  const showAddToHomeScreenPrompt = () => {
-    // Rileva il sistema operativo
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    
-    if (isMobile) {
-      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-      const isAndroid = /Android/i.test(navigator.userAgent);
-      
-      let message = '';
-      
-      if (isIOS) {
-        message = 'Per aggiungere questa app alla tua home screen: tocca l\'icona di condivisione (📤) e poi "Aggiungi a Home"';
-      } else if (isAndroid) {
-        message = 'Per aggiungere questa app alla tua home screen: tocca i tre puntini (⋮) e poi "Aggiungi a schermata Home"';
-      }
-      
-      if (message) {
-        toast(message, {
-          icon: '📱',
-          duration: 6000,
-        });
-      }
-    }
-  };
 
   const updatePrezziRegionali = (regione: string) => {
     if (prezziRegioniData[regione as keyof typeof prezziRegioniData]) {
@@ -290,23 +338,15 @@ const MaterialiMetallici: React.FC = () => {
 
       if (materialiResult.error) {
         console.error('Errore nel caricamento materiali:', materialiResult.error);
-        if (materialiResult.error.code === '42501') {
-          toast.error('Non hai i permessi per visualizzare i materiali metallici');
-          return;
-        }
         throw materialiResult.error;
       }
 
       if (prezziResult.error) {
         console.error('Errore nel caricamento prezzi:', prezziResult.error);
-        if (prezziResult.error.code === '42501') {
-          toast.error('Non hai i permessi per visualizzare i prezzi dei materiali');
-          return;
-        }
         throw prezziResult.error;
       }
 
-      // Se non ci sono prezzi, mostra un messaggio informativo invece di tentare l'inizializzazione automatica
+      // Se non ci sono prezzi, mostra un messaggio informativo
       if ((!prezziResult.data || prezziResult.data.length === 0)) {
         console.log('Nessun prezzo materiale trovato. L\'utente può aggiungere manualmente i prezzi.');
         toast('Nessun prezzo materiale configurato. Puoi aggiungere i prezzi manualmente.', {
@@ -329,17 +369,6 @@ const MaterialiMetallici: React.FC = () => {
 
   const initializePrezziRegionali = async () => {
     try {
-      // Verifica prima se l'utente ha i permessi necessari
-      const { data: testData, error: testError } = await supabase
-        .from('prezzi_materiali')
-        .select('id')
-        .limit(1);
-
-      if (testError && testError.code === '42501') {
-        toast.error('Non hai i permessi per gestire i prezzi dei materiali. Contatta l\'amministratore.');
-        return;
-      }
-
       // Prepara i dati per l'inserimento
       const prezziToInsert = [];
       
@@ -360,10 +389,6 @@ const MaterialiMetallici: React.FC = () => {
 
       if (error) {
         console.error('Errore nell\'inserimento prezzi:', error);
-        if (error.code === '42501') {
-          toast.error('Non hai i permessi per inserire i prezzi dei materiali. Contatta l\'amministratore.');
-          return;
-        }
         throw error;
       }
       
@@ -388,10 +413,6 @@ const MaterialiMetallici: React.FC = () => {
 
       if (error) {
         console.error('Errore nell\'inserimento prezzo:', error);
-        if (error.code === '42501') {
-          toast.error('Non hai i permessi per aggiungere prezzi dei materiali');
-          return false;
-        }
         throw error;
       }
       
@@ -417,10 +438,6 @@ const MaterialiMetallici: React.FC = () => {
 
       if (error) {
         console.error('Errore nell\'aggiornamento prezzo:', error);
-        if (error.code === '42501') {
-          toast.error('Non hai i permessi per aggiornare questo prezzo');
-          return;
-        }
         throw error;
       }
       
@@ -465,10 +482,6 @@ const MaterialiMetallici: React.FC = () => {
 
         if (error) {
           console.error('Errore nell\'aggiornamento prezzo:', error);
-          if (error.code === '42501') {
-            toast.error('Non hai i permessi per aggiornare i prezzi');
-            return;
-          }
           throw error;
         }
       }
@@ -496,23 +509,24 @@ const MaterialiMetallici: React.FC = () => {
 
     try {
       // Trova il prezzo del materiale selezionato
-      let prezzoMateriale = prezziMateriali.find(p => p.tipo_materiale === newMateriale.tipo_materiale);
+      let prezzoMateriale = prezziMateriali.find(p => p.tipo_materiale === newMateriale.tipo_materiale.split(' - ')[0]);
       
       // Se il prezzo non esiste, chiedi all'utente di inserirlo
       if (!prezzoMateriale) {
-        const prezzoInput = prompt(`Inserisci il prezzo per kg per "${newMateriale.tipo_materiale}" (€/kg):`);
+        const tipoBase = newMateriale.tipo_materiale.split(' - ')[0];
+        const prezzoInput = prompt(`Inserisci il prezzo per kg per "${tipoBase}" (€/kg):`);
         if (!prezzoInput || isNaN(parseFloat(prezzoInput))) {
           toast.error('Prezzo non valido');
           return;
         }
         
         const prezzoKg = parseFloat(prezzoInput);
-        const success = await addNewPrezzoMateriale(newMateriale.tipo_materiale, prezzoKg);
+        const success = await addNewPrezzoMateriale(tipoBase, prezzoKg);
         if (!success) return;
         
         // Ricarica i prezzi e trova quello appena inserito
         await fetchData();
-        prezzoMateriale = prezziMateriali.find(p => p.tipo_materiale === newMateriale.tipo_materiale);
+        prezzoMateriale = prezziMateriali.find(p => p.tipo_materiale === tipoBase);
         if (!prezzoMateriale) {
           toast.error('Errore nel recupero del prezzo appena inserito');
           return;
@@ -533,13 +547,7 @@ const MaterialiMetallici: React.FC = () => {
           fornitore: newMateriale.fornitore || null
         }]);
 
-      if (error) {
-        if (error.code === '42501') {
-          toast.error('Non hai i permessi per aggiungere materiali metallici');
-          return;
-        }
-        throw error;
-      }
+      if (error) throw error;
       
       toast.success('Materiale aggiunto con successo');
       setNewMateriale({
@@ -548,7 +556,10 @@ const MaterialiMetallici: React.FC = () => {
         prezzo_kg: 0,
         numero_ddt: '',
         data_trasporto: new Date().toISOString().split('T')[0],
-        fornitore: ''
+        fornitore: '',
+        profilato: '',
+        lunghezza: 600,
+        quantita: 1
       });
       setShowAddForm(false);
       fetchData();
@@ -567,13 +578,7 @@ const MaterialiMetallici: React.FC = () => {
         .delete()
         .eq('id', id);
 
-      if (error) {
-        if (error.code === '42501') {
-          toast.error('Non hai i permessi per eliminare questo materiale');
-          return;
-        }
-        throw error;
-      }
+      if (error) throw error;
       
       toast.success('Materiale eliminato con successo');
       fetchData();
@@ -583,19 +588,101 @@ const MaterialiMetallici: React.FC = () => {
     }
   };
 
-  const calculateWeight = (tipo: string, diametro: number, lunghezza: number, quantita: number) => {
-    const materiale = pesoMateriali[tipo as keyof typeof pesoMateriali];
+  const handleMaterialeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedValue = e.target.value;
+    if (!selectedValue) return;
     
-    if (!materiale) return 0;
+    // Resetta il profilato quando cambia il materiale
+    setNewMateriale(prev => ({
+      ...prev,
+      tipo_materiale: selectedValue,
+      profilato: ''
+    }));
+  };
+
+  const handleProfilatoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedValue = e.target.value;
+    if (!selectedValue) return;
     
-    // Formula: volume (dm³) * densità (kg/dm³)
-    // Volume cilindro: π * r² * h
-    const raggio = diametro / 20; // da mm a dm e diviso 2 per avere il raggio
-    const lunghezzaDm = lunghezza / 10; // da cm a dm
-    const volume = Math.PI * raggio * raggio * lunghezzaDm;
-    const peso = volume * materiale.densita * quantita;
+    const [tipoMateriale, nomeProfilato] = selectedValue.split('|');
     
-    return peso;
+    // Trova il materiale e il profilato selezionati
+    const materialeTipo = tipoMateriale.trim();
+    const profilatoSelezionato = profilatiCommerciali[materialeTipo as keyof typeof profilatiCommerciali]?.find(
+      p => p.nome === nomeProfilato.trim()
+    );
+    
+    if (profilatoSelezionato) {
+      // Calcola il peso totale in base alla lunghezza e quantità
+      const lunghezzaMetri = newMateriale.lunghezza / 100; // da cm a metri
+      const pesoStandard = profilatoSelezionato.tipo === 'lamiera' 
+        ? profilatoSelezionato.peso // Per le lamiere il peso è già per foglio standard
+        : profilatoSelezionato.peso * lunghezzaMetri; // Per barre e tubi, moltiplica per lunghezza
+      
+      const pesoTotale = pesoStandard * newMateriale.quantita;
+      
+      setNewMateriale(prev => ({
+        ...prev,
+        tipo_materiale: `${materialeTipo} - ${profilatoSelezionato.nome}`,
+        kg_totali: Math.round(pesoTotale * 1000) / 1000
+      }));
+    }
+  };
+
+  const handleLunghezzaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const lunghezza = parseFloat(e.target.value) || 0;
+    setNewMateriale(prev => ({ ...prev, lunghezza }));
+    
+    // Ricalcola il peso se è già selezionato un profilato
+    if (prev.tipo_materiale && prev.profilato) {
+      const [tipoMateriale, nomeProfilato] = prev.profilato.split('|');
+      const materialeTipo = tipoMateriale.trim();
+      const profilatoSelezionato = profilatiCommerciali[materialeTipo as keyof typeof profilatiCommerciali]?.find(
+        p => p.nome === nomeProfilato.trim()
+      );
+      
+      if (profilatoSelezionato) {
+        const lunghezzaMetri = lunghezza / 100; // da cm a metri
+        const pesoStandard = profilatoSelezionato.tipo === 'lamiera' 
+          ? profilatoSelezionato.peso
+          : profilatoSelezionato.peso * lunghezzaMetri;
+        
+        const pesoTotale = pesoStandard * prev.quantita;
+        
+        setNewMateriale(prev => ({
+          ...prev,
+          kg_totali: Math.round(pesoTotale * 1000) / 1000
+        }));
+      }
+    }
+  };
+
+  const handleQuantitaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const quantita = parseInt(e.target.value) || 1;
+    setNewMateriale(prev => ({ ...prev, quantita }));
+    
+    // Ricalcola il peso se è già selezionato un profilato
+    if (prev.tipo_materiale && prev.profilato) {
+      const [tipoMateriale, nomeProfilato] = prev.profilato.split('|');
+      const materialeTipo = tipoMateriale.trim();
+      const profilatoSelezionato = profilatiCommerciali[materialeTipo as keyof typeof profilatiCommerciali]?.find(
+        p => p.nome === nomeProfilato.trim()
+      );
+      
+      if (profilatoSelezionato) {
+        const lunghezzaMetri = prev.lunghezza / 100; // da cm a metri
+        const pesoStandard = profilatoSelezionato.tipo === 'lamiera' 
+          ? profilatoSelezionato.peso
+          : profilatoSelezionato.peso * lunghezzaMetri;
+        
+        const pesoTotale = pesoStandard * quantita;
+        
+        setNewMateriale(prev => ({
+          ...prev,
+          kg_totali: Math.round(pesoTotale * 1000) / 1000
+        }));
+      }
+    }
   };
 
   if (loading) {
@@ -614,20 +701,6 @@ const MaterialiMetallici: React.FC = () => {
           <p className="mt-2 text-gray-600">Gestisci i costi e i prezzi dei materiali metallici</p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={toggleAudio}
-            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
-          >
-            <Info className="h-4 w-4" />
-            Musica Relax
-          </button>
-          <button
-            onClick={() => setShowCalculator(!showCalculator)}
-            className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
-          >
-            <Calculator className="h-4 w-4" />
-            Calcolatore
-          </button>
           {prezziMateriali.length > 0 && (
             <button
               onClick={updateAllPrices}
@@ -656,31 +729,6 @@ const MaterialiMetallici: React.FC = () => {
           </button>
         </div>
       </div>
-
-      {/* Calcolatore Materiali */}
-      <AnimatePresence>
-        {showCalculator && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-          >
-            <MaterialCalculator 
-              materiali={prezziMateriali} 
-              pesoMateriali={pesoMateriali}
-              onAddMaterial={(material) => {
-                setNewMateriale({
-                  ...newMateriale,
-                  tipo_materiale: material.tipo,
-                  kg_totali: material.peso
-                });
-                setShowAddForm(true);
-                toast.success('Materiale calcolato. Completa i dettagli per aggiungerlo.');
-              }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Prezzi Regionali */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -750,35 +798,21 @@ const MaterialiMetallici: React.FC = () => {
               </h3>
             </div>
             <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label htmlFor="tipo_materiale" className="block text-sm font-medium text-gray-700 mb-1">
                     Tipo Materiale *
                   </label>
                   <select
                     id="tipo_materiale"
-                    value={newMateriale.tipo_materiale}
-                    onChange={(e) => {
-                      const selectedMaterial = e.target.value;
-                      const prezzoMateriale = prezziMateriali.find(p => p.tipo_materiale === selectedMaterial);
-                      setNewMateriale(prev => ({ 
-                        ...prev, 
-                        tipo_materiale: selectedMaterial,
-                        prezzo_kg: prezzoMateriale?.prezzo_kg || 0
-                      }));
-                    }}
+                    value={newMateriale.tipo_materiale.split(' - ')[0] || ''}
+                    onChange={handleMaterialeChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   >
                     <option value="">Seleziona materiale</option>
                     {Object.keys(profilatiCommerciali).map(tipo => (
-                      <optgroup key={tipo} label={tipo}>
-                        {profilatiCommerciali[tipo as keyof typeof profilatiCommerciali].map(profilato => (
-                          <option key={`${tipo}-${profilato}`} value={`${tipo} - ${profilato}`}>
-                            {tipo} - {profilato}
-                          </option>
-                        ))}
-                      </optgroup>
+                      <option key={tipo} value={tipo}>{tipo}</option>
                     ))}
                     <option value="custom">Altro materiale (inserisci manualmente)</option>
                   </select>
@@ -791,6 +825,66 @@ const MaterialiMetallici: React.FC = () => {
                     />
                   )}
                 </div>
+                
+                <div>
+                  <label htmlFor="profilato" className="block text-sm font-medium text-gray-700 mb-1">
+                    Profilato Commerciale *
+                  </label>
+                  <select
+                    id="profilato"
+                    value={newMateriale.profilato}
+                    onChange={handleProfilatoChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Seleziona profilato</option>
+                    {newMateriale.tipo_materiale && newMateriale.tipo_materiale !== 'custom' && 
+                      profilatiCommerciali[newMateriale.tipo_materiale.split(' - ')[0] as keyof typeof profilatiCommerciali]?.map(profilato => (
+                        <option 
+                          key={`${newMateriale.tipo_materiale.split(' - ')[0]}-${profilato.nome}`} 
+                          value={`${newMateriale.tipo_materiale.split(' - ')[0]}|${profilato.nome}`}
+                        >
+                          {profilato.nome} - {profilato.tipo === 'lamiera' ? profilato.dimensioni : `${profilato.peso.toFixed(3)} kg/m`}
+                        </option>
+                      ))
+                    }
+                  </select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label htmlFor="lunghezza" className="block text-sm font-medium text-gray-700 mb-1">
+                    Lunghezza (cm) *
+                  </label>
+                  <input
+                    type="number"
+                    id="lunghezza"
+                    value={newMateriale.lunghezza}
+                    onChange={handleLunghezzaChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="600 (6 metri)"
+                    min="1"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="quantita" className="block text-sm font-medium text-gray-700 mb-1">
+                    Quantità (pezzi) *
+                  </label>
+                  <input
+                    type="number"
+                    id="quantita"
+                    value={newMateriale.quantita}
+                    onChange={handleQuantitaChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="1"
+                    min="1"
+                    required
+                  />
+                </div>
+                
                 <div>
                   <label htmlFor="kg_totali" className="block text-sm font-medium text-gray-700 mb-1">
                     Peso Totale (kg) *
@@ -806,7 +900,13 @@ const MaterialiMetallici: React.FC = () => {
                     step="0.001"
                     required
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Calcolato automaticamente in base al profilato selezionato
+                  </p>
                 </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
                   <label htmlFor="fornitore" className="block text-sm font-medium text-gray-700 mb-1">
                     Fornitore
@@ -820,9 +920,7 @@ const MaterialiMetallici: React.FC = () => {
                     placeholder="Nome fornitore"
                   />
                 </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                
                 <div>
                   <label htmlFor="numero_ddt" className="block text-sm font-medium text-gray-700 mb-1">
                     Numero DDT *
@@ -837,6 +935,7 @@ const MaterialiMetallici: React.FC = () => {
                     required
                   />
                 </div>
+                
                 <div>
                   <label htmlFor="data_trasporto" className="block text-sm font-medium text-gray-700 mb-1">
                     Data Trasporto *
@@ -860,13 +959,13 @@ const MaterialiMetallici: React.FC = () => {
                     <div>
                       <p className="text-xs text-blue-600">Prezzo al kg:</p>
                       <p className="text-sm font-medium">
-                        €{newMateriale.prezzo_kg.toFixed(3)}/kg
+                        €{(prezziMateriali.find(p => p.tipo_materiale === newMateriale.tipo_materiale.split(' - ')[0])?.prezzo_kg || 0).toFixed(3)}/kg
                       </p>
                     </div>
                     <div>
                       <p className="text-xs text-blue-600">Importo totale:</p>
                       <p className="text-sm font-medium">
-                        €{(newMateriale.kg_totali * newMateriale.prezzo_kg).toFixed(2)}
+                        €{(newMateriale.kg_totali * (prezziMateriali.find(p => p.tipo_materiale === newMateriale.tipo_materiale.split(' - ')[0])?.prezzo_kg || 0)).toFixed(2)}
                       </p>
                     </div>
                   </div>
