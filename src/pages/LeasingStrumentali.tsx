@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Edit, Wrench, Zap, DollarSign, ToggleLeft, ToggleRight, Plus, Trash2, Music } from 'lucide-react';
+import { Edit, Wrench, Zap, DollarSign, ToggleLeft, ToggleRight, Plus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { LeasingStrumentale } from '../types/database';
 import { usePermissions } from '../hooks/usePermissions';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import HelpTooltip from '../components/common/HelpTooltip';
-import SpotifyPlayer from '../components/common/SpotifyPlayer';
 import toast from 'react-hot-toast';
 
 const LeasingStrumentali: React.FC = () => {
@@ -23,7 +22,6 @@ const LeasingStrumentali: React.FC = () => {
     consumo_kw: 0
   });
   const [showAddForm, setShowAddForm] = useState(false);
-  const [showSpotify, setShowSpotify] = useState(false);
   const permissions = usePermissions();
 
   // Elenco di strumenti predefiniti
@@ -259,13 +257,6 @@ const LeasingStrumentali: React.FC = () => {
           <p className="mt-2 text-gray-600">Gestisci i costi mensili di attrezzature e servizi</p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={() => setShowSpotify(!showSpotify)}
-            className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
-          >
-            <Music className="h-4 w-4" />
-            Spotify
-          </button>
           {leasingStrumentali.length === 0 && (
             <button
               onClick={initializeStrumentiPredefiniti}
@@ -284,19 +275,6 @@ const LeasingStrumentali: React.FC = () => {
           </button>
         </div>
       </div>
-
-      {/* Spotify Player */}
-      <AnimatePresence>
-        {showSpotify && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-          >
-            <SpotifyPlayer />
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Form Aggiungi Strumento */}
       <AnimatePresence>
