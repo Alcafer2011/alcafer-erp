@@ -113,11 +113,14 @@ const MaterialiMetallici: React.FC = () => {
         throw prezziResult.error;
       }
 
-      // Se non ci sono prezzi e l'utente ha i permessi, prova a inizializzare
+      // Se non ci sono prezzi, mostra un messaggio informativo invece di tentare l'inizializzazione automatica
       if ((!prezziResult.data || prezziResult.data.length === 0)) {
-        await initializePrezziRegionali();
-        const { data } = await supabase.from('prezzi_materiali').select('*').order('tipo_materiale');
-        setPrezziMateriali(data || []);
+        console.log('Nessun prezzo materiale trovato. L\'utente può aggiungere manualmente i prezzi.');
+        toast('Nessun prezzo materiale configurato. Puoi aggiungere i prezzi manualmente.', {
+          icon: 'ℹ️',
+          duration: 4000,
+        });
+        setPrezziMateriali([]);
       } else {
         setPrezziMateriali(prezziResult.data || []);
       }
@@ -133,6 +136,17 @@ const MaterialiMetallici: React.FC = () => {
 
   const initializePrezziRegionali = async () => {
     try {
+      // Verifica prima se l'utente ha i permessi necessari
+      const { data: testData, error: testError } = await supabase
+        .from('prezzi_materiali')
+        .select('id')
+        .limit(1);
+
+      if (testError && testError.code === '42501') {
+        toast.error('Non hai i permessi per gestire i prezzi dei materiali. Contatta l\'amministratore.');
+        return;
+      }
+
       // Crea un set di tipi di materiale unici
       const tipiUnici = new Set();
       const prezziUnici = [];
@@ -157,16 +171,47 @@ const MaterialiMetallici: React.FC = () => {
       if (error) {
         console.error('Errore nell\'inserimento prezzi:', error);
         if (error.code === '42501') {
-          toast.error('Non hai i permessi per inserire i prezzi dei materiali');
+          toast.error('Non hai i permessi per inserire i prezzi dei materiali. Contatta l\'amministratore.');
           return;
         }
         throw error;
       }
       
       toast.success('Prezzi materiali inizializzati con successo');
+      fetchData(); // Ricarica i dati dopo l'inserimento
     } catch (error) {
       console.error('Errore nell\'inizializzazione dei prezzi:', error);
       toast.error('Errore nell\'inizializzazione dei prezzi');
+    }
+  };
+
+  const addNewPrezzoMateriale = async (tipoMateriale: string, prezzoKg: number) => {
+    try {
+      const { error } = await supabase
+        .from('prezzi_materiali')
+        .insert([{
+          tipo_materiale: tipoMateriale,
+          prezzo_kg: prezzoKg,
+          data_aggiornamento: new Date().toISOString().split('T')[0],
+          fonte: 'Inserimento manuale'
+        }]);
+
+      if (error) {
+        console.error('Errore nell\'inserimento prezzo:', error);
+        if (error.code === '42501') {
+          toast.error('Non hai i permessi per aggiungere prezzi dei materiali');
+          return false;
+        }
+        throw error;
+      }
+      
+      toast.success('Prezzo materiale aggiunto con successo');
+      fetchData();
+      return true;
+    } catch (error) {
+      console.error('Errore nell\'aggiunta del prezzo:', error);
+      toast.error('Errore nell\'aggiunta del prezzo');
+      return false;
     }
   };
 
@@ -261,11 +306,27 @@ const MaterialiMetallici: React.FC = () => {
 
     try {
       // Trova il prezzo del materiale selezionato
-      const prezzoMateriale = prezziMateriali.find(p => p.tipo_materiale === newMateriale.tipo_materiale);
+      let prezzoMateriale = prezziMateriali.find(p => p.tipo_materiale === newMateriale.tipo_materiale);
       
+      // Se il prezzo non esiste, chiedi all'utente di inserirlo
       if (!prezzoMateriale) {
-        toast.error('Prezzo del materiale non trovato');
-        return;
+        const prezzoInput = prompt(`Inserisci il prezzo per kg per "${newMateriale.tipo_materiale}" (€/kg):`);
+        if (!prezzoInput || isNaN(parseFloat(prezzoInput))) {
+          toast.error('Prezzo non valido');
+          return;
+        }
+        
+        const prezzoKg = parseFloat(prezzoInput);
+        const success = await addNewPrezzoMateriale(newMateriale.tipo_materiale, prezzoKg);
+        if (!success) return;
+        
+        // Ricarica i prezzi e trova quello appena inserito
+        await fetchData();
+        prezzoMateriale = prezziMateriali.find(p => p.tipo_materiale === newMateriale.tipo_materiale);
+        if (!prezzoMateriale) {
+          toast.error('Errore nel recupero del prezzo appena inserito');
+          return;
+        }
       }
       
       const importoTotale = newMateriale.kg_totali * prezzoMateriale.prezzo_kg;
@@ -282,7 +343,13 @@ const MaterialiMetallici: React.FC = () => {
           fornitore: newMateriale.fornitore || null
         }]);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '42501') {
+          toast.error('Non hai i permessi per aggiungere materiali metallici');
+          return;
+        }
+        throw error;
+      }
       
       toast.success('Materiale aggiunto con successo');
       setNewMateriale({
@@ -310,7 +377,13 @@ const MaterialiMetallici: React.FC = () => {
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '42501') {
+          toast.error('Non hai i permessi per eliminare questo materiale');
+          return;
+        }
+        throw error;
+      }
       
       toast.success('Materiale eliminato con successo');
       fetchData();
@@ -358,23 +431,25 @@ const MaterialiMetallici: React.FC = () => {
             <Calculator className="h-4 w-4" />
             Calcolatore
           </button>
-          <button
-            onClick={updateAllPrices}
-            disabled={updatingPrices}
-            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 disabled:opacity-50"
-          >
-            {updatingPrices ? (
-              <>
-                <LoadingSpinner size="sm" color="text-white" />
-                Aggiornamento...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-4 w-4" />
-                Aggiorna Prezzi
-              </>
-            )}
-          </button>
+          {prezziMateriali.length > 0 && (
+            <button
+              onClick={updateAllPrices}
+              disabled={updatingPrices}
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 disabled:opacity-50"
+            >
+              {updatingPrices ? (
+                <>
+                  <LoadingSpinner size="sm" color="text-white" />
+                  Aggiornamento...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4" />
+                  Aggiorna Prezzi
+                </>
+              )}
+            </button>
+          )}
           <button
             onClick={() => setShowAddForm(!showAddForm)}
             className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
@@ -451,7 +526,16 @@ const MaterialiMetallici: React.FC = () => {
                         {prezzo.tipo_materiale} - €{prezzo.prezzo_kg.toFixed(3)}/kg
                       </option>
                     ))}
+                    <option value="custom">Altro materiale (inserisci manualmente)</option>
                   </select>
+                  {newMateriale.tipo_materiale === 'custom' && (
+                    <input
+                      type="text"
+                      placeholder="Nome del materiale"
+                      className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      onChange={(e) => setNewMateriale(prev => ({ ...prev, tipo_materiale: e.target.value }))}
+                    />
+                  )}
                 </div>
                 <div>
                   <label htmlFor="kg_totali" className="block text-sm font-medium text-gray-700 mb-1">
@@ -559,53 +643,77 @@ const MaterialiMetallici: React.FC = () => {
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">
-              Prezzi Materiali Lombardia, Piemonte, Emilia Romagna
+              Prezzi Materiali
             </h3>
-            <HelpTooltip content="Prezzi aggiornati per le regioni del Nord Italia. Puoi modificarli manualmente se necessario." />
+            <div className="flex items-center gap-2">
+              <HelpTooltip content="Prezzi dei materiali metallici. Puoi modificarli manualmente se necessario." />
+              {prezziMateriali.length === 0 && (
+                <button
+                  onClick={initializePrezziRegionali}
+                  className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+                >
+                  Inizializza Prezzi
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
         <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {prezziMateriali.map((prezzo, index) => (
-              <motion.div
-                key={prezzo.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200"
+          {prezziMateriali.length === 0 ? (
+            <div className="text-center py-8">
+              <TrendingUp className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Nessun prezzo configurato</h3>
+              <p className="text-gray-500 mb-6">Inizializza i prezzi dei materiali per iniziare</p>
+              <button
+                onClick={initializePrezziRegionali}
+                className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-gray-900">{prezzo.tipo_materiale}</h4>
-                  <TrendingUp className="h-5 w-5 text-blue-600" />
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Prezzo:</span>
-                    <input
-                      type="number"
-                      step="0.001"
-                      value={prezzo.prezzo_kg}
-                      onChange={(e) => updatePrezzo(prezzo.id, parseFloat(e.target.value))}
-                      className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    <span className="text-sm text-gray-600">€/kg</span>
+                Inizializza Prezzi Regionali
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {prezziMateriali.map((prezzo, index) => (
+                <motion.div
+                  key={prezzo.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-gray-900">{prezzo.tipo_materiale}</h4>
+                    <TrendingUp className="h-5 w-5 text-blue-600" />
                   </div>
                   
-                  <div className="text-xs text-gray-500">
-                    Aggiornato: {new Date(prezzo.data_aggiornamento).toLocaleDateString('it-IT')}
-                  </div>
-                  
-                  {prezzo.fonte && (
-                    <div className="text-xs text-blue-600">
-                      Fonte: {prezzo.fonte}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">Prezzo:</span>
+                      <input
+                        type="number"
+                        step="0.001"
+                        value={prezzo.prezzo_kg}
+                        onChange={(e) => updatePrezzo(prezzo.id, parseFloat(e.target.value))}
+                        className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      <span className="text-sm text-gray-600">€/kg</span>
                     </div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                    
+                    <div className="text-xs text-gray-500">
+                      Aggiornato: {new Date(prezzo.data_aggiornamento).toLocaleDateString('it-IT')}
+                    </div>
+                    
+                    {prezzo.fonte && (
+                      <div className="text-xs text-blue-600">
+                        Fonte: {prezzo.fonte}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
