@@ -121,27 +121,27 @@ const MeditationPlayer: React.FC<MeditationPlayerProps> = ({ autoplay = false, o
   };
 
   return (
-    <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 shadow-lg">
-      <div className="flex items-center gap-3">
+    <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 shadow-lg">
+      <div className="flex items-center gap-2">
         <button 
           onClick={prevTrack}
-          className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+          className="p-1 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
         >
-          <SkipBack className="h-5 w-5" />
+          <SkipBack className="h-4 w-4" />
         </button>
         
         <button 
           onClick={togglePlayback}
-          className="p-3 bg-white/30 hover:bg-white/40 text-white rounded-full transition-colors shadow-lg"
+          className="p-2 bg-white/30 hover:bg-white/40 text-white rounded-full transition-colors shadow-lg"
         >
-          {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+          {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
         </button>
         
         <button 
           onClick={nextTrack}
-          className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+          className="p-1 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
         >
-          <SkipForward className="h-5 w-5" />
+          <SkipForward className="h-4 w-4" />
         </button>
         
         <div className="flex items-center gap-2">
@@ -149,7 +149,7 @@ const MeditationPlayer: React.FC<MeditationPlayerProps> = ({ autoplay = false, o
             onClick={toggleMute}
             className="text-white/80 hover:text-white transition-colors"
           >
-            {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+            {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </button>
           <input
             type="range"
@@ -160,18 +160,9 @@ const MeditationPlayer: React.FC<MeditationPlayerProps> = ({ autoplay = false, o
               setVolume(parseInt(e.target.value));
               if (isMuted) setIsMuted(false);
             }}
-            className="w-20 h-1 bg-white/30 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
+            className="w-16 h-1 bg-white/30 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
           />
         </div>
-      </div>
-      
-      <div className="mt-2 text-center">
-        <p className="text-sm text-white font-medium">
-          {meditationTracks[currentTrack].name}
-        </p>
-        <p className="text-xs text-white/70">
-          {meditationTracks[currentTrack].artist}
-        </p>
       </div>
     </div>
   );
