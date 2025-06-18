@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { Manovalanza as ManovalanzaType } from '../types/database';
 import { usePermissions } from '../hooks/usePermissions';
+import { useAuth } from '../hooks/useAuth';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import HelpTooltip from '../components/common/HelpTooltip';
 import toast from 'react-hot-toast';
@@ -33,12 +34,55 @@ const Manovalanza: React.FC = () => {
         .order('nome');
 
       if (error) throw error;
-      setManovalanza(data || []);
+      
+      // Se non ci sono dati, inizializza con valori predefiniti
+      if (!data || data.length === 0) {
+        await initializeManovalanzaPredefinita();
+        const { data: initialData } = await supabase
+          .from('manovalanza')
+          .select('*')
+          .order('nome');
+        
+        setManovalanza(initialData || []);
+      } else {
+        setManovalanza(data);
+      }
     } catch (error) {
       console.error('Errore nel caricamento della manovalanza:', error);
       toast.error('Errore nel caricamento dei dati');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const initializeManovalanzaPredefinita = async () => {
+    try {
+      const dipendentiPredefiniti = [
+        { nome: 'Mario Rossi', importo_mensile: 2200 },
+        { nome: 'Luigi Bianchi', importo_mensile: 1800 },
+        { nome: 'Giuseppe Verdi', importo_mensile: 2000 },
+        { nome: 'Anna Neri', importo_mensile: 2100 },
+        { nome: 'Paolo Gialli', importo_mensile: 1900 }
+      ];
+      
+      for (const dipendente of dipendentiPredefiniti) {
+        const { error } = await supabase
+          .from('manovalanza')
+          .insert([{
+            nome: dipendente.nome,
+            importo_mensile: dipendente.importo_mensile,
+            attivo: true
+          }]);
+        
+        if (error) {
+          console.error(`Errore nell'inserimento di ${dipendente.nome}:`, error);
+        }
+      }
+      
+      toast.success('Dipendenti predefiniti inizializzati');
+    } catch (error) {
+      console.error('Errore nell\'inizializzazione dei dipendenti:', error);
+      toast.error('Errore nell\'inizializzazione dei dipendenti');
     }
   };
 
