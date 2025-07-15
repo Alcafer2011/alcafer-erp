@@ -2,7 +2,7 @@ import { HfInference } from '@huggingface/inference';
 import { supabase, supabaseAdmin } from '../lib/supabase';
 import { RetrievalQAChain } from 'langchain/chains';
 import { MemoryVectorStore } from 'langchain/vectorstores/memory';
-import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
+import { OpenAIEmbeddings } from 'langchain/embeddings';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import { PromptTemplate } from 'langchain/prompts';
