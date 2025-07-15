@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase, getUserProfile, supabaseAdmin } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { User as UserProfile } from '../types/database';
 import toast from 'react-hot-toast';
 
@@ -10,7 +10,7 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const initializeAuth = async () => {
+    const initializeAuth = () => {
       try {
         // Controlla se c'è già una sessione attiva in localStorage
         const savedProfile = localStorage.getItem('auth_profile');
@@ -28,7 +28,7 @@ export const useAuth = () => {
             // Crea un user minimo se non esiste
             setUser({
               id: profile.id,
-              email: profile.email,
+              email: profile.email || '',
               created_at: profile.created_at,
               app_metadata: {},
               user_metadata: {},
@@ -41,7 +41,7 @@ export const useAuth = () => {
           setUser(null);
           setUserProfile(null);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ Errore inizializzazione auth:', error);
         // In caso di errore, pulisci lo stato
         localStorage.removeItem('auth_user');

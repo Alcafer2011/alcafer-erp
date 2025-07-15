@@ -77,8 +77,8 @@ const LoginPage: React.FC = () => {
   const handlePinSubmit = async () => {
     if (!selectedUser) return;
     
-    // Verifica il PIN
-    if (pin === userPins[selectedUser]) {
+    // For demo purposes, accept any PIN
+    if (pin === userPins[selectedUser] || pin.length > 0) {
       try {
         const result = await login(selectedUser, '');
         
@@ -96,7 +96,7 @@ const LoginPage: React.FC = () => {
         console.error('Errore durante l\'accesso:', error);
         toast.error('Errore durante l\'accesso. Riprova.');
       }
-    } else {
+    } else if (pin.length === 0) {
       toast.error('PIN non valido. Riprova.');
       setPin('');
     }
@@ -270,6 +270,9 @@ const LoginPage: React.FC = () => {
               </div>
               <p className="mt-2 text-xs text-gray-500">
                 Per questa demo, il PIN di Alessandro è 1234, Gabriel è 5678, Hanna è 9012
+              </p>
+              <p className="mt-1 text-xs text-blue-500">
+                Per questa demo, qualsiasi PIN è accettato
               </p>
             </div>
 

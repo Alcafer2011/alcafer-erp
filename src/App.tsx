@@ -35,7 +35,8 @@ function App() {
     
     const checkConnection = async () => {
       const isConnected = await checkSupabaseConnection();
-      setConnectionStatus(isConnected);
+      console.log('Connection status:', isConnected);
+      setConnectionStatus(Boolean(isConnected));
       
       if (!isConnected) {
         toast.error('Errore di connessione al database. Controlla le variabili d\'ambiente.', {
@@ -44,7 +45,7 @@ function App() {
       }
     };
     
-    checkConnection();
+    setTimeout(checkConnection, 1000); // Delay to ensure environment variables are loaded
     
     // Registra il service worker per PWA
     if ('serviceWorker' in navigator) {
