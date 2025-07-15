@@ -1,4 +1,5 @@
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseAdmin } from '../lib/supabase';
+import { Octokit } from '@octokit/rest';
 
 interface AIResponse {
   text: string;
@@ -16,11 +17,19 @@ export class AIDevService {
   private static instance: AIDevService;
   private apiKey: string | null = null;
   private githubToken: string | null = null;
+  private octokit: Octokit | null = null;
 
   private constructor() {
     // Inizializza le chiavi API dalle variabili d'ambiente
     this.apiKey = import.meta.env.VITE_OPENAI_API_KEY || null;
     this.githubToken = import.meta.env.VITE_GITHUB_TOKEN || null;
+    
+    // Inizializza Octokit se il token è disponibile
+    if (this.githubToken) {
+      this.octokit = new Octokit({
+        auth: this.githubToken
+      });
+    }
   }
 
   public static getInstance(): AIDevService {
@@ -171,21 +180,21 @@ export class AIDevService {
   // Metodo per ottenere file dal repository GitHub
   async getRepositoryFiles(owner: string, repo: string, path: string = ''): Promise<RepositoryFile[]> {
     try {
-      if (!this.githubToken) {
+      if (!this.octokit) {
         return this.getMockRepositoryFiles();
       }
 
-      const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
-        headers: {
-          'Authorization': `token ${this.githubToken}`
-        }
+      const response = await this.octokit.repos.getContent({
+        owner,
+        repo,
+        path
       });
 
-      const data = await response.json();
+      const data = response.data;
       
       // Se è un file singolo
       if (!Array.isArray(data)) {
-        const content = atob(data.content); // Decodifica il contenuto Base64
+        const content = Buffer.from(data.content, 'base64').toString(); // Decodifica il contenuto Base64
         return [{
           path: data.path,
           content
@@ -196,17 +205,20 @@ export class AIDevService {
       const files: RepositoryFile[] = [];
       for (const item of data) {
         if (item.type === 'file') {
-          const fileResponse = await fetch(item.url, {
-            headers: {
-              'Authorization': `token ${this.githubToken}`
-            }
+          const fileResponse = await this.octokit.repos.getContent({
+            owner,
+            repo,
+            path: item.path
           });
-          const fileData = await fileResponse.json();
-          const content = atob(fileData.content);
-          files.push({
-            path: item.path,
-            content
-          });
+          
+          const fileData = fileResponse.data;
+          if ('content' in fileData) {
+            const content = Buffer.from(fileData.content, 'base64').toString();
+            files.push({
+              path: item.path,
+              content
+            });
+          }
         }
       }
 
@@ -214,6 +226,52 @@ export class AIDevService {
     } catch (error) {
       console.error('Errore nel recupero dei file dal repository:', error);
       return this.getMockRepositoryFiles();
+    }
+  }
+
+  // Metodo per ottenere lo schema del database Supabase
+  async getDatabaseSchema(): Promise<any> {
+    try {
+      const { data, error } = await supabaseAdmin.rpc('get_schema_info');
+      
+      if (error) {
+        throw error;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Errore nel recupero dello schema del database:', error);
+      throw error;
+    }
+  }
+
+  // Metodo per analizzare le policy RLS
+  async analyzeRLSPolicies(): Promise<any> {
+    try {
+      const { data, error } = await supabaseAdmin.rpc('get_rls_policies');
+      
+      if (error) {
+        throw error;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Errore nell\'analisi delle policy RLS:', error);
+      throw error;
+    }
+  }
+
+  // Metodo per creare una nuova migrazione SQL
+  async createMigration(sql: string, name: string): Promise<boolean> {
+    try {
+      // In un'implementazione reale, questo creerebbe un nuovo file di migrazione
+      console.log(`Creazione migrazione: ${name}`);
+      console.log(sql);
+      
+      return true;
+    } catch (error) {
+      console.error('Errore nella creazione della migrazione:', error);
+      return false;
     }
   }
 
@@ -235,15 +293,32 @@ export class AIDevService {
   // Metodo per salvare modifiche al codice
   async saveCodeChanges(path: string, content: string, message: string = 'Aggiornamento tramite AI Assistant'): Promise<boolean> {
     try {
-      if (!this.githubToken) {
+      if (!this.octokit) {
         // Simula il salvataggio
         console.log(`Simulazione salvataggio: ${path}`);
         return true;
       }
 
-      // In un'implementazione reale, questo salverebbe le modifiche su GitHub
-      // Per questa demo, simuliamo il salvataggio
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Ottieni il contenuto attuale del file per avere il suo SHA
+      const { data: fileData } = await this.octokit.repos.getContent({
+        owner: 'owner', // Sostituisci con il vero owner
+        repo: 'repo',   // Sostituisci con il vero repo
+        path
+      });
+
+      if (!('sha' in fileData)) {
+        throw new Error('Impossibile ottenere lo SHA del file');
+      }
+
+      // Aggiorna il file
+      await this.octokit.repos.createOrUpdateFileContents({
+        owner: 'owner', // Sostituisci con il vero owner
+        repo: 'repo',   // Sostituisci con il vero repo
+        path,
+        message,
+        content: Buffer.from(content).toString('base64'),
+        sha: fileData.sha
+      });
       
       return true;
     } catch (error) {
@@ -326,6 +401,13 @@ export class AIDevService {
         "Ecco i passaggi per fare il deploy dell'applicazione:",
         "Per pubblicare l'applicazione, segui questa procedura:",
         "Ecco come configurare il deploy automatico con GitHub e Netlify:"
+      ],
+      
+      // RLS
+      'rls': [
+        "Ho analizzato le policy RLS e ho trovato il problema. Ecco come risolverlo:",
+        "Il problema di sicurezza è nelle policy RLS. Ecco la soluzione:",
+        "Per risolvere il problema di RLS, devi aggiungere queste policy:"
       ]
     };
 
@@ -339,6 +421,8 @@ export class AIDevService {
       responseCategory = 'implementa';
     } else if (messageLower.includes('deploy') || messageLower.includes('pubblica')) {
       responseCategory = 'deploy';
+    } else if (messageLower.includes('rls') || messageLower.includes('policy') || messageLower.includes('sicurezza')) {
+      responseCategory = 'rls';
     }
     
     // Seleziona una risposta casuale dalla categoria
@@ -349,8 +433,8 @@ export class AIDevService {
     let code = null;
     let language = null;
     
-    if (responseCategory === 'errore' || responseCategory === 'implementa') {
-      code = `// Esempio di codice generato localmente
+    if (responseCategory === 'errore') {
+      code = `// Esempio di codice corretto
 function fixedFunction() {
   try {
     // Implementazione corretta
@@ -362,11 +446,62 @@ function fixedFunction() {
   }
 }`;
       language = 'javascript';
+    } else if (responseCategory === 'implementa') {
+      code = `// Implementazione della funzionalità
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+
+export function useFeature() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const { data, error } = await supabase
+          .from('table_name')
+          .select('*');
+          
+        if (error) throw error;
+        setData(data || []);
+      } catch (error) {
+        console.error('Errore:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchData();
+  }, []);
+  
+  return { data, loading };
+}`;
+      language = 'typescript';
     } else if (responseCategory === 'deploy') {
       code = `# Comandi per il deploy
 npm run build
 npx netlify deploy --prod --dir=dist`;
       language = 'bash';
+    } else if (responseCategory === 'rls') {
+      code = `-- Soluzione per il problema RLS
+-- Crea una nuova migrazione SQL con questo contenuto
+
+-- Abilita RLS sulla tabella (se non già abilitato)
+ALTER TABLE prezzi_materiali ENABLE ROW LEVEL SECURITY;
+
+-- Policy per consentire SELECT a tutti gli utenti autenticati
+CREATE POLICY "Tutti possono leggere prezzi_materiali" 
+ON prezzi_materiali FOR SELECT 
+TO authenticated 
+USING (true);
+
+-- Policy per consentire INSERT/UPDATE/DELETE agli utenti autenticati
+CREATE POLICY "Utenti autenticati possono modificare prezzi_materiali" 
+ON prezzi_materiali FOR ALL 
+TO authenticated 
+USING (true) 
+WITH CHECK (true);`;
+      language = 'sql';
     }
 
     return {
@@ -417,6 +552,252 @@ export const useAuth = () => {
   
   return { user, loading };
 };`
+      },
+      {
+        path: 'src/pages/MaterialiMetallici.tsx',
+        content: `import React, { useEffect, useState } from 'react';
+import { Plus, Edit, Trash2, Package } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '../lib/supabase';
+import { MaterialeMetallico } from '../types/database';
+import { usePermissions } from '../hooks/usePermissions';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import HelpTooltip from '../components/common/HelpTooltip';
+import toast from 'react-hot-toast';
+
+const MaterialiMetallici: React.FC = () => {
+  const [materialiMetallici, setMaterialiMetallici] = useState<MaterialeMetallico[]>([]);
+  const [loading, setLoading] = useState(true);
+  const permissions = usePermissions();
+
+  useEffect(() => {
+    fetchMaterialiMetallici();
+    initializePrezziRegionali();
+  }, []);
+
+  const fetchMaterialiMetallici = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('materiali_metallici')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setMaterialiMetallici(data || []);
+    } catch (error) {
+      console.error('Errore nel caricamento dei materiali metallici:', error);
+      toast.error('Errore nel caricamento dei materiali metallici');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const initializePrezziRegionali = async () => {
+    try {
+      // Verifica se esistono già prezzi
+      const { data: existingPrices, error: checkError } = await supabase
+        .from('prezzi_materiali')
+        .select('count');
+      
+      if (checkError) throw checkError;
+      
+      // Se ci sono già prezzi, non inizializzare
+      if (existingPrices && existingPrices.length > 0 && existingPrices[0].count > 0) {
+        return;
+      }
+      
+      // Prezzi iniziali per i materiali
+      const prezziIniziali = [
+        { tipo_materiale: 'Ferro S235 grezzo', prezzo_kg: 0.95, fonte: 'Listino regionale' },
+        { tipo_materiale: 'Acciaio inox AISI 304', prezzo_kg: 3.20, fonte: 'Listino regionale' },
+        { tipo_materiale: 'Alluminio 6060', prezzo_kg: 2.80, fonte: 'Listino regionale' },
+        { tipo_materiale: 'Acciaio al carbonio', prezzo_kg: 0.85, fonte: 'Listino regionale' },
+        { tipo_materiale: 'Ferro zincato', prezzo_kg: 1.15, fonte: 'Listino regionale' },
+        { tipo_materiale: 'Acciaio corten', prezzo_kg: 1.45, fonte: 'Listino regionale' },
+        { tipo_materiale: 'Alluminio anodizzato', prezzo_kg: 3.50, fonte: 'Listino regionale' },
+        { tipo_materiale: 'Acciaio inox AISI 316', prezzo_kg: 4.20, fonte: 'Listino regionale' }
+      ];
+      
+      // Inserisci i prezzi iniziali
+      const { error: insertError } = await supabase
+        .from('prezzi_materiali')
+        .insert(prezziIniziali.map(p => ({
+          ...p,
+          data_aggiornamento: new Date().toISOString().split('T')[0]
+        })));
+      
+      if (insertError) throw insertError;
+      
+      console.log('Prezzi materiali inizializzati con successo');
+    } catch (error) {
+      console.error('Errore nell\'inserimento prezzi:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Materiali Metallici</h1>
+          <p className="mt-2 text-gray-600">Gestisci i materiali metallici utilizzati nei lavori</p>
+        </div>
+      </div>
+
+      {/* Lista Materiali */}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Materiali Metallici
+            </h3>
+            <HelpTooltip content="Gestisci i materiali metallici utilizzati nei lavori" />
+          </div>
+        </div>
+
+        {materialiMetallici.length === 0 ? (
+          <div className="text-center py-12">
+            <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Nessun materiale registrato</h3>
+            <p className="text-gray-500 mb-6">Inizia registrando i materiali metallici utilizzati nei lavori</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Materiale
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Lavoro
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Quantità
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Prezzo
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Totale
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Data
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Azioni
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                <AnimatePresence>
+                  {materialiMetallici.map((materiale, index) => (
+                    <motion.tr
+                      key={materiale.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <Package className="h-5 w-5 text-blue-600 mr-3" />
+                          <div className="text-sm font-medium text-gray-900">
+                            {materiale.tipo_materiale}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {materiale.lavoro_id}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {materiale.kg_totali} kg
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        €{materiale.prezzo_kg.toLocaleString('it-IT', { minimumFractionDigits: 3 })}/kg
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          €{materiale.importo_totale.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(materiale.data_trasporto).toLocaleDateString('it-IT')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Modifica materiale"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Elimina materiale"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default MaterialiMetallici;`
+      },
+      {
+        path: 'supabase/migrations/20250618004416_red_hill.sql',
+        content: `/*
+  # Schema iniziale per prezzi_materiali
+  
+  1. Tabella
+    - Creazione tabella prezzi_materiali per tracciare i prezzi dei materiali
+    - Campi: id, tipo_materiale, prezzo_kg, data_aggiornamento, fonte
+  
+  2. Indici
+    - Indice su tipo_materiale per ricerche veloci
+  
+  3. Vincoli
+    - Chiave primaria su id
+    - Vincolo UNIQUE su tipo_materiale
+*/
+
+-- Creazione tabella prezzi_materiali
+CREATE TABLE IF NOT EXISTS prezzi_materiali (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tipo_materiale text UNIQUE NOT NULL,
+  prezzo_kg numeric(8,3) NOT NULL,
+  data_aggiornamento date DEFAULT CURRENT_DATE,
+  fonte text,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Creazione indici
+CREATE INDEX IF NOT EXISTS idx_prezzi_materiali_tipo ON prezzi_materiali(tipo_materiale);
+
+-- Abilitazione RLS
+ALTER TABLE prezzi_materiali ENABLE ROW LEVEL SECURITY;
+
+-- NOTA: Mancano le policy RLS per consentire operazioni agli utenti autenticati
+-- Questo causa l'errore "new row violates row-level security policy for table prezzi_materiali"
+`
       }
     ];
   }

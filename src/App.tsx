@@ -26,6 +26,7 @@ import { supabase, checkSupabaseConnection } from './lib/supabase';
 import toast from 'react-hot-toast';
 import LoginPage from './pages/LoginPage';
 import AIDevAssistant from './components/admin/AIDevAssistant';
+import AIDevAssistant from './components/admin/AIDevAssistant';
 
 function App() {
   const { isAuthenticated, loading, userProfile, user } = useAuth();
@@ -133,6 +134,7 @@ function App() {
           },
         }}
       />
+      {isAuthenticated && userProfile?.ruolo === 'alessandro' && <AIDevAssistant />}
       {isAuthenticated && userProfile?.ruolo === 'alessandro' && <AIDevAssistant />}
     </>
   );
