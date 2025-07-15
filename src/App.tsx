@@ -24,7 +24,6 @@ import TasseGabifer from './pages/finanziari/TasseGabifer';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { supabase, checkSupabaseConnection } from './lib/supabase';
 import toast from 'react-hot-toast';
-import LoginPage from './pages/LoginPage';
 import AIDevAssistant from './components/admin/AIDevAssistant';
 
 function App() {
@@ -133,7 +132,6 @@ function App() {
           },
         }}
       />
-      {isAuthenticated && userProfile?.ruolo === 'alessandro' && <AIDevAssistant />}
       {isAuthenticated && userProfile?.ruolo === 'alessandro' && <AIDevAssistant />}
     </>
   );
