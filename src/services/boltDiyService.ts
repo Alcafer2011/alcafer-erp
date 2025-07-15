@@ -1,11 +1,5 @@
 import { HfInference } from '@huggingface/inference';
 import { supabase, supabaseAdmin } from '../lib/supabase';
-import { RetrievalQAChain } from 'langchain/chains';
-import { MemoryVectorStore } from 'langchain/vectorstores/memory';
-import { OpenAIEmbeddings } from 'langchain/embeddings';
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
-import { ChatOpenAI } from 'langchain/chat_models/openai';
-import { PromptTemplate } from 'langchain/prompts';
 
 // Importa i moduli di Bolt.diy
 import { BoltDiy } from '../lib/bolt.diy/index';
@@ -16,8 +10,6 @@ export class BoltDiyService {
   private boltDiy: BoltDiy | null = null;
   private hf: HfInference | null = null;
   private initialized: boolean = false;
-  private vectorStore: MemoryVectorStore | null = null;
-  private chain: RetrievalQAChain | null = null;
 
   private constructor() {
     // Inizializza Hugging Face Inference
@@ -61,74 +53,12 @@ export class BoltDiyService {
       this.boltDiy = new BoltDiy(finalConfig);
       await this.boltDiy.initialize();
       
-      // Inizializza il vector store per la ricerca semantica
-      await this.initializeVectorStore();
-      
       this.initialized = true;
       console.log('✅ Bolt.diy inizializzato con successo!');
       return true;
     } catch (error) {
       console.error('❌ Errore nell\'inizializzazione di Bolt.diy:', error);
       return false;
-    }
-  }
-
-  private async initializeVectorStore(): Promise<void> {
-    try {
-      // Recupera il codice sorgente dal database o dai file
-      const codebase = await this.getCodebase();
-      
-      // Dividi il testo in chunks
-      const textSplitter = new RecursiveCharacterTextSplitter({
-        chunkSize: 1000,
-        chunkOverlap: 200
-      });
-      
-      const docs = await textSplitter.createDocuments(codebase);
-      
-      // Crea embeddings (utilizza OpenAI o fallback locale)
-      let embeddings;
-      try {
-        embeddings = new OpenAIEmbeddings({
-          openAIApiKey: process.env.OPENAI_API_KEY || 'sk-free-key'
-        });
-      } catch (error) {
-        console.warn('⚠️ OpenAI embeddings non disponibili, utilizzo embeddings locali');
-        embeddings = {
-          embedDocuments: async (texts: string[]) => texts.map(() => Array(1536).fill(0).map(() => Math.random())),
-          embedQuery: async (text: string) => Array(1536).fill(0).map(() => Math.random())
-        };
-      }
-      
-      // Crea il vector store
-      this.vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings);
-      
-      // Crea la chain per question answering
-      const model = new ChatOpenAI({
-        openAIApiKey: process.env.OPENAI_API_KEY || 'sk-free-key',
-        modelName: 'gpt-3.5-turbo',
-        temperature: 0.7
-      });
-      
-      const template = `Sei un assistente esperto di programmazione che aiuta a rispondere a domande sul codice.
-      
-      Contesto: {context}
-      
-      Domanda: {question}
-      
-      Risposta:`;
-      
-      const prompt = PromptTemplate.fromTemplate(template);
-      
-      this.chain = RetrievalQAChain.fromLLM(
-        model,
-        this.vectorStore.asRetriever(),
-        { prompt }
-      );
-      
-      console.log('✅ Vector store inizializzato con successo!');
-    } catch (error) {
-      console.error('❌ Errore nell\'inizializzazione del vector store:', error);
     }
   }
 
@@ -379,13 +309,7 @@ export class BoltDiyService {
     }
     
     try {
-      if (this.chain) {
-        const result = await this.chain.call({
-          query: question
-        });
-        
-        return result.text;
-      } else if (this.boltDiy) {
+      if (this.boltDiy) {
         const result = await this.boltDiy.chat(question);
         return result.text;
       } else {
