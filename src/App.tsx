@@ -24,7 +24,6 @@ import TasseGabifer from './pages/finanziari/TasseGabifer';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { supabase, checkSupabaseConnection } from './lib/supabase';
 import toast from 'react-hot-toast';
-import AIDevAssistant from './components/admin/AIDevAssistant';
 
 function App() {
   const { isAuthenticated, loading, userProfile, user } = useAuth();

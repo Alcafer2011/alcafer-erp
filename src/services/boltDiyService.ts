@@ -2,8 +2,8 @@ import { HfInference } from '@huggingface/inference';
 import { supabase, supabaseAdmin } from '../lib/supabase';
 
 // Importa i moduli di Bolt.diy
-import { BoltDiy } from '../lib/bolt.diy/index';
-import { BoltDiyConfig } from '../lib/bolt.diy/types';
+import { BoltDiy } from '../lib/bolt.diy';
+import type { BoltDiyConfig } from '../lib/bolt.diy/types';
 
 export class BoltDiyService {
   private static instance: BoltDiyService;
@@ -14,7 +14,7 @@ export class BoltDiyService {
   private constructor() {
     // Inizializza Hugging Face Inference
     try {
-      this.hf = new HfInference(process.env.HUGGINGFACE_API_KEY || 'hf_free_api_key');
+      this.hf = new HfInference('hf_free_api_key');
     } catch (error) {
       console.warn('⚠️ Hugging Face non disponibile, utilizzerò fallback locale');
     }
@@ -27,7 +27,7 @@ export class BoltDiyService {
     return BoltDiyService.instance;
   }
 
-  async initialize(config?: BoltDiyConfig): Promise<boolean> {
+  async initialize(config?: Partial<BoltDiyConfig>): Promise<boolean> {
     try {
       console.log('🚀 Inizializzazione Bolt.diy...');
       
@@ -40,9 +40,9 @@ export class BoltDiyService {
         maxTokens: 2048,
         temperature: 0.7,
         apiKeys: {
-          openai: process.env.OPENAI_API_KEY || '',
-          huggingface: process.env.HUGGINGFACE_API_KEY || 'hf_free_api_key',
-          anthropic: process.env.ANTHROPIC_API_KEY || ''
+          openai: '',
+          huggingface: 'hf_free_api_key',
+          anthropic: ''
         }
       };
       
@@ -59,92 +59,6 @@ export class BoltDiyService {
     } catch (error) {
       console.error('❌ Errore nell\'inizializzazione di Bolt.diy:', error);
       return false;
-    }
-  }
-
-  private async getCodebase(): Promise<string[]> {
-    try {
-      // Recupera il codice sorgente dal database
-      const { data: files, error } = await supabase
-        .from('code_files')
-        .select('*');
-      
-      if (error) throw error;
-      
-      if (files && files.length > 0) {
-        return files.map(file => file.content);
-      }
-      
-      // Se non ci sono file nel database, utilizza un set di file predefiniti
-      return [
-        `// App.tsx
-        import React from 'react';
-        import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-        import { Toaster } from 'react-hot-toast';
-        import { useAuth } from './hooks/useAuth';
-        import Layout from './components/layout/Layout';
-        import Dashboard from './pages/Dashboard';
-        import LoginPage from './pages/LoginPage';
-        
-        function App() {
-          const { isAuthenticated, loading } = useAuth();
-          
-          if (loading) {
-            return <div>Loading...</div>;
-          }
-          
-          return (
-            <>
-              <Router>
-                {!isAuthenticated ? (
-                  <Routes>
-                    <Route path="*" element={<LoginPage />} />
-                  </Routes>
-                ) : (
-                  <Layout>
-                    <Routes>
-                      <Route path="/" element={<Dashboard />} />
-                    </Routes>
-                  </Layout>
-                )}
-              </Router>
-              <Toaster />
-            </>
-          );
-        }
-        
-        export default App;`,
-        
-        `// supabase.ts
-        import { createClient } from '@supabase/supabase-js';
-        
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-        
-        export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-        
-        export const supabaseAdmin = createClient(supabaseUrl, import.meta.env.VITE_SUPABASE_SERVICE_ROLE);
-        
-        export const checkSupabaseConnection = async () => {
-          try {
-            const { data, error } = await supabase.from('clienti').select('count').limit(1);
-            
-            if (error) {
-              console.error('❌ Errore connessione Supabase:', error);
-              return false;
-            }
-            
-            console.log('✅ Connessione a Supabase OK');
-            return true;
-          } catch (error) {
-            console.error('❌ Errore durante il test di connessione:', error);
-            return false;
-          }
-        };`
-      ];
-    } catch (error) {
-      console.error('❌ Errore nel recupero del codice sorgente:', error);
-      return [];
     }
   }
 
