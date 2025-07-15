@@ -194,10 +194,16 @@ export class AIDevService {
       
       // Se è un file singolo
       if (!Array.isArray(data)) {
-        const content = Buffer.from(data.content, 'base64').toString(); // Decodifica il contenuto Base64
+        if ('content' in data && typeof data.content === 'string') {
+          const content = Buffer.from(data.content, 'base64').toString(); // Decodifica il contenuto Base64
+          return [{
+            path: data.path,
+            content
+          }];
+        }
         return [{
           path: data.path,
-          content
+          content: ''
         }];
       }
 
@@ -212,7 +218,7 @@ export class AIDevService {
           });
           
           const fileData = fileResponse.data;
-          if ('content' in fileData) {
+          if ('content' in fileData && typeof fileData.content === 'string') {
             const content = Buffer.from(fileData.content, 'base64').toString();
             files.push({
               path: item.path,

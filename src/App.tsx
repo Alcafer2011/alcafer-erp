@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { useAuth } from './hooks/useAuth';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
+import LoginPage from './pages/LoginPage';
 import HomeFinanziaria from './pages/HomeFinanziaria';
 import Clienti from './pages/Clienti';
 import Preventivi from './pages/Preventivi';

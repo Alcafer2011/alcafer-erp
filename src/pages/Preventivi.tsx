@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, FileText, Upload, Camera, Download, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, Upload, Camera, Download, Eye, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { Preventivo } from '../types/database';
