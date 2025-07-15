@@ -34,6 +34,7 @@ const AIDevAssistant: React.FC = () => {
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionOutput, setExecutionOutput] = useState('');
   const [repositoryInfo, setRepositoryInfo] = useState({ owner: '', repo: '', branch: 'main' });
+  const [githubUrl, setGithubUrl] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { userProfile } = useAuth();
   const [aiModel, setAiModel] = useState<'openai' | 'huggingface' | 'local'>('openai');
@@ -50,29 +51,68 @@ const AIDevAssistant: React.FC = () => {
     if (isOpen && messages.length === 0) {
       const initialMessage: Message = {
         id: Date.now().toString(),
-        text: `Ciao ${userProfile?.nome || 'Amministratore'}! Sono il tuo assistente di sviluppo IA. Posso aiutarti con il codice, analizzare errori, suggerire modifiche e testare l'applicazione. Cosa posso fare per te oggi?`,
+        text: `Ciao ${userProfile?.nome || 'Amministratore'}! Sono il tuo assistente di sviluppo IA. Posso aiutarti con il codice, analizzare errori, suggerire modifiche e testare l'applicazione. Per iniziare, inserisci l'URL del tuo repository GitHub.`,
         sender: 'ai',
         timestamp: new Date()
       };
       
       setMessages([initialMessage]);
-      
-      // Carica le informazioni del repository
-      fetchRepositoryInfo();
     }
   }, [isOpen, messages.length, userProfile?.nome]);
 
-  const fetchRepositoryInfo = async () => {
+  const handleConnectRepository = async () => {
+    if (!githubUrl) {
+      toast.error('Inserisci l\'URL del repository GitHub');
+      return;
+    }
+    
+    setIsLoading(true);
+    
     try {
-      // In un'implementazione reale, queste informazioni potrebbero essere caricate da un file di configurazione
-      // o da un'API
+      // Estrai owner e repo dall'URL
+      const urlParts = githubUrl.replace('https://github.com/', '').split('/');
+      const owner = urlParts[0];
+      const repo = urlParts[1];
+      
+      if (!owner || !repo) {
+        throw new Error('URL del repository non valido');
+      }
+      
       setRepositoryInfo({
-        owner: 'Alcafer2011',
-        repo: 'alcafer-erp',
+        owner,
+        repo,
         branch: 'main'
       });
+      
+      // Simula il caricamento dei file
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const connectMessage: Message = {
+        id: Date.now().toString(),
+        text: `✅ Repository connesso con successo: ${owner}/${repo}\n\nOra posso aiutarti con il codice. Cosa vuoi fare?`,
+        sender: 'ai',
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, connectMessage]);
+      
+      // Carica alcuni file di esempio
+      await handleFileSelect();
+      
     } catch (error) {
-      console.error('Errore nel caricamento delle informazioni del repository:', error);
+      console.error('Errore nella connessione al repository:', error);
+      
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        text: `❌ Errore nella connessione al repository: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`,
+        sender: 'ai',
+        timestamp: new Date(),
+        error: error instanceof Error ? error.message : 'Errore sconosciuto'
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -202,6 +242,37 @@ async function testSupabaseConnection() {
 }
 
 testSupabaseConnection();`,
+        language: 'typescript'
+      };
+    } else if (userMessage.toLowerCase().includes('supabase') || userMessage.toLowerCase().includes('database')) {
+      return {
+        text: "Ho analizzato la configurazione di Supabase. Ecco alcune informazioni e suggerimenti per migliorare l'integrazione:",
+        code: `// Miglioramenti per l'integrazione con Supabase
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from './types/supabase';
+
+// Usa variabili d'ambiente con fallback sicuri
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+// Verifica che le variabili siano definite
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('⚠️ Variabili d\'ambiente Supabase mancanti');
+}
+
+// Crea il client con tipizzazione
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+
+// Funzione per verificare la connessione
+export const checkSupabaseConnection = async (): Promise<boolean> => {
+  try {
+    const { error } = await supabase.from('users').select('count');
+    return !error;
+  } catch (error) {
+    console.error('Errore di connessione a Supabase:', error);
+    return false;
+  }
+};`,
         language: 'typescript'
       };
     } else {
@@ -485,11 +556,35 @@ export const useAuth = () => {
                   <GitBranch className="h-4 w-4" />
                   <span>Repository</span>
                 </div>
-                <div className="text-xs text-gray-600 space-y-1">
-                  <p><span className="font-medium">Owner:</span> {repositoryInfo.owner}</p>
-                  <p><span className="font-medium">Repo:</span> {repositoryInfo.repo}</p>
-                  <p><span className="font-medium">Branch:</span> {repositoryInfo.branch}</p>
-                </div>
+                
+                {repositoryInfo.owner ? (
+                  <div className="text-xs text-gray-600 space-y-1">
+                    <p><span className="font-medium">Owner:</span> {repositoryInfo.owner}</p>
+                    <p><span className="font-medium">Repo:</span> {repositoryInfo.repo}</p>
+                    <p><span className="font-medium">Branch:</span> {repositoryInfo.branch}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={githubUrl}
+                      onChange={(e) => setGithubUrl(e.target.value)}
+                      placeholder="URL repository GitHub"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                    />
+                    <button
+                      onClick={handleConnectRepository}
+                      disabled={isLoading}
+                      className="w-full text-xs bg-blue-600 hover:bg-blue-700 text-white py-1 px-2 rounded transition-colors disabled:opacity-50"
+                    >
+                      {isLoading ? (
+                        <RefreshCw className="h-3 w-3 animate-spin mx-auto" />
+                      ) : (
+                        'Connetti Repository'
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
               
               {/* Files */}

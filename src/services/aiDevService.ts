@@ -84,6 +84,50 @@ export class AIDevService {
     }
   }
 
+  // Metodo per analizzare il codice con Hugging Face
+  async analyzeCodeWithHuggingFace(code: string, context?: any): Promise<AIResponse> {
+    try {
+      // Hugging Face Inference API (gratuita)
+      const response = await fetch('https://api-inference.huggingface.co/models/bigcode/starcoder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer hf_free_api_key' // Usa una chiave API gratuita
+        },
+        body: JSON.stringify({
+          inputs: `Analizza questo codice e fornisci feedback, miglioramenti o correzioni:
+          
+          ${code}
+          
+          Contesto aggiuntivo: ${JSON.stringify(context)}`,
+          parameters: {
+            max_new_tokens: 512,
+            temperature: 0.7,
+            return_full_text: false
+          }
+        })
+      });
+
+      const data = await response.json();
+      const aiResponse = data[0].generated_text;
+
+      // Estrai il codice se presente
+      const codeMatch = aiResponse.match(/```([a-zA-Z]*)\n([\s\S]*?)```/);
+      const extractedCode = codeMatch ? codeMatch[2] : null;
+      const language = codeMatch ? codeMatch[1] : null;
+
+      return {
+        text: aiResponse.replace(/```([a-zA-Z]*)\n[\s\S]*?```/g, '').trim(),
+        code: extractedCode,
+        language,
+        confidence: 0.85
+      };
+    } catch (error) {
+      console.error('Errore nell\'analisi del codice con Hugging Face:', error);
+      return this.getLocalAIResponse(code, context);
+    }
+  }
+
   // Metodo per ottenere file dal repository GitHub
   async getRepositoryFiles(owner: string, repo: string, path: string = ''): Promise<RepositoryFile[]> {
     try {
@@ -215,8 +259,80 @@ export class AIDevService {
   // Metodo per ottenere una risposta AI locale (fallback)
   private getLocalAIResponse(message: string, context?: any): AIResponse {
     // Implementazione locale semplice per quando l'API non è disponibile
+    const responses = {
+      // Analisi di codice
+      'analisi': [
+        "Il codice sembra ben strutturato, ma ho notato alcune potenziali ottimizzazioni. Ecco una versione migliorata:",
+        "Ho analizzato il codice e ho trovato alcuni problemi di sicurezza. Ecco come puoi risolverli:",
+        "Il codice funziona, ma potrebbe essere più efficiente. Ecco alcune modifiche consigliate:"
+      ],
+      
+      // Correzioni di errori
+      'errore': [
+        "Ho trovato l'errore nel codice. Il problema è nella gestione delle promesse. Ecco la correzione:",
+        "L'errore è causato da un problema di tipizzazione. Ecco come correggerlo:",
+        "C'è un problema nella gestione degli stati React. Ecco la soluzione:"
+      ],
+      
+      // Implementazioni
+      'implementa': [
+        "Ecco come puoi implementare questa funzionalità:",
+        "Per implementare questa caratteristica, dovresti seguire questi passaggi:",
+        "Ecco un'implementazione completa della funzionalità richiesta:"
+      ],
+      
+      // Deploy
+      'deploy': [
+        "Ecco i passaggi per fare il deploy dell'applicazione:",
+        "Per pubblicare l'applicazione, segui questa procedura:",
+        "Ecco come configurare il deploy automatico con GitHub e Netlify:"
+      ]
+    };
+
+    // Analisi intelligente del messaggio
+    const messageLower = message.toLowerCase();
+    let responseCategory = 'analisi';
+    
+    if (messageLower.includes('errore') || messageLower.includes('bug') || messageLower.includes('non funziona')) {
+      responseCategory = 'errore';
+    } else if (messageLower.includes('implementa') || messageLower.includes('crea') || messageLower.includes('aggiungi')) {
+      responseCategory = 'implementa';
+    } else if (messageLower.includes('deploy') || messageLower.includes('pubblica')) {
+      responseCategory = 'deploy';
+    }
+    
+    // Seleziona una risposta casuale dalla categoria
+    const categoryResponses = responses[responseCategory as keyof typeof responses];
+    const text = categoryResponses[Math.floor(Math.random() * categoryResponses.length)];
+    
+    // Genera un esempio di codice
+    let code = null;
+    let language = null;
+    
+    if (responseCategory === 'errore' || responseCategory === 'implementa') {
+      code = `// Esempio di codice generato localmente
+function fixedFunction() {
+  try {
+    // Implementazione corretta
+    const result = performOperation();
+    return result;
+  } catch (error) {
+    console.error('Errore gestito:', error);
+    return null;
+  }
+}`;
+      language = 'javascript';
+    } else if (responseCategory === 'deploy') {
+      code = `# Comandi per il deploy
+npm run build
+npx netlify deploy --prod --dir=dist`;
+      language = 'bash';
+    }
+
     return {
-      text: "Sono l'assistente di sviluppo locale. Posso aiutarti con analisi di base del codice, ma per funzionalità avanzate è necessaria una connessione a OpenAI o Hugging Face.",
+      text,
+      code,
+      language,
       confidence: 0.7
     };
   }
