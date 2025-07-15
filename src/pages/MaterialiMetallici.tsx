@@ -357,6 +357,13 @@ const MaterialiMetallici: React.FC = () => {
   };
 
   const initializePrezziRegionali = async () => {
+    // Verifica che l'utente sia autenticato
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error('Devi essere autenticato per inizializzare i prezzi');
+      return;
+    }
+
     try {
       // Prepara i dati per l'inserimento
       const prezziToInsert = [];
@@ -379,7 +386,7 @@ const MaterialiMetallici: React.FC = () => {
       if (error) {
         console.error('Errore nell\'inserimento prezzi:', error);
         if (error.code === '42501') {
-          toast.error('Non hai i permessi per inserire i prezzi dei materiali. Contatta l\'amministratore.');
+          toast.error('Non hai i permessi per inserire i prezzi dei materiali. Assicurati di essere autenticato correttamente.');
           return;
         }
         throw error;
@@ -394,6 +401,13 @@ const MaterialiMetallici: React.FC = () => {
   };
 
   const addNewPrezzoMateriale = async (tipoMateriale: string, prezzoKg: number) => {
+    // Verifica che l'utente sia autenticato
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error('Devi essere autenticato per aggiungere prezzi');
+      return false;
+    }
+
     try {
       const { error } = await supabase
         .from('prezzi_materiali')
@@ -407,7 +421,7 @@ const MaterialiMetallici: React.FC = () => {
       if (error) {
         console.error('Errore nell\'inserimento prezzo:', error);
         if (error.code === '42501') {
-          toast.error('Non hai i permessi per aggiungere prezzi dei materiali');
+          toast.error('Non hai i permessi per aggiungere prezzi dei materiali. Verifica la tua autenticazione.');
           return false;
         }
         throw error;
@@ -424,6 +438,13 @@ const MaterialiMetallici: React.FC = () => {
   };
 
   const updatePrezzo = async (id: string, nuovoPrezzo: number) => {
+    // Verifica che l'utente sia autenticato
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error('Devi essere autenticato per aggiornare i prezzi');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('prezzi_materiali')
@@ -436,7 +457,7 @@ const MaterialiMetallici: React.FC = () => {
       if (error) {
         console.error('Errore nell\'aggiornamento prezzo:', error);
         if (error.code === '42501') {
-          toast.error('Non hai i permessi per aggiornare questo prezzo');
+          toast.error('Non hai i permessi per aggiornare questo prezzo. Verifica la tua autenticazione.');
           return;
         }
         throw error;
@@ -451,6 +472,13 @@ const MaterialiMetallici: React.FC = () => {
   };
 
   const updateAllPrices = async () => {
+    // Verifica che l'utente sia autenticato
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error('Devi essere autenticato per aggiornare i prezzi');
+      return;
+    }
+
     setUpdatingPrices(true);
     try {
       // Simula aggiornamento automatico dei prezzi
@@ -484,7 +512,7 @@ const MaterialiMetallici: React.FC = () => {
         if (error) {
           console.error('Errore nell\'aggiornamento prezzo:', error);
           if (error.code === '42501') {
-            toast.error('Non hai i permessi per aggiornare i prezzi');
+            toast.error('Non hai i permessi per aggiornare i prezzi. Verifica la tua autenticazione.');
             return;
           }
           throw error;
@@ -502,6 +530,13 @@ const MaterialiMetallici: React.FC = () => {
   };
 
   const handleAddMateriale = async () => {
+    // Verifica che l'utente sia autenticato
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error('Devi essere autenticato per aggiungere materiali');
+      return;
+    }
+
     if (!newMateriale.tipo_materiale) {
       toast.error('Il tipo di materiale è obbligatorio');
       return;
@@ -553,7 +588,7 @@ const MaterialiMetallici: React.FC = () => {
 
       if (error) {
         if (error.code === '42501') {
-          toast.error('Non hai i permessi per aggiungere materiali metallici');
+          toast.error('Non hai i permessi per aggiungere materiali metallici. Verifica la tua autenticazione.');
           return;
         }
         throw error;
@@ -577,6 +612,13 @@ const MaterialiMetallici: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
+    // Verifica che l'utente sia autenticato
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error('Devi essere autenticato per eliminare materiali');
+      return;
+    }
+
     if (!confirm('Sei sicuro di voler eliminare questo materiale?')) return;
 
     try {
@@ -587,7 +629,7 @@ const MaterialiMetallici: React.FC = () => {
 
       if (error) {
         if (error.code === '42501') {
-          toast.error('Non hai i permessi per eliminare questo materiale');
+          toast.error('Non hai i permessi per eliminare questo materiale. Verifica la tua autenticazione.');
           return;
         }
         throw error;
