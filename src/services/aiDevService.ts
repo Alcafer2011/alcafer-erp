@@ -84,6 +84,46 @@ export class AIDevService {
     }
   }
 
+  // Metodo per analizzare il codice con Ollama (completamente gratuito, locale)
+  async analyzeCodeWithOllama(code: string, context?: any): Promise<AIResponse> {
+    try {
+      // Ollama API locale - completamente gratuito
+      const response = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'codellama', // Modello ottimizzato per il codice
+          prompt: `Sei un assistente di sviluppo esperto che aiuta a analizzare, migliorare e correggere codice.
+          
+          Analizza questo codice e fornisci feedback, miglioramenti o correzioni:
+          
+          ${code}
+          
+          Contesto aggiuntivo: ${JSON.stringify(context)}`,
+          stream: false
+        })
+      });
+
+      const data = await response.json();
+      const aiResponse = data.response;
+
+      // Estrai il codice se presente
+      const codeMatch = aiResponse.match(/```([a-zA-Z]*)\n([\s\S]*?)```/);
+      const extractedCode = codeMatch ? codeMatch[2] : null;
+      const language = codeMatch ? codeMatch[1] : null;
+
+      return {
+        text: aiResponse.replace(/```([a-zA-Z]*)\n[\s\S]*?```/g, '').trim(),
+        code: extractedCode,
+        language,
+        confidence: 0.9
+      };
+    } catch (error) {
+      console.warn('⚠️ Ollama non disponibile, uso AI locale:', error);
+      return this.getLocalAIResponse(code, context);
+    }
+  }
+
   // Metodo per analizzare il codice con Hugging Face
   async analyzeCodeWithHuggingFace(code: string, context?: any): Promise<AIResponse> {
     try {

@@ -37,7 +37,7 @@ const AIDevAssistant: React.FC = () => {
   const [githubUrl, setGithubUrl] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { userProfile } = useAuth();
-  const [aiModel, setAiModel] = useState<'openai' | 'huggingface' | 'local'>('openai');
+  const [aiModel, setAiModel] = useState<'openai' | 'huggingface' | 'ollama' | 'local'>('openai');
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -661,7 +661,7 @@ export const useAuth = () => {
               {/* AI Model Selector */}
               <div className="flex border-b border-gray-200 bg-gray-50 p-2">
                 <button
-                  onClick={() => switchAiModel('openai')}
+                  onClick={() => switchAiModel('openai')} 
                   className={`flex-1 text-xs py-1 px-2 rounded-l-md ${
                     aiModel === 'openai' 
                       ? 'bg-purple-600 text-white' 
@@ -675,7 +675,7 @@ export const useAuth = () => {
                 </button>
                 <button
                   onClick={() => switchAiModel('huggingface')}
-                  className={`flex-1 text-xs py-1 px-2 ${
+                  className={`flex-1 text-xs py-1 px-2 border-r border-gray-200 ${
                     aiModel === 'huggingface' 
                       ? 'bg-purple-600 text-white' 
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -684,6 +684,21 @@ export const useAuth = () => {
                   <div className="flex items-center justify-center gap-1">
                     <Brain className="h-3 w-3" />
                     <span>Hugging Face</span>
+                  </div>
+                </button>
+                <button
+                  onClick={() => switchAiModel('ollama')}
+                  className={`flex-1 text-xs py-1 px-2 ${
+                    aiModel === 'ollama' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" className="h-3 w-3">
+                      <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm0 22.5C6.2 22.5 1.5 17.8 1.5 12S6.2 1.5 12 1.5 22.5 6.2 22.5 12 17.8 22.5 12 22.5zm0-19.5c-5 0-9 4-9 9s4 9 9 9 9-4 9-9-4-9-9-9zm0 16.5c-4.1 0-7.5-3.4-7.5-7.5S7.9 4.5 12 4.5s7.5 3.4 7.5 7.5-3.4 7.5-7.5 7.5z"/>
+                    </svg>
+                    <span>Ollama</span>
                   </div>
                 </button>
                 <button
@@ -818,7 +833,12 @@ export const useAuth = () => {
                 <div className="flex items-center justify-between mt-2">
                   <div className="text-xs text-gray-500 flex items-center gap-1">
                     <Zap className="h-3 w-3" />
-                    Powered by {aiModel === 'openai' ? 'OpenAI GPT-4' : aiModel === 'huggingface' ? 'Hugging Face' : 'Modello Locale'}
+                    Powered by {
+                      aiModel === 'openai' ? 'OpenAI GPT-4' : 
+                      aiModel === 'huggingface' ? 'Hugging Face' : 
+                      aiModel === 'ollama' ? 'Ollama (locale)' : 
+                      'Modello Locale'
+                    }
                   </div>
                   <div className="text-xs text-purple-600 flex items-center gap-1">
                     <MessageSquare className="h-3 w-3" />
