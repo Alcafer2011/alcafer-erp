@@ -1,0 +1,26 @@
+{
+  "name": "alcafer-erp-installer",
+  "version": "1.0.0",
+  "description": "Windows Installer per Alcafer ERP con integrazione bolt.diy",
+  "main": "create-installer.js",
+  "scripts": {
+    "build": "node create-installer.js",
+    "create-installer": "npm run build"
+  },
+  "dependencies": {
+    "archiver": "^5.3.1"
+  },
+  "devDependencies": {
+    "@types/archiver": "^5.3.2"
+  },
+  "keywords": [
+    "alcafer",
+    "erp",
+    "installer",
+    "windows",
+    "bolt.diy",
+    "ai"
+  ],
+  "author": "Alcafer & Gabifer",
+  "license": "MIT"
+}
