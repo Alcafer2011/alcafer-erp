@@ -16,6 +16,8 @@ interface ImportMetaEnv {
   readonly VITE_APP_URL: string;
   readonly VITE_ADMIN_EMAIL: string;
   readonly VITE_ADMIN_PHONE: string;
+  readonly VITE_ANTHROPIC_API_KEY?: string;
+  readonly VITE_BOLTDIY_URL?: string;
 }
 
 interface ImportMeta {

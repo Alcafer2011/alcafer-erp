@@ -48,16 +48,7 @@ function App() {
     
     setTimeout(checkConnection, 1000); // Delay to ensure environment variables are loaded
     
-    // Registra il service worker per PWA
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js').then(registration => {
-          console.log('ServiceWorker registrato con successo:', registration.scope);
-        }).catch(error => {
-          console.log('Registrazione ServiceWorker fallita:', error);
-        });
-      });
-    }
+    // Registrazione del service worker gestita in index.html
   }, []);
 
   if (loading) {

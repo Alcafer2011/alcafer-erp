@@ -103,7 +103,8 @@ export class BoltDiyIntegrationService {
   private async waitForBoltDiy(maxAttempts: number = 15): Promise<boolean> {
     for (let i = 0; i < maxAttempts; i++) {
       try {
-        const response = await fetch('http://localhost:5174/api/health', {
+        const baseUrl = (import.meta as any).env?.VITE_BOLTDIY_URL || 'http://localhost:5174';
+        const response = await fetch(`${baseUrl}/api/health`, {
           method: 'GET',
           timeout: 2000
         } as any);
@@ -292,7 +293,9 @@ export class BoltDiyIntegrationService {
   // 🔗 Configurazione WebSocket
   private async setupWebSocketConnection(): Promise<void> {
     try {
-      this.ws = new WebSocket('ws://localhost:5174/ws/alcafer');
+      const baseUrl = (import.meta as any).env?.VITE_BOLTDIY_URL || 'http://localhost:5174';
+      const wsUrl = baseUrl.replace(/^http/, 'ws') + '/ws/alcafer';
+      this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
         console.log('🔗 WebSocket connesso a bolt.diy');
@@ -325,7 +328,8 @@ export class BoltDiyIntegrationService {
   private setupPolling(): void {
     setInterval(async () => {
       try {
-        const response = await fetch('http://localhost:5174/api/alcafer-messages');
+        const baseUrl = (import.meta as any).env?.VITE_BOLTDIY_URL || 'http://localhost:5174';
+        const response = await fetch(`${baseUrl}/api/alcafer-messages`);
         if (response.ok) {
           const messages = await response.json();
           messages.forEach((message: any) => this.handleBoltDiyMessage(message));
@@ -371,7 +375,8 @@ export class BoltDiyIntegrationService {
   // 📨 Invia dati a bolt.diy
   private async sendToBoltDiy(event: string, data: any): Promise<any> {
     try {
-      const response = await fetch('http://localhost:5174/api/alcafer-integration', {
+      const baseUrl = (import.meta as any).env?.VITE_BOLTDIY_URL || 'http://localhost:5174';
+      const response = await fetch(`${baseUrl}/api/alcafer-integration`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
