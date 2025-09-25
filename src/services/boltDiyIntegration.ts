@@ -369,7 +369,7 @@ export class BoltDiyIntegrationService {
   }
 
   // 📨 Invia dati a bolt.diy
-  private async sendToBoltDiy(event: string, data: any): Promise<any> {
+  public async sendToBoltDiy(event: string, data: any): Promise<any> {
     try {
       const response = await fetch('http://localhost:5174/api/alcafer-integration', {
         method: 'POST',
@@ -661,7 +661,7 @@ export class BoltDiyIntegrationService {
       if (response?.fix) {
         await this.applyAutoFix(response.fix);
       } else {
-        toast.info('🤖 bolt.diy sta analizzando il problema...');
+        toast('🤖 bolt.diy sta analizzando il problema...', { icon: 'ℹ️' });
       }
 
     } catch (error) {
