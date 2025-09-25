@@ -1,5 +1,5 @@
 import { HfInference } from '@huggingface/inference';
-import { supabase, supabaseAdmin } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 // Importa i moduli di Bolt.diy
 import { BoltDiy } from '../lib/bolt.diy';
@@ -104,48 +104,24 @@ export class BoltDiyService {
   }
 
   async fixRLSPolicies(tableName: string): Promise<string> {
-    try {
-      // Recupera lo schema della tabella
-      const { data: tableInfo, error: tableError } = await supabaseAdmin.rpc('get_table_info', {
-        table_name: tableName
-      });
-      
-      if (tableError) throw tableError;
-      
-      // Recupera le policy esistenti
-      const { data: policies, error: policiesError } = await supabaseAdmin.rpc('get_policies', {
-        table_name: tableName
-      });
-      
-      if (policiesError) throw policiesError;
-      
-      // Genera SQL per correggere le policy RLS
-      let sql = `-- Correzione policy RLS per la tabella ${tableName}\n\n`;
-      
-      // Abilita RLS se non è già abilitato
-      sql += `-- Abilita RLS sulla tabella\n`;
-      sql += `ALTER TABLE ${tableName} ENABLE ROW LEVEL SECURITY;\n\n`;
-      
-      // Crea policy di base se non esistono
-      if (!policies || policies.length === 0) {
-        sql += `-- Crea policy di base per utenti autenticati\n`;
-        sql += `CREATE POLICY "Utenti autenticati possono leggere ${tableName}" ON ${tableName}\n`;
-        sql += `  FOR SELECT\n`;
-        sql += `  TO authenticated\n`;
-        sql += `  USING (true);\n\n`;
-        
-        sql += `CREATE POLICY "Utenti autenticati possono modificare ${tableName}" ON ${tableName}\n`;
-        sql += `  FOR ALL\n`;
-        sql += `  TO authenticated\n`;
-        sql += `  USING (true)\n`;
-        sql += `  WITH CHECK (true);\n`;
-      }
-      
-      return sql;
-    } catch (error) {
-      console.error('❌ Errore nella generazione delle policy RLS:', error);
-      return `-- Errore nella generazione delle policy RLS: ${error}`;
-    }
+    // Genera SQL standard per attivare RLS e creare policy base
+    let sql = `-- Correzione policy RLS per la tabella ${tableName}\n\n`;
+    sql += `ALTER TABLE ${tableName} ENABLE ROW LEVEL SECURITY;\n\n`;
+    sql += `DO $$\nBEGIN\n`;
+    sql += `  IF NOT EXISTS (\n`;
+    sql += `    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = '${tableName}' AND policyname = 'Utenti autenticati possono leggere ${tableName}'\n`;
+    sql += `  ) THEN\n`;
+    sql += `    CREATE POLICY "Utenti autenticati possono leggere ${tableName}" ON ${tableName}\n`;
+    sql += `      FOR SELECT TO authenticated USING (true);\n`;
+    sql += `  END IF;\n`;
+    sql += `  IF NOT EXISTS (\n`;
+    sql += `    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = '${tableName}' AND policyname = 'Utenti autenticati possono modificare ${tableName}'\n`;
+    sql += `  ) THEN\n`;
+    sql += `    CREATE POLICY "Utenti autenticati possono modificare ${tableName}" ON ${tableName}\n`;
+    sql += `      FOR ALL TO authenticated USING (true) WITH CHECK (true);\n`;
+    sql += `  END IF;\n`;
+    sql += `END$$;\n`;
+    return sql;
   }
 
   async createMigration(sql: string, name: string): Promise<boolean> {

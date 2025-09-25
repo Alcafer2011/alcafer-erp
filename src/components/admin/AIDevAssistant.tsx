@@ -7,6 +7,7 @@ import {
   RefreshCw, Download, Upload
 } from 'lucide-react';
 import { boltDiyIntegration } from '../../services/boltDiyIntegration';
+import { boltDiyService } from '../../services/boltDiyService';
 import { useAuth } from '../../hooks/useAuth';
 import toast from 'react-hot-toast';
 
@@ -80,7 +81,8 @@ const AIDevAssistant: React.FC = () => {
   const checkSystemStatus = async () => {
     try {
       // Controlla bolt.diy
-      const boltResponse = await fetch('http://localhost:5174/api/health').catch(() => null);
+      const boltBaseUrl = (import.meta as any).env?.VITE_BOLTDIY_URL || 'http://localhost:5174';
+      const boltResponse = await fetch(`${boltBaseUrl}/api/health`).catch(() => null);
       const boltConnected = boltResponse?.ok || false;
 
       // Controlla Supabase
@@ -137,36 +139,21 @@ const AIDevAssistant: React.FC = () => {
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev: Message[]) => [...prev, userMessage]);
     setMessage('');
     setIsTyping(true);
 
     try {
-      // Invia a bolt.diy per elaborazione
-      const response = await boltDiyIntegration.sendToBoltDiy('chat_message', {
-        message: userMessage.text,
-        context: {
-          userId: userProfile?.id,
-          userRole: userProfile?.ruolo,
-          currentPage: window.location.pathname,
-          systemStatus
-        }
-      });
-
-      // Simula risposta AI
-      setTimeout(() => {
-        const aiResponse = response?.response || generateLocalResponse(userMessage.text);
-        
-        const aiMessage: Message = {
-          id: Date.now().toString(),
-          text: aiResponse,
-          sender: 'ai',
-          timestamp: new Date()
-        };
-
-        setMessages(prev => [...prev, aiMessage]);
-        setIsTyping(false);
-      }, 1500);
+      // Chiedi risposta tramite servizio bolt.diy (con fallback locale interno)
+      const responseText = await boltDiyService.askQuestion(userMessage.text);
+      const aiMessage: Message = {
+        id: Date.now().toString(),
+        text: responseText || generateLocalResponse(userMessage.text),
+        sender: 'ai',
+        timestamp: new Date()
+      };
+      setMessages((prev: Message[]) => [...prev, aiMessage]);
+      setIsTyping(false);
 
     } catch (error) {
       console.error('Errore invio messaggio:', error);
@@ -179,7 +166,7 @@ const AIDevAssistant: React.FC = () => {
         type: 'error'
       };
 
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages((prev: Message[]) => [...prev, errorMessage]);
       setIsTyping(false);
     }
   };
@@ -206,7 +193,7 @@ const AIDevAssistant: React.FC = () => {
     return 'Sono il tuo assistente AI integrato con bolt.diy. Posso aiutarti con debugging, ottimizzazioni, correzioni automatiche e molto altro. Cosa posso fare per te?';
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -342,7 +329,7 @@ const AIDevAssistant: React.FC = () => {
                         </div>
                       )}
                       
-                      {messages.map((msg) => (
+                      {messages.map((msg: Message) => (
                         <motion.div
                           key={msg.id}
                           initial={{ opacity: 0, y: 10 }}
@@ -521,7 +508,10 @@ const AIDevAssistant: React.FC = () => {
                     </button>
                     
                     <button
-                      onClick={() => window.open('http://localhost:5174', '_blank')}
+                      onClick={() => {
+                        const boltBaseUrl = (import.meta as any).env?.VITE_BOLTDIY_URL || 'http://localhost:5174';
+                        window.open(boltBaseUrl, '_blank');
+                      }}
                       className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors"
                     >
                       <Brain className="h-4 w-4" />
