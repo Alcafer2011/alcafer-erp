@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Radio Player Italiano</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .radio-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 350px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .radio-title {
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .station-selector {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 14px;
+            margin-bottom: 15px;
+            backdrop-filter: blur(5px);
+        }
+
+        .station-selector option {
+            background: #333;
+            color: white;
+        }
+
+        .current-station {
+            color: white;
+            font-size: 14px;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .audio-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .play-btn {
+            background: rgba(76, 175, 80, 0.8);
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
+        }
+
+        .play-btn:hover {
+            background: rgba(76, 175, 80, 1);
+        }
+
+        .volume-control {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .volume-slider {
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .status {
+            color: white;
+            font-size: 12px;
+            margin-top: 8px;
+            opacity: 0.8;
+        }
+
+        .error {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+
+        .success {
+            color: #51cf66;
+            background: rgba(81, 207, 102, 0.1);
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+
+        .loading {
+            color: #ffd43b;
+            background: rgba(255, 212, 59, 0.1);
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+
+        .station-info {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 15px;
+            color: white;
+        }
+
+        .station-info h3 {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .station-info p {
+            font-size: 12px;
+            opacity: 0.8;
+            line-height: 1.3;
+        }
+    </style>
+</head>
+<body>
+    <div class="radio-container">
+        <h1 class="radio-title">📻 Web Radio Italiano</h1>
+        
+        <select id="stationSelect" class="station-selector">
+            <option value="">Seleziona una stazione radio</option>
+            <option value="https://streaming.radionova.it/radionova">Radio Nova</option>
+            <option value="https://streaming.radionova.it/radionova2">Radio Nova 2</option>
+            <option value="https://streaming.radionova.it/radionova3">Radio Nova 3</option>
+            <option value="https://streaming.radionova.it/radionova4">Radio Nova 4</option>
+            <option value="https://streaming.radionova.it/radionova5">Radio Nova 5</option>
+            <option value="https://streaming.radionova.it/radionova6">Radio Nova 6</option>
+            <option value="https://streaming.radionova.it/radionova7">Radio Nova 7</option>
+            <option value="https://streaming.radionova.it/radionova8">Radio Nova 8</option>
+            <option value="https://streaming.radionova.it/radionova9">Radio Nova 9</option>
+            <option value="https://streaming.radionova.it/radionova10">Radio Nova 10</option>
+            <option value="https://streaming.radionova.it/radionova11">Radio Nova 11</option>
+            <option value="https://streaming.radionova.it/radionova12">Radio Nova 12</option>
+            <option value="https://streaming.radionova.it/radionova13">Radio Nova 13</option>
+            <option value="https://streaming.radionova.it/radionova14">Radio Nova 14</option>
+            <option value="https://streaming.radionova.it/radionova15">Radio Nova 15</option>
+            <option value="https://streaming.radionova.it/radionova16">Radio Nova 16</option>
+            <option value="https://streaming.radionova.it/radionova17">Radio Nova 17</option>
+            <option value="https://streaming.radionova.it/radionova18">Radio Nova 18</option>
+            <option value="https://streaming.radionova.it/radionova19">Radio Nova 19</option>
+            <option value="https://streaming.radionova.it/radionova20">Radio Nova 20</option>
+            <option value="https://streaming.radionova.it/radionova21">Radio Nova 21</option>
+            <option value="https://streaming.radionova.it/radionova22">Radio Nova 22</option>
+            <option value="https://streaming.radionova.it/radionova23">Radio Nova 23</option>
+            <option value="https://streaming.radionova.it/radionova24">Radio Nova 24</option>
+            <option value="https://streaming.radionova.it/radionova25">Radio Nova 25</option>
+            <option value="https://streaming.radionova.it/radionova26">Radio Nova 26</option>
+            <option value="https://streaming.radionova.it/radionova27">Radio Nova 27</option>
+            <option value="https://streaming.radionova.it/radionova28">Radio Nova 28</option>
+            <option value="https://streaming.radionova.it/radionova29">Radio Nova 29</option>
+            <option value="https://streaming.radionova.it/radionova30">Radio Nova 30</option>
+        </select>
+
+        <div id="currentStation" class="current-station"></div>
+
+        <div class="audio-controls">
+            <button id="prevBtn" class="control-btn">⏮</button>
+            <button id="playBtn" class="control-btn play-btn">▶</button>
+            <button id="nextBtn" class="control-btn">⏭</button>
+            <button id="stopBtn" class="control-btn">⏹</button>
+        </div>
+
+        <div class="volume-control">
+            <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="70">
+            <div class="status">Volume: <span id="volumeValue">70</span>%</div>
+        </div>
+
+        <div id="status" class="status"></div>
+        <div id="stationInfo" class="station-info" style="display: none;">
+            <h3>Informazioni Stazione</h3>
+            <p id="stationDescription"></p>
+        </div>
+
+        <audio id="audioPlayer" preload="none"></audio>
+    </div>
+
+    <script>
+        class RadioPlayer {
+            constructor() {
+                this.audio = document.getElementById('audioPlayer');
+                this.stationSelect = document.getElementById('stationSelect');
+                this.currentStationDiv = document.getElementById('currentStation');
+                this.playBtn = document.getElementById('playBtn');
+                this.stopBtn = document.getElementById('stopBtn');
+                this.prevBtn = document.getElementById('prevBtn');
+                this.nextBtn = document.getElementById('nextBtn');
+                this.volumeSlider = document.getElementById('volumeSlider');
+                this.volumeValue = document.getElementById('volumeValue');
+                this.statusDiv = document.getElementById('status');
+                this.stationInfoDiv = document.getElementById('stationInfo');
+                this.stationDescription = document.getElementById('stationDescription');
+                
+                this.isPlaying = false;
+                this.currentStationIndex = 0;
+                this.stations = this.getStations();
+                
+                this.init();
+            }
+
+            getStations() {
+                return [
+                    { name: 'Radio Nova', url: 'https://streaming.radionova.it/radionova', description: 'Musica italiana e internazionale' },
+                    { name: 'Radio Nova 2', url: 'https://streaming.radionova.it/radionova2', description: 'Rock e alternative' },
+                    { name: 'Radio Nova 3', url: 'https://streaming.radionova.it/radionova3', description: 'Pop e dance' },
+                    { name: 'Radio Nova 4', url: 'https://streaming.radionova.it/radionova4', description: 'Classica e jazz' },
+                    { name: 'Radio Nova 5', url: 'https://streaming.radionova.it/radionova5', description: 'Hip hop e rap' },
+                    { name: 'Radio Nova 6', url: 'https://streaming.radionova.it/radionova6', description: 'Electronic e techno' },
+                    { name: 'Radio Nova 7', url: 'https://streaming.radionova.it/radionova7', description: 'Reggae e world music' },
+                    { name: 'Radio Nova 8', url: 'https://streaming.radionova.it/radionova8', description: 'Blues e soul' },
+                    { name: 'Radio Nova 9', url: 'https://streaming.radionova.it/radionova9', description: 'Country e folk' },
+                    { name: 'Radio Nova 10', url: 'https://streaming.radionova.it/radionova10', description: 'Ambient e chillout' }
+                ];
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.audio.volume = 0.7;
+                this.updateStatus('Seleziona una stazione radio per iniziare');
+            }
+
+            setupEventListeners() {
+                this.stationSelect.addEventListener('change', (e) => {
+                    if (e.target.value) {
+                        this.loadStation(e.target.value);
+                    }
+                });
+
+                this.playBtn.addEventListener('click', () => {
+                    if (this.isPlaying) {
+                        this.pause();
+                    } else {
+                        this.play();
+                    }
+                });
+
+                this.stopBtn.addEventListener('click', () => {
+                    this.stop();
+                });
+
+                this.prevBtn.addEventListener('click', () => {
+                    this.previousStation();
+                });
+
+                this.nextBtn.addEventListener('click', () => {
+                    this.nextStation();
+                });
+
+                this.volumeSlider.addEventListener('input', (e) => {
+                    this.setVolume(e.target.value);
+                });
+
+                this.audio.addEventListener('loadstart', () => {
+                    this.updateStatus('Caricamento in corso...', 'loading');
+                });
+
+                this.audio.addEventListener('canplay', () => {
+                    this.updateStatus('Pronto per la riproduzione', 'success');
+                });
+
+                this.audio.addEventListener('play', () => {
+                    this.isPlaying = true;
+                    this.playBtn.textContent = '⏸';
+                    this.updateStatus('In riproduzione', 'success');
+                });
+
+                this.audio.addEventListener('pause', () => {
+                    this.isPlaying = false;
+                    this.playBtn.textContent = '▶';
+                    this.updateStatus('In pausa');
+                });
+
+                this.audio.addEventListener('error', (e) => {
+                    this.isPlaying = false;
+                    this.playBtn.textContent = '▶';
+                    this.updateStatus('Errore nel caricamento della stazione', 'error');
+                    console.error('Errore audio:', e);
+                });
+
+                this.audio.addEventListener('ended', () => {
+                    this.isPlaying = false;
+                    this.playBtn.textContent = '▶';
+                    this.updateStatus('Riproduzione terminata');
+                });
+            }
+
+            loadStation(url) {
+                const station = this.stations.find(s => s.url === url);
+                if (station) {
+                    this.currentStationDiv.textContent = `📻 ${station.name}`;
+                    this.stationDescription.textContent = station.description;
+                    this.stationInfoDiv.style.display = 'block';
+                }
+
+                this.audio.src = url;
+                this.audio.load();
+                this.updateStatus('Caricamento stazione...', 'loading');
+            }
+
+            play() {
+                if (this.audio.src) {
+                    this.audio.play().catch(error => {
+                        console.error('Errore nella riproduzione:', error);
+                        this.updateStatus('Errore nella riproduzione', 'error');
+                    });
+                } else {
+                    this.updateStatus('Seleziona prima una stazione', 'error');
+                }
+            }
+
+            pause() {
+                this.audio.pause();
+            }
+
+            stop() {
+                this.audio.pause();
+                this.audio.currentTime = 0;
+                this.isPlaying = false;
+                this.playBtn.textContent = '▶';
+                this.updateStatus('Riproduzione fermata');
+            }
+
+            setVolume(value) {
+                this.audio.volume = value / 100;
+                this.volumeValue.textContent = value;
+            }
+
+            previousStation() {
+                if (this.currentStationIndex > 0) {
+                    this.currentStationIndex--;
+                } else {
+                    this.currentStationIndex = this.stations.length - 1;
+                }
+                this.loadStation(this.stations[this.currentStationIndex].url);
+                this.stationSelect.value = this.stations[this.currentStationIndex].url;
+            }
+
+            nextStation() {
+                if (this.currentStationIndex < this.stations.length - 1) {
+                    this.currentStationIndex++;
+                } else {
+                    this.currentStationIndex = 0;
+                }
+                this.loadStation(this.stations[this.currentStationIndex].url);
+                this.stationSelect.value = this.stations[this.currentStationIndex].url;
+            }
+
+            updateStatus(message, type = '') {
+                this.statusDiv.textContent = message;
+                this.statusDiv.className = `status ${type}`;
+            }
+        }
+
+        // Inizializza il player quando la pagina è caricata
+        document.addEventListener('DOMContentLoaded', () => {
+            new RadioPlayer();
+        });
+    </script>
+</body>
+</html>
